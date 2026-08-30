@@ -19,8 +19,8 @@ GPL-3.0-or-later - see LICENSE
   later heartbeat.
 - Added non-mutating build-test scripts and CI SDK checkout, matching
   the rest of the External Automation / Mobile Bridges family.
-- Standardized README (English + Spanish so far, remaining languages
-  to follow), project banner and manifest to match the ecosystem's
-  established-project structure.
+- Standardized README in all 7 ecosystem languages (English, Spanish,
+  French, Italian, German, Simplified Chinese, Japanese), project banner
+  and manifest to match the ecosystem's established-project structure.
 - No real MAVLink/DJI OSDK transport adapter or physical UAV validated
   yet - this is a plan-only coordination boundary.
