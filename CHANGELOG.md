@@ -6,6 +6,16 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.0.2] - Reject non-finite heartbeat deadlines and timestamps
+
+- **`HeartbeatMonitor`** - `timeout_s <= 0` alone never caught `NaN`
+  (`nan <= 0` is always `False` in Python) - a `NaN` timeout previously
+  passed the old check silently, then made every later `elapsed >
+  timeout_s` comparison in `state()` also always `False`, which could
+  leave a genuinely lost link reported as healthy. `timeout_s`, and the
+  `now` passed to `observe()`/`state()`, must now be finite.
+- 17/17 tests passing.
+
 ## [0.0.1]
 
 - Added a dependency-free UAV flight-request coordination core

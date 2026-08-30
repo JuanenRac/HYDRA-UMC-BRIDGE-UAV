@@ -72,6 +72,19 @@ class HeartbeatMonitorTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             HeartbeatMonitor(timeout_s=-1.0)
 
+    def test_rejects_non_finite_timeout(self):
+        for timeout in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(timeout=timeout), self.assertRaises(ValueError):
+                HeartbeatMonitor(timeout_s=timeout)
+
+    def test_rejects_non_finite_heartbeat_or_check_timestamp(self):
+        monitor = HeartbeatMonitor(timeout_s=5.0)
+        for timestamp in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(timestamp=timestamp), self.assertRaises(ValueError):
+                monitor.observe(timestamp)
+            with self.subTest(timestamp=timestamp), self.assertRaises(ValueError):
+                monitor.state(timestamp)
+
     def test_rejects_a_now_earlier_than_the_last_heartbeat(self):
         monitor = HeartbeatMonitor(timeout_s=5.0)
         monitor.observe(now=100.0)

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import math
 
 
 class LinkStatus(str, Enum):
@@ -51,8 +52,8 @@ class HeartbeatMonitor:
     """
 
     def __init__(self, timeout_s: float, failsafe_action: str = "RETURN_TO_LAUNCH") -> None:
-        if timeout_s <= 0:
-            raise ValueError("timeout_s must be a positive number of seconds")
+        if not math.isfinite(timeout_s) or timeout_s <= 0:
+            raise ValueError("timeout_s must be a finite, positive number of seconds")
         self._timeout_s = timeout_s
         self._failsafe_action = failsafe_action
         self._last_heartbeat_at: float | None = None
@@ -60,6 +61,8 @@ class HeartbeatMonitor:
     def observe(self, now: float) -> None:
         """Record a real heartbeat received at `now`."""
 
+        if not math.isfinite(now):
+            raise ValueError("heartbeat timestamp must be finite")
         self._last_heartbeat_at = now
 
     def state(self, now: float) -> HeartbeatState:
@@ -70,6 +73,8 @@ class HeartbeatMonitor:
         a false OK.
         """
 
+        if not math.isfinite(now):
+            raise ValueError("state timestamp must be finite")
         if self._last_heartbeat_at is None:
             return HeartbeatState(LinkStatus.LOST, float("inf"), self._failsafe_action)
         elapsed = now - self._last_heartbeat_at
