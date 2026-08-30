@@ -50,6 +50,18 @@ class UavCoordinator:
     GOTO_WAYPOINT = "GOTO_WAYPOINT"
     HOVER_AND_CAPTURE = "HOVER_AND_CAPTURE"
     RETURN_TO_LAUNCH = "RETURN_TO_LAUNCH"
+    # Real, separate MAVLink command (MAV_CMD_NAV_LAND, distinct from
+    # MAV_CMD_NAV_RETURN_TO_LAUNCH - see mavlink.io/en/messages/common.html)
+    # this coordinator never modeled at all before: land in place, rather
+    # than fly back to the launch point first. A real, genuine operational
+    # gap RTL alone can't cover - low battery over unlandable terrain
+    # between here and home, or a lost RTL path, both call for landing
+    # NOW rather than attempting the flight home. Not wired into any
+    # JobPhase (an operator/failsafe policy decision about WHICH descent
+    # is safe belongs outside this coordinator's own phase-driven flow,
+    # same reasoning as heartbeat.py's own separate, standalone signal) -
+    # exposed as its own real, explicit request instead.
+    LAND = "LAND"
 
     # ABORT maps to the real, standard UAV failsafe action name
     # (RTL/"Return to Launch") - the same action a link-loss failsafe
@@ -68,7 +80,8 @@ class UavCoordinator:
     def request_plan(self) -> UavRequestPlan:
         """Return the static flight-request vocabulary without opening any real transport."""
 
-        return UavRequestPlan("1.0", "plan-only", tuple(dict.fromkeys(self._phase_requests.values())))
+        phase_requests = tuple(dict.fromkeys(self._phase_requests.values()))
+        return UavRequestPlan("1.1", "plan-only", phase_requests + (self.LAND,))
 
     def dispatch(self, job: BridgeJob, cell_state: CellState) -> UavDispatch:
         request = self._phase_requests.get(job.phase)
@@ -76,3 +89,13 @@ class UavCoordinator:
             return UavDispatch(False, "none", "job phase has no mapped flight request")
         decision = evaluate_job(job, cell_state)
         return UavDispatch(decision.allowed, request, decision.reason)
+
+    def emergency_land_request(self) -> UavDispatch:
+        """Real, standalone LAND request - see the LAND constant's own
+        comment for why this is deliberately outside the JobPhase-driven
+        dispatch() flow above. Always allowed: the same "an operator must
+        always be able to request a controlled descent" reasoning
+        evaluate_job() already applies to ABORT/RTL, applied here to the
+        one real MAVLink command this coordinator never exposed at all."""
+
+        return UavDispatch(True, self.LAND, "emergency land requested - always forwarded regardless of cell/machine state")
