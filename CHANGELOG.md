@@ -6,6 +6,30 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.0.4] - Real MAVLink command transport (pre-real: connected, not simulated)
+
+- **`mavlink_transport.py`** (new) - this bridge's first real transport:
+  `MavlinkFlightControl.send()` sends an already-gated `UavDispatch` as a
+  real MAVLink `COMMAND_LONG`, mapped to a real, numbered `MAV_CMD` from the
+  authoritative spec
+  ([common.xml](https://github.com/mavlink/mavlink/blob/master/message_definitions/v1.0/common.xml)),
+  never an invented or guessed ID: `PRE_FLIGHT_CHECK` ->
+  `MAV_CMD_COMPONENT_ARM_DISARM` (400, arm - PX4/ArduPilot both run their
+  own real pre-arm checks as part of processing an arm request);
+  `TAKEOFF` -> `MAV_CMD_NAV_TAKEOFF` (22); `GOTO_WAYPOINT` ->
+  `MAV_CMD_DO_REPOSITION` (192, the real command for an immediate
+  GUIDED-mode "go here now" - not the mission-item `MAV_CMD_NAV_WAYPOINT`);
+  `HOVER_AND_CAPTURE` -> `MAV_CMD_NAV_LOITER_UNLIM` (17) followed by
+  `MAV_CMD_IMAGE_START_CAPTURE` (2000); `RETURN_TO_LAUNCH` ->
+  `MAV_CMD_NAV_RETURN_TO_LAUNCH` (20); `LAND` -> `MAV_CMD_NAV_LAND` (21).
+  Only an already-gated dispatch is ever sent - a rejected `UavDispatch`
+  never reaches the network. `open_mavlink_connection()` is the one place
+  `pymavlink` (new optional `[mavlink]` extra) is imported, lazily,
+  degrading to a clear `RuntimeError` instead of a bare `ImportError` when
+  it isn't installed.
+- 11 new regression tests against an in-memory fake command sink (no real
+  flight controller/SITL needed) - 30/30 tests passing.
+
 ## [0.0.3] - Real, standalone LAND request (MAV_CMD_NAV_LAND)
 
 - **`coordinator.py`** - added `LAND`, a real, genuinely distinct flight

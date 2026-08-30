@@ -2,12 +2,12 @@
   "schema_version": "1.0",
   "ecosystem": "HYDRA-UMC",
   "name": "HYDRA-UMC-BRIDGE-UAV",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "role": "library",
   "stack": "python",
   "technologies": [
     "Python",
-    "MAVLink-class flight requests",
+    "MAVLink",
     "HYDRA-UMC-SDK"
   ],
   "deployment_target": "cm5",
@@ -15,7 +15,7 @@
   "family": "Mobile & Autonomous Bridges",
   "parent": "HYDRA-UMC-SERVER",
   "build": "python tools/build_test.py",
-  "notes": "Real, dependency-free coordination boundary for camera-equipped UAVs: a named high-level flight-request vocabulary (PRE_FLIGHT_CHECK/TAKEOFF/GOTO_WAYPOINT/HOVER_AND_CAPTURE/RETURN_TO_LAUNCH) gated through HYDRA-UMC-SDK's shared safety contract, plus a real, deterministic HeartbeatMonitor link-loss failsafe state machine (explicit `now`-driven, no real sleeps, fully unit-tested including its exact timeout boundary) - the required watchdog a UAV bridge needs per this project's own architecture note. Never computes flight control or stabilization itself, and this heartbeat signal is a coordination-layer concern, not a replacement for the flight controller's own independent link-loss failsafe. No real MAVLink/DJI OSDK transport adapter or physical UAV validated yet.",
+  "notes": "Real, dependency-free coordination boundary for camera-equipped UAVs: a named high-level flight-request vocabulary (PRE_FLIGHT_CHECK/TAKEOFF/GOTO_WAYPOINT/HOVER_AND_CAPTURE/RETURN_TO_LAUNCH/LAND) gated through HYDRA-UMC-SDK's shared safety contract, a real, deterministic HeartbeatMonitor link-loss failsafe state machine, and a real MAVLink command sender (MavlinkFlightControl) mapping each request to its real, numbered MAV_CMD - only an already-gated dispatch is ever sent. Never computes flight control or stabilization itself; real-time failsafe execution stays the flight controller's own authority. Not yet exercised against a real flight controller or SITL.",
   "native_version": {
     "file": "pyproject.toml",
     "pattern": "^version\\s*=\\s*\"(\\d+)\\.(\\d+)\\.(\\d+)\""

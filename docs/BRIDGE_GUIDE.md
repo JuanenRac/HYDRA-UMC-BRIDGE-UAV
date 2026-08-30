@@ -10,7 +10,9 @@ GPL-3.0-or-later - see LICENSE
 
 This bridge maps a validated `BridgeJob` to a **static high-level flight-request plan**, and separately tracks a real link-loss heartbeat. `UavCoordinator` has no MAVLink or vendor SDK dependency, so it can be verified on Windows, Linux or CI without a real UAV. It emits only a named flight request - `PRE_FLIGHT_CHECK`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE` or `RETURN_TO_LAUNCH` - never a real attitude/throttle command.
 
-`PREPARE`/`LOAD`/`PROCESS`/`UNLOAD`/`COMPLETE` map to their own request; `ABORT` and `COMPLETE` both resolve to `RETURN_TO_LAUNCH` - a normal mission end and an emergency abort both mean "come home", the real standard UAV failsafe action. An unknown SDK phase is rejected. The result is always `plan-only`, never a live flight command.
+`PREPARE`/`LOAD`/`PROCESS`/`UNLOAD`/`COMPLETE` map to their own request; `ABORT` and `COMPLETE` both resolve to `RETURN_TO_LAUNCH` - a normal mission end and an emergency abort both mean "come home", the real standard UAV failsafe action. An unknown SDK phase is rejected. `UavCoordinator.dispatch()` itself is still `plan-only`, never a live flight command - only `mavlink_transport.py`'s `MavlinkFlightControl`, given that already-gated dispatch explicitly, ever reaches the network.
+
+`mavlink_transport.py` is this bridge's first real transport: `MavlinkFlightControl.send()` maps each request to a real, numbered `MAV_CMD` from the authoritative common.xml spec and sends it as a real `COMMAND_LONG` - `PRE_FLIGHT_CHECK` -> `MAV_CMD_COMPONENT_ARM_DISARM` (400, arm); `TAKEOFF` -> `MAV_CMD_NAV_TAKEOFF` (22); `GOTO_WAYPOINT` -> `MAV_CMD_DO_REPOSITION` (192, the real immediate-GUIDED-mode command, not the mission-item `MAV_CMD_NAV_WAYPOINT`); `HOVER_AND_CAPTURE` -> `MAV_CMD_NAV_LOITER_UNLIM` (17) then `MAV_CMD_IMAGE_START_CAPTURE` (2000); `RETURN_TO_LAUNCH` -> `MAV_CMD_NAV_RETURN_TO_LAUNCH` (20); `LAND` -> `MAV_CMD_NAV_LAND` (21). A rejected `UavDispatch` is never sent. `open_mavlink_connection()` is the one place `pymavlink` (optional `[mavlink]` extra) is imported, lazily.
 
 ## The heartbeat watchdog is not optional
 
@@ -18,7 +20,7 @@ This bridge maps a validated `BridgeJob` to a **static high-level flight-request
 
 ## Compatible platforms
 
-The planned flight-request boundary is for UAV platforms reachable through a documented high-level interface: a Pixhawk/PX4-class flight controller over MAVLink, or a DJI OSDK/Mobile SDK-class vendor interface. Compatibility means adapting that platform's own real command/telemetry interface through a separately deployed transport adapter after one is selected and tested; it does **not** mean this repository flies a UAV today.
+The flight-request boundary is for UAV platforms reachable through a documented high-level interface: a Pixhawk/PX4-class flight controller over MAVLink (real, implemented above), or a DJI OSDK/Mobile SDK-class vendor interface (still future work, introduced only after that SDK is selected and tested). Sending a real command still requires a real MAVLink link (SITL, telemetry radio, or companion computer) and a real vehicle/simulator on the other end - this repository has not been exercised against either yet.
 
 ## Scripts and verification
 
