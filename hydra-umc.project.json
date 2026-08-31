@@ -11,7 +11,7 @@
     "HYDRA-UMC-SDK"
   ],
   "deployment_target": "cm5",
-  "maturity": "functional",
+  "maturity": "established",
   "family": "Mobile & Autonomous Bridges",
   "parent": "HYDRA-UMC-SERVER",
   "build": "python tools/build_test.py",

@@ -6,6 +6,15 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [Unreleased] - Maturity raised to established
+
+- **`hydra-umc.project.json`** - `maturity` raised from `functional` to
+  `established`, matching the real substance already shipped in 0.0.4
+  (real, gated coordination logic plus a real MAVLink command sender,
+  lazily imported, same rigor and scope as sibling bridges already
+  marked `established` - e.g. HYDRA-UMC-BRIDGE-CNC). Metadata-only, no
+  code change, no version bump.
+
 ## [0.0.4] - Real MAVLink command transport (pre-real: connected, not simulated)
 
 - **`mavlink_transport.py`** (new) - this bridge's first real transport:
