@@ -73,16 +73,20 @@ HYDRA-UMC-BRIDGE-UAV/
 │   └── hydra_umc_bridge_uav/
 │       ├── __init__.py
 │       ├── coordinator.py       # UavCoordinator:无依赖的飞行请求门控
-│       └── heartbeat.py         # HeartbeatMonitor:真实的、确定性的链路丢失故障保护
+│       ├── heartbeat.py         # HeartbeatMonitor:真实的、确定性的链路丢失故障保护
+│       └── mavlink_transport.py # 将已验证的 UavDispatch 作为真实的 MAVLink COMMAND_LONG 发送
 ├── tests/
 │   ├── test_coordinator.py      # 协调核心的确定性单元测试
-│   └── test_heartbeat.py        # 心跳看门狗的确定性边界测试
+│   ├── test_heartbeat.py        # 心跳看门狗的确定性边界测试
+│   └── test_mavlink_transport.py # 针对模拟 MAVLink 连接的真实 MAV_CMD 格式测试
 ├── tools/
 │   ├── build_test.py            # 非变更式编译 + 测试运行器 (build-test.bat/.sh)
 │   ├── bump_version.py          # 同步 pyproject.toml、清单和 CHANGELOG.md
 │   └── inspect_request_plan.py  # 打印静态飞行请求计划(不打开传输通道)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # 范围、兼容平台、脚本、硬件验收门控
+├── images/
+│   └── HYDRA_UMC_BANNER.svg     # README 横幅图
 ├── build-test.bat / build-test.sh  # 仅验证,绝不修改仓库
 ├── build.bat / build.sh            # 先验证,成功后才更新版本 + CHANGELOG
 ├── pyproject.toml               # 包元数据;依赖 HYDRA-UMC-SDK (git)

@@ -73,16 +73,20 @@ HYDRA-UMC-BRIDGE-UAV/
 │   └── hydra_umc_bridge_uav/
 │       ├── __init__.py
 │       ├── coordinator.py       # UavCoordinator: 依存関係なしの飛行リクエストゲート
-│       └── heartbeat.py         # HeartbeatMonitor: 実在する決定論的なリンク喪失フェイルセーフ
+│       ├── heartbeat.py         # HeartbeatMonitor: 実在する決定論的なリンク喪失フェイルセーフ
+│       └── mavlink_transport.py # 検証済みのUavDispatchを実際のMAVLink COMMAND_LONGとして送信
 ├── tests/
 │   ├── test_coordinator.py      # 連携コアの決定論的ユニットテスト
-│   └── test_heartbeat.py        # ウォッチドッグの境界値に対する決定論的テスト
+│   ├── test_heartbeat.py        # ウォッチドッグの境界値に対する決定論的テスト
+│   └── test_mavlink_transport.py # 疑似MAVLink接続に対する実MAV_CMD形状テスト
 ├── tools/
 │   ├── build_test.py            # 非破壊的なコンパイル+テストランナー (build-test.bat/.sh)
 │   ├── bump_version.py          # pyproject.toml、マニフェスト、CHANGELOG.md を同期
 │   └── inspect_request_plan.py  # 静的な飛行リクエストプランを出力する(トランスポートを開かない)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # 適用範囲、対応プラットフォーム、スクリプト、ハードウェア受け入れゲート
+├── images/
+│   └── HYDRA_UMC_BANNER.svg     # README バナー
 ├── build-test.bat / build-test.sh  # 検証のみ、リポジトリを一切変更しない
 ├── build.bat / build.sh            # 検証後、成功時のみバージョン + CHANGELOG を更新
 ├── pyproject.toml               # パッケージメタデータ。HYDRA-UMC-SDK に依存 (git)

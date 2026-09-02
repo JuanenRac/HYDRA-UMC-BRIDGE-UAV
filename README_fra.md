@@ -73,16 +73,20 @@ HYDRA-UMC-BRIDGE-UAV/
 │   └── hydra_umc_bridge_uav/
 │       ├── __init__.py
 │       ├── coordinator.py       # UavCoordinator : portail de requêtes de vol sans dépendance
-│       └── heartbeat.py         # HeartbeatMonitor : failsafe déterministe réel de perte de liaison
+│       ├── heartbeat.py         # HeartbeatMonitor : failsafe déterministe réel de perte de liaison
+│       └── mavlink_transport.py # Envoie un UavDispatch déjà validé comme un vrai COMMAND_LONG MAVLink
 ├── tests/
 │   ├── test_coordinator.py      # Tests unitaires déterministes du noyau de coordination
-│   └── test_heartbeat.py        # Tests déterministes des cas limites du watchdog
+│   ├── test_heartbeat.py        # Tests déterministes des cas limites du watchdog
+│   └── test_mavlink_transport.py # Tests de forme MAV_CMD réels contre une connexion MAVLink simulée
 ├── tools/
 │   ├── build_test.py            # Compilateur + lanceur de tests non mutant (build-test.bat/.sh)
 │   ├── bump_version.py          # Synchronise pyproject.toml, manifeste et CHANGELOG.md
 │   └── inspect_request_plan.py  # Affiche le plan de requêtes de vol statique (aucun transport ouvert)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # Portée, plateformes compatibles, scripts, portail d'acceptation matérielle
+├── images/
+│   └── HYDRA_UMC_BANNER.svg     # Bannière du README
 ├── build-test.bat / build-test.sh  # Valide uniquement, ne modifie jamais le dépôt
 ├── build.bat / build.sh            # Valide puis, si succès, incrémente version + CHANGELOG
 ├── pyproject.toml               # Métadonnées du paquet ; dépend de HYDRA-UMC-SDK (git)
