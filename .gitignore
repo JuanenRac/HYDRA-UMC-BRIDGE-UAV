@@ -1,0 +1,17 @@
+# =============================================================================
+# HYDRA-UMC-BRIDGE-UAV - Generated-file exclusions
+# Copyright (C) 2026 JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
+# GPL-3.0-or-later - see LICENSE
+# =============================================================================
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Local configuration may contain deployment credentials; retain only a safe
+# example when one is introduced later.
+.env
+.env.*
+!.env.example
