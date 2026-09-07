@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "ecosystem": "HYDRA-UMC",
+  "name": "HYDRA-UMC-BRIDGE-UAV",
+  "version": "0.0.6",
+  "role": "library",
+  "stack": "python",
+  "technologies": [
+    "Python",
+    "MAVLink",
+    "HYDRA-UMC-SDK"
+  ],
+  "deployment_target": "cm5",
+  "maturity": "established",
+  "family": "Mobile & Autonomous Bridges",
+  "parent": "HYDRA-UMC-SERVER",
+  "build": "python tools/build_test.py",
+  "notes": "Real, dependency-free coordination boundary for camera-equipped UAVs: a named high-level flight-request vocabulary (ARM/TAKEOFF/GOTO_WAYPOINT/HOVER_AND_CAPTURE/RETURN_TO_LAUNCH/LAND) gated through HYDRA-UMC-SDK's shared safety contract, a real, deterministic HeartbeatMonitor link-loss failsafe state machine, and a real MAVLink command sender (MavlinkFlightControl) mapping each request to its real, numbered MAV_CMD - only an already-gated dispatch is ever sent. ARM (renamed from the misleading PRE_FLIGHT_CHECK) requires the literal boolean confirm_arm is True (v0.0.6: never a merely-truthy value like the string 'false'); takeoff altitude and waypoint lat/lon/alt are validated as real, non-boolean, finite numbers within real geographic range before ever reaching a real COMMAND_LONG. Never computes flight control or stabilization itself; real-time failsafe execution stays the flight controller's own authority. Not yet exercised against a real flight controller or SITL.",
+  "native_version": {
+    "file": "pyproject.toml",
+    "pattern": "^version\\s*=\\s*\"(\\d+)\\.(\\d+)\\.(\\d+)\""
+  }
+}
