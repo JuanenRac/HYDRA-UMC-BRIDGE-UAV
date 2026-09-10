@@ -53,8 +53,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
         self.assertEqual(params[0], 1)
 
     def test_arm_without_explicit_confirmation_is_refused_regression_for_uav_02(self):
-        # UAV-02 (found in an ecosystem-wide software-improvements audit,
-        # P1): a real arm command must never fire just because the shared
+        # UAV-02 (P1): a real arm command must never fire just because the shared
         # cell/machine gate already said yes - it needs its own explicit,
         # separate opt-in from the caller, defaulting to refused.
         dispatch = UavDispatch(True, "ARM", "cell and external machine are ready")
@@ -64,7 +63,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
         self.assertEqual(self.sink.sent, [])
 
     def test_arm_with_a_truthy_non_boolean_confirm_arm_is_still_refused_regression_for_rev_007(self):
-        # REV-007 (found in an independent revalidation audit, P0): the
+        # REV-007 (P0): the
         # old check was `not confirm_arm`, and Python's own truthiness
         # rules made the non-empty STRING 'false' evaluate as truthy -
         # `not 'false'` is `False`, so a caller passing that string armed
@@ -87,8 +86,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
         self.assertEqual(params[6], 25.0)  # param7 is the 7th of 7 params, index 6
 
     def test_takeoff_rejects_non_finite_or_non_positive_altitude_regression_for_uav_01(self):
-        # UAV-01 (found in an ecosystem-wide software-improvements audit,
-        # P0): a NaN altitude used to sail straight through into a real
+        # UAV-01 (P0): a NaN altitude used to sail straight through into a real
         # MAV_CMD_NAV_TAKEOFF param7 with sent=True reported.
         for bad_altitude in (float("nan"), float("inf"), float("-inf"), 0.0, -5.0):
             with self.subTest(altitude=bad_altitude):
@@ -98,7 +96,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
                 self.assertEqual(self.sink.sent, [])
 
     def test_takeoff_rejects_a_boolean_altitude_regression_for_rev_007(self):
-        # REV-007 (found in an independent revalidation audit, P0): `bool`
+        # REV-007 (P0): `bool`
         # is a real Python subclass of `int` - `math.isfinite(True)` is
         # `True` and `True <= 0` is `False` (since `True == 1`), so
         # `takeoff_altitude_m=True` used to sail through every existing

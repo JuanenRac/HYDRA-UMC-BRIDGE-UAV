@@ -40,12 +40,12 @@ class CoordinatorTests(unittest.TestCase):
         self.assertTrue(result.accepted)
         self.assertEqual(result.request, "RETURN_TO_LAUNCH")
 
-    # REV-008 (found in an independent revalidation audit, P1): SDK-01's
+    # REV-008 (P1): SDK-01's
     # own real fix now rejects an unrecognised `phase` AT CONSTRUCTION
     # TIME (`BridgeJob.__post_init__` requires a real `JobPhase` member) -
     # this test used to construct one directly with a raw string, which
     # is no longer possible through the real public constructor at all.
-    # The audit's own guidance: update this test to require rejection at
+    # The intended fix: update this test to require rejection at
     # the constructor (below), and cover the coordinator's OWN defensive
     # fallback with an explicit double instead of weakening the SDK's
     # public contract to let the old construction succeed again.
