@@ -78,10 +78,13 @@ HYDRA-UMC-BRIDGE-UAV/
 ├── tests/
 │   ├── test_coordinator.py      # Tests unitarios deterministas del núcleo de coordinación
 │   ├── test_heartbeat.py        # Tests deterministas de los casos límite del watchdog
-│   └── test_mavlink_transport.py # Tests de forma MAV_CMD reales contra una conexión MAVLink simulada
+│   ├── test_mavlink_transport.py # Tests de forma MAV_CMD reales contra una conexión MAVLink simulada
+│   ├── mavlink_emulator.py       # Emulador de MAVLink autopilot fiel al protocolo (doble de prueba realista)
+│   └── test_mavlink_emulator.py  # Comportamiento del bridge frente al emulador MAVLink autopilot
 ├── tools/
 │   ├── build_test.py            # Compilación + tests sin mutación (build-test.bat/.sh)
 │   ├── bump_version.py          # Sincroniza pyproject.toml, manifiesto y CHANGELOG.md
+│   ├── ci_validate.py           # Línea base de CI sin dependencias y no destructiva (usada por .github/workflows/ci.yml)
 │   └── inspect_request_plan.py  # Imprime el plan de peticiones de vuelo estático (sin abrir transporte)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # Alcance, plataformas compatibles, scripts, puerta de aceptación de hardware

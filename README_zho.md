@@ -78,10 +78,13 @@ HYDRA-UMC-BRIDGE-UAV/
 ├── tests/
 │   ├── test_coordinator.py      # 协调核心的确定性单元测试
 │   ├── test_heartbeat.py        # 心跳看门狗的确定性边界测试
-│   └── test_mavlink_transport.py # 针对模拟 MAVLink 连接的真实 MAV_CMD 格式测试
+│   ├── test_mavlink_transport.py # 针对模拟 MAVLink 连接的真实 MAV_CMD 格式测试
+│   ├── mavlink_emulator.py       # 协议忠实的 MAVLink autopilot 模拟器（真实的测试替身）
+│   └── test_mavlink_emulator.py  # 针对 MAVLink autopilot 模拟器的 bridge 行为
 ├── tools/
 │   ├── build_test.py            # 非变更式编译 + 测试运行器 (build-test.bat/.sh)
 │   ├── bump_version.py          # 同步 pyproject.toml、清单和 CHANGELOG.md
+│   ├── ci_validate.py           # 无依赖、非破坏性的CI基线检查 (由 .github/workflows/ci.yml 使用)
 │   └── inspect_request_plan.py  # 打印静态飞行请求计划(不打开传输通道)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # 范围、兼容平台、脚本、硬件验收门控
