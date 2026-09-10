@@ -130,6 +130,12 @@ def main() -> int:
     result = subprocess.run(("git", "grep", "-n", "-I", "--", private_marker), cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
     if result.returncode == 0: fail("public files must not reference private documentation")
     if result.returncode not in (0, 1): fail("could not check public/private documentation boundary")
+    _pp = ("BIB" + "LIA HYDRA" + "-UMC", "private development" + " plan", "plan de desarrollo" + " privado", "internal work" + " log", "registro de trabajo" + " interno")
+    _pc = ["git", "grep", "-n", "-I", "-i", "-F"]
+    for _p in _pp: _pc += ["-e", _p]
+    _pr = subprocess.run(tuple(_pc), cwd=ROOT, text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
+    if _pr.returncode == 0: fail("public files must not reference private planning or audit documents")
+    if _pr.returncode not in (0, 1): fail("could not check public/private documentation boundary")
     print(f"CI_VALIDATION=PASS project={manifest['name']} version={manifest['version']}")
     return 0
 
