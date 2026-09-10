@@ -45,7 +45,7 @@ class UavRequestPlan:
 class UavCoordinator:
     """Gate jobs before a future MAVLink/OSDK transport adapter reaches a real UAV."""
 
-    # UAV-02 (found in an ecosystem-wide software-improvements audit):
+    # UAV-02:
     # this constant used to be named PRE_FLIGHT_CHECK, but the real
     # MAVLink command it maps to (mavlink_transport.py's own
     # MAV_CMD_COMPONENT_ARM_DISARM, param1=1) genuinely arms the vehicle -

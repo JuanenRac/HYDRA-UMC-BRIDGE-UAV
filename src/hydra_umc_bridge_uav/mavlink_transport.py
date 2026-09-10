@@ -11,9 +11,8 @@ the MAVLink common message set (researched against the authoritative
 common.xml, github.com/mavlink/mavlink/blob/master/message_definitions/
 v1.0/common.xml), never an invented or guessed command ID:
 
-- ARM -> MAV_CMD_COMPONENT_ARM_DISARM (400), param1=1 (arm). Found in an
-  ecosystem-wide software-improvements audit (UAV-02): this used to be
-  named PRE_FLIGHT_CHECK, sounding like an inert, read-only query - it
+- ARM -> MAV_CMD_COMPONENT_ARM_DISARM (400), param1=1 (arm). UAV-02: this
+  used to be named PRE_FLIGHT_CHECK, sounding like an inert, read-only query - it
   genuinely arms the vehicle. PX4/ArduPilot both run their own real
   internal pre-arm check suite as part of processing an arm request (so
   there is no separate, real, standard MAVLink command that runs those
@@ -121,8 +120,7 @@ def _is_real_number(value: object) -> bool:
     subclass of `int`, so `isinstance(True, (int, float))` is also `True`;
     without excluding it explicitly, a caller passing `takeoff_altitude_m=
     True` sails through every finiteness/range check below as if it were
-    the real number `1.0` (REV-007, found in an independent revalidation
-    audit)."""
+    the real number `1.0` (REV-007)."""
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
@@ -154,7 +152,7 @@ class MavlinkFlightControl:
             # shared cell/machine gate every other request already passes
             # through. Defaults to refusing: confirm_arm must be True.
             #
-            # REV-007 (found in an independent revalidation audit): this
+            # REV-007: this
             # used to be `not confirm_arm`, which Python's own truthiness
             # rules make dangerously permissive - a real caller passing
             # the STRING `'false'` (a non-empty string, therefore truthy)
@@ -168,8 +166,7 @@ class MavlinkFlightControl:
                 sink, target_system, target_component, _MAV_CMD_COMPONENT_ARM_DISARM, param1=1
             )
         if dispatch.request == "TAKEOFF":
-            # UAV-01 (found in an ecosystem-wide software-improvements
-            # audit): a non-finite (NaN/+-inf) or non-positive altitude
+            # UAV-01: a non-finite (NaN/+-inf) or non-positive altitude
             # used to sail straight through into a real MAV_CMD_NAV_TAKEOFF
             # param7 with no check at all - a fake sink still reported
             # sent=True for it. A takeoff altitude of 0 or below is

@@ -33,9 +33,9 @@ lifecycle, a hard pre-arm failure denying the arm, no-GPS temporarily
 rejecting it, an in-flight disarm denied, and a link-loss failsafe
 switching to RTL and flagging CRITICAL. 47 tests total.
 
-## [0.0.6] - REV-007/REV-008: real regressions found by independent revalidation
+## [0.0.6] - REV-007/REV-008: real regressions
 
-An independent revalidation audit reproduced 2 real regressions (each
+Closer review reproduced 2 real regressions (each
 with a real fake-sink probe, no vehicle involved). Both fixed here,
 each with new regression tests:
 
@@ -60,13 +60,12 @@ each with new regression tests:
   itself refuses construction; a second exercises the coordinator's own
   defensive fallback via an explicit minimal double, never a real
   `BridgeJob` the SDK would refuse to build.
-- 5 new regression tests (36 total), each reproducing the audit's own
+- 5 new regression tests (36 total), each reproducing its own
   exact scenario before the fix and passing after it.
 
 ## [0.0.5] - UAV-01/UAV-02: finite/range validation and a real arm gate
 
-- **UAV-01 (found in an ecosystem-wide software-improvements audit,
-  P0):** `TAKEOFF`'s `takeoff_altitude_m` and `GOTO_WAYPOINT`'s
+- **UAV-01 (P0):** `TAKEOFF`'s `takeoff_altitude_m` and `GOTO_WAYPOINT`'s
   `waypoint_lat`/`waypoint_lon`/`waypoint_alt_m` reached a real
   `COMMAND_LONG` with zero validation - a `NaN` altitude sailed straight
   through with `sent=True` reported by a fake sink. Fixed: altitude must
@@ -76,7 +75,7 @@ each with new regression tests:
   deployment-specific profile parameter, not a universal physical
   constant, and stays real, deferred future work rather than an invented
   number.
-- **UAV-02 (found in the same audit, P1):** the request named
+- **UAV-02 (P1):** the request named
   `PRE_FLIGHT_CHECK` genuinely arms the vehicle
   (`MAV_CMD_COMPONENT_ARM_DISARM`, param1=1) - PX4/ArduPilot run their
   own pre-arm check suite as part of processing an arm request, so there
