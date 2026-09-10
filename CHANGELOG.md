@@ -6,6 +6,33 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.0.7] - A PX4/ArduPilot-shaped MAVLink autopilot emulator, not a record-only sink
+
+Until now the only `MavlinkCommandSink` double here was `FakeMavlinkSink`
+- it records `(command, params)` and answers nothing. A real autopilot
+answers every `COMMAND_LONG` with a `COMMAND_ACK` carrying a real
+`MAV_RESULT`, runs its own pre-arm gate, refuses `NAV_TAKEOFF` while
+disarmed, and moves through a real armed/flying/RTL/landed state machine.
+New `tests/mavlink_emulator.py` does all of that, against the
+authoritative common.xml numeric IDs: `COMMAND_ARM_DISARM` (400) ->
+ARMED only if the pre-arm gate (gps_fix, battery, prearm_ok) passes, else
+`DENIED` (2) / `TEMPORARILY_REJECTED` (1); `NAV_TAKEOFF` (22) -> climbing
+to param7 m, `DENIED` while disarmed; `DO_REPOSITION` (192) /
+`NAV_LOITER_UNLIM` (17) -> moving / hovering, `TEMPORARILY_REJECTED` on
+the ground; `NAV_RETURN_TO_LAUNCH` (20) / `NAV_LAND` (21) -> returning /
+landing with `step()` auto-disarming on touchdown; `IMAGE_START_CAPTURE`
+(2000) -> accepted; any other id -> `UNSUPPORTED` (3). `fail_prearm()`,
+`set_gps_fix()`, `set_battery()`, `trigger_link_loss_failsafe()` drive
+the physical side; `emit_heartbeat()` returns a real `HEARTBEAT` dict
+with the `MAV_MODE_FLAG_SAFETY_ARMED` bit and a real `MAV_STATE`
+(STANDBY/ACTIVE/CRITICAL) in `system_status`. New
+`tests/test_mavlink_emulator.py` runs this bridge's real
+`MavlinkFlightControl.send()` end to end against it (11 tests): the full
+arm -> takeoff -> reposition -> hover+capture -> RTL -> auto-disarm
+lifecycle, a hard pre-arm failure denying the arm, no-GPS temporarily
+rejecting it, an in-flight disarm denied, and a link-loss failsafe
+switching to RTL and flagging CRITICAL. 47 tests total.
+
 ## [0.0.6] - REV-007/REV-008: real regressions found by independent revalidation
 
 An independent revalidation audit reproduced 2 real regressions (each
