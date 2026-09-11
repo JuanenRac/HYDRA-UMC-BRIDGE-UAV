@@ -22,6 +22,10 @@ GPL-3.0-or-later - see LICENSE
 
 ---
 
+> **诚实检查——今天真正可运行的部分：** 无依赖的飞行请求核心（`coordinator.py` 中的 `UavCoordinator`，每次派发都会经过 `HYDRA-UMC-SDK` 自身真正的 `evaluate_job()`）、确定性的心跳断链看门狗（`heartbeat.py` 中的 `HeartbeatMonitor`），以及真正的 MAVLink 命令传输（`mavlink_transport.py` 中的 `MavlinkFlightControl`）都是真实的，并由 47 个通过的单元测试覆盖（`python tools/build_test.py` —— `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`，以及让该桥接对抗一个协议忠实但纯手写的 MAVLink 自动驾驶仪模拟器（而非真实设备）的 `test_mavlink_emulator.py`）。以上这些都从未针对真实安装的 `pymavlink`、真实的无线电/遥测链路或实体 UAV/飞控进行过验证——`test_mavlink_transport.py` 自带的伪造 MAVLink 连接完全替代了 `pymavlink`（这些测试甚至不需要安装真正的库就能通过），并且目前还没有实时的 `run` 命令，因为尚未选定或验证任何真实的 MAVLink/OSDK 传输方案。详见下文的"当前状态与后续步骤"（已经如实说明了这一点），以及 `CHANGELOG.md` 中目前具体已交付的内容。
+
+---
+
 ## 1. 🛠️ 技术概览
 
 **HYDRA-UMC-BRIDGE-UAV** 是 HYDRA-UMC 与搭载摄像头的无人机(UAV)之间双向的高层协调边界,可通过 Wi-Fi、无线电链路或蜂窝(4G/5G)遥测连接访问。它校验并转发一套小型的、具名的高层飞行请求词汇(`ARM`、`TAKEOFF`、`GOTO_WAYPOINT`、`HOVER_AND_CAPTURE`、`RETURN_TO_LAUNCH`),并单独运行一个真实的、强制性的链路丢失心跳(heartbeat)看门狗。它从不计算飞行控制或姿态稳定,也不能绕过 HYDRA-UMC-SERVER、MCU 限位、看门狗或急停(E-STOP)。

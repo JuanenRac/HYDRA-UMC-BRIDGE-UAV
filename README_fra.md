@@ -22,6 +22,10 @@ GPL-3.0-or-later - see LICENSE
 
 ---
 
+> **Vérification d'honnêteté - ce qui fonctionne réellement aujourd'hui :** le cœur de requêtes de vol sans dépendance (`coordinator.py` avec `UavCoordinator`, faisant passer chaque envoi par le propre `evaluate_job()` de `HYDRA-UMC-SDK`), le chien de garde déterministe de perte de liaison par heartbeat (`heartbeat.py` avec `HeartbeatMonitor`), et le vrai transport de commandes MAVLink (`mavlink_transport.py` avec `MavlinkFlightControl`) sont réels et couverts par 47 tests unitaires qui passent (`python tools/build_test.py` - `test_coordinator.py`, `test_heartbeat.py`, `test_mavlink_transport.py`, plus `test_mavlink_emulator.py` qui fait tourner le bridge contre un émulateur de pilote automatique MAVLink fidèle au protocole mais écrit à la main, pas un vrai). Rien de tout cela n'a été testé contre une vraie installation `pymavlink`, une vraie liaison radio/télémétrie, ou un UAV/contrôleur de vol physique - la fausse connexion MAVLink propre à `test_mavlink_transport.py` remplace entièrement `pymavlink` (la vraie bibliothèque n'a même pas besoin d'être installée pour que ces tests passent), et il n'existe pas encore de commande `run` en direct car aucun transport MAVLink/OSDK réel n'a été choisi ni validé. Voir « État actuel et prochaines étapes » ci-dessous, qui le dit déjà clairement, et `CHANGELOG.md` pour ce qui a été exactement livré jusqu'à présent.
+
+---
+
 ## 1. 🛠️ APERÇU TECHNIQUE
 
 **HYDRA-UMC-BRIDGE-UAV** est la frontière de coordination bidirectionnelle et haut niveau entre HYDRA-UMC et un drone équipé de caméra (UAV), accessible par Wi-Fi, une liaison radio ou une connexion de télémétrie cellulaire (4G/5G). Elle valide et transmet un vocabulaire réduit et nommé de requêtes de vol haut niveau (`ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`), et exécute séparément un watchdog réel et obligatoire de perte de liaison (heartbeat). Elle ne calcule jamais le contrôle de vol ni la stabilisation, et elle ne peut pas contourner HYDRA-UMC-SERVER, les limites du MCU, les watchdogs ou l'E-STOP.
