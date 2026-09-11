@@ -22,6 +22,10 @@ GPL-3.0-or-later - see LICENSE
 
 ---
 
+> **Ehrlichkeitscheck - was heute wirklich läuft:** der abhängigkeitsfreie Flugantrags-Kern (`coordinator.py` mit `UavCoordinator`, das jeden Dispatch durch das echte `evaluate_job()` von `HYDRA-UMC-SDK` leitet), der deterministische Verbindungsverlust-Heartbeat-Watchdog (`heartbeat.py` mit `HeartbeatMonitor`) und der echte MAVLink-Befehlstransport (`mavlink_transport.py` mit `MavlinkFlightControl`) sind real und durch 47 bestehende Unit-Tests abgedeckt (`python tools/build_test.py` - `test_coordinator.py`, `test_heartbeat.py`, `test_mavlink_transport.py`, plus `test_mavlink_emulator.py`, das die Bridge gegen einen protokolltreuen, von Hand geschriebenen MAVLink-Autopilot-Emulator laufen lässt, keinen echten). Nichts davon wurde gegen eine echte `pymavlink`-Installation, eine echte Funk-/Telemetrieverbindung oder einen physischen UAV/Flugcontroller getestet - die eigene simulierte MAVLink-Verbindung von `test_mavlink_transport.py` ersetzt `pymavlink` vollständig (die echte Bibliothek muss für das Bestehen dieser Tests nicht einmal installiert sein), und es gibt noch keinen echten `run`-Befehl, weil noch kein realer MAVLink-/OSDK-Transport ausgewählt oder validiert wurde. Siehe „Aktueller Status & Nächste Schritte" weiter unten, das dies bereits klar sagt, sowie `CHANGELOG.md` für das, was bisher genau ausgeliefert wurde.
+
+---
+
 ## 1. 🛠️ TECHNISCHER ÜBERBLICK
 
 **HYDRA-UMC-BRIDGE-UAV** ist die bidirektionale, High-Level-Koordinationsgrenze zwischen HYDRA-UMC und einer kameraausgestatteten Drohne (UAV), erreichbar über Wi-Fi, eine Funkverbindung oder eine Mobilfunk-Telemetrieverbindung (4G/5G). Sie validiert und leitet ein kleines, benanntes Vokabular von High-Level-Fluganfragen weiter (`ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`) und betreibt separat einen echten, verpflichtenden Heartbeat-Watchdog für Verbindungsverlust. Sie berechnet niemals Flugsteuerung oder Stabilisierung und kann HYDRA-UMC-SERVER, MCU-Grenzen, Watchdogs oder den E-STOP nicht umgehen.
