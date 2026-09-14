@@ -14,6 +14,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from _doc_policy import check_public_private_boundary
+
 ROOT = Path(__file__).resolve().parent.parent
 REQUIRED_DOCUMENTS = ("README.md", "README_spa.md", "README_fra.md", "README_ita.md", "README_deu.md", "README_zho.md", "README_jpn.md", "CHANGELOG.md", "LICENSE", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "SUPPORT.md")
 REQUIRED_MANIFEST_KEYS = ("schema_version", "ecosystem", "name", "version", "role", "stack", "technologies", "deployment_target", "maturity", "family", "parent", "build", "notes", "native_version")
@@ -126,16 +128,9 @@ def main() -> int:
     gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8", errors="replace")
     if not re.search(r"(?m)^\.env(?:\.|$|\*)", gitignore) or not re.search(r"(?m)^!\.env\.example$", gitignore): fail(".gitignore must exclude .env and retain .env.example")
     validate_markdown_links()
-    private_marker = "SON" + "NET"
-    result = subprocess.run(("git", "grep", "-n", "-I", "--", private_marker), cwd=ROOT, text=True, encoding="utf-8", errors="replace", stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
-    if result.returncode == 0: fail("public files must not reference private documentation")
-    if result.returncode not in (0, 1): fail("could not check public/private documentation boundary")
-    _pp = ("BIB" + "LIA HYDRA" + "-UMC", "private development" + " plan", "plan de desarrollo" + " privado", "internal work" + " log", "registro de trabajo" + " interno")
-    _pc = ["git", "grep", "-n", "-I", "-i", "-F"]
-    for _p in _pp: _pc += ["-e", _p]
-    _pr = subprocess.run(tuple(_pc), cwd=ROOT, text=True, encoding="utf-8", errors="replace", stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, check=False)
-    if _pr.returncode == 0: fail("public files must not reference private planning or audit documents")
-    if _pr.returncode not in (0, 1): fail("could not check public/private documentation boundary")
+    doc_policy_error = check_public_private_boundary(ROOT)
+    if doc_policy_error:
+        fail(doc_policy_error)
     print(f"CI_VALIDATION=PASS project={manifest['name']} version={manifest['version']}")
     return 0
 
