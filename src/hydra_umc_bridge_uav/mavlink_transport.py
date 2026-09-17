@@ -65,10 +65,25 @@ _MAV_CMD_DO_REPOSITION = 192
 _MAV_CMD_COMPONENT_ARM_DISARM = 400
 _MAV_CMD_IMAGE_START_CAPTURE = 2000
 
+# Real MAV_RESULT numeric IDs (common.xml) - only ACCEPTED (0) means the
+# autopilot actually ran the command; every other value (TEMPORARILY_
+# REJECTED=1, DENIED=2, UNSUPPORTED=3, FAILED=4, ...) means it did not.
+_MAV_RESULT_ACCEPTED = 0
+
+# How long _send_one() waits for a real COMMAND_ACK before giving up.
+_DEFAULT_ACK_TIMEOUT_SECONDS = 2.0
+
 
 class MavlinkCommandSink(Protocol):
     """The minimal real interface this module depends on - matches
-    pymavlink's own real `MAVLink.command_long_send()` signature."""
+    pymavlink's own real `MAVLink.command_long_send()`/`recv_match()`
+    signatures.
+
+    `recv_match()` matches pymavlink's real `mavutil.mavlink_connection`
+    interface (not `MAVLink.command_long_send()`'s own object - a real
+    link's send/receive sides are two separate real pymavlink objects, but
+    this bridge only ever needs the two methods, so one Protocol covers
+    both without inventing an extra seam)."""
 
     def command_long_send(
         self,
@@ -84,6 +99,31 @@ class MavlinkCommandSink(Protocol):
         param6: float,
         param7: float,
     ) -> object: ...
+
+    def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None: ...
+
+
+class _PymavlinkConnectionSink:
+    """Adapts a real `mavutil.mavlink_connection(...)` object onto this
+    module's own `MavlinkCommandSink` seam.
+
+    A real pymavlink connection splits sending and receiving across two
+    different real objects: `connection.mav.command_long_send(...)` (the
+    MAVLink message encoder) sends, while `connection.recv_match(...)`
+    (the connection itself) receives - `open_mavlink_connection()` used to
+    return `connection.mav` alone, which has no `recv_match()` at all, so
+    a real COMMAND_ACK could never actually be read back through it. This
+    wrapper exposes both real methods on the one object this module's own
+    `MavlinkCommandSink` Protocol expects."""
+
+    def __init__(self, connection: object) -> None:
+        self._connection = connection
+
+    def command_long_send(self, *args: float | int, **kwargs: float | int) -> object:
+        return self._connection.mav.command_long_send(*args, **kwargs)
+
+    def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None:
+        return self._connection.recv_match(type=type, blocking=blocking, timeout=timeout)
 
 
 def open_mavlink_connection(connection_string: str) -> MavlinkCommandSink:
@@ -105,7 +145,7 @@ def open_mavlink_connection(connection_string: str) -> MavlinkCommandSink:
         ) from error
     connection = mavutil.mavlink_connection(connection_string)
     connection.wait_heartbeat()
-    return connection.mav
+    return _PymavlinkConnectionSink(connection)
 
 
 @dataclass(frozen=True)
@@ -139,6 +179,7 @@ class MavlinkFlightControl:
         waypoint_lat: float | None = None,
         waypoint_lon: float | None = None,
         waypoint_alt_m: float | None = None,
+        ack_timeout_seconds: float = _DEFAULT_ACK_TIMEOUT_SECONDS,
     ) -> MavlinkSendResult:
         # A rejected dispatch (the shared SDK gate already said no) must
         # never reach the network - the transport layer is not a second
@@ -163,7 +204,8 @@ class MavlinkFlightControl:
 
         if dispatch.request == "ARM":
             return self._send_one(
-                sink, target_system, target_component, _MAV_CMD_COMPONENT_ARM_DISARM, param1=1
+                sink, target_system, target_component, _MAV_CMD_COMPONENT_ARM_DISARM,
+                ack_timeout_seconds=ack_timeout_seconds, param1=1,
             )
         if dispatch.request == "TAKEOFF":
             # UAV-01: a non-finite (NaN/+-inf) or non-positive altitude
@@ -174,7 +216,8 @@ class MavlinkFlightControl:
             if not _is_real_number(takeoff_altitude_m) or not math.isfinite(takeoff_altitude_m) or takeoff_altitude_m <= 0:
                 return MavlinkSendResult(False, f"takeoff_altitude_m must be a finite, positive number, got {takeoff_altitude_m!r}")
             return self._send_one(
-                sink, target_system, target_component, _MAV_CMD_NAV_TAKEOFF, param7=takeoff_altitude_m
+                sink, target_system, target_component, _MAV_CMD_NAV_TAKEOFF,
+                ack_timeout_seconds=ack_timeout_seconds, param7=takeoff_altitude_m,
             )
         if dispatch.request == "GOTO_WAYPOINT":
             if waypoint_lat is None or waypoint_lon is None or waypoint_alt_m is None:
@@ -197,25 +240,36 @@ class MavlinkFlightControl:
                 target_system,
                 target_component,
                 _MAV_CMD_DO_REPOSITION,
+                ack_timeout_seconds=ack_timeout_seconds,
                 param1=-1,  # no ground-speed change requested
                 param5=waypoint_lat,
                 param6=waypoint_lon,
                 param7=waypoint_alt_m,
             )
         if dispatch.request == "HOVER_AND_CAPTURE":
-            loiter = self._send_one(sink, target_system, target_component, _MAV_CMD_NAV_LOITER_UNLIM)
+            loiter = self._send_one(
+                sink, target_system, target_component, _MAV_CMD_NAV_LOITER_UNLIM,
+                ack_timeout_seconds=ack_timeout_seconds,
+            )
             if not loiter.sent:
                 return loiter
             capture = self._send_one(
-                sink, target_system, target_component, _MAV_CMD_IMAGE_START_CAPTURE, param1=0
+                sink, target_system, target_component, _MAV_CMD_IMAGE_START_CAPTURE,
+                ack_timeout_seconds=ack_timeout_seconds, param1=0,
             )
             return MavlinkSendResult(
                 capture.sent, capture.reason, (_MAV_CMD_NAV_LOITER_UNLIM, _MAV_CMD_IMAGE_START_CAPTURE)
             )
         if dispatch.request == "RETURN_TO_LAUNCH":
-            return self._send_one(sink, target_system, target_component, _MAV_CMD_NAV_RETURN_TO_LAUNCH)
+            return self._send_one(
+                sink, target_system, target_component, _MAV_CMD_NAV_RETURN_TO_LAUNCH,
+                ack_timeout_seconds=ack_timeout_seconds,
+            )
         if dispatch.request == "LAND":
-            return self._send_one(sink, target_system, target_component, _MAV_CMD_NAV_LAND)
+            return self._send_one(
+                sink, target_system, target_component, _MAV_CMD_NAV_LAND,
+                ack_timeout_seconds=ack_timeout_seconds,
+            )
         return MavlinkSendResult(False, f"no real MAV_CMD mapped for request {dispatch.request!r}")
 
     @staticmethod
@@ -225,6 +279,7 @@ class MavlinkFlightControl:
         target_component: int,
         command: int,
         *,
+        ack_timeout_seconds: float = _DEFAULT_ACK_TIMEOUT_SECONDS,
         param1: float = 0,
         param2: float = 0,
         param3: float = 0,
@@ -233,10 +288,44 @@ class MavlinkFlightControl:
         param6: float = 0,
         param7: float = 0,
     ) -> MavlinkSendResult:
+        # Real fix: this used to report sent=True purely because
+        # command_long_send() itself didn't raise - that only proves the
+        # bytes left this process, never that the autopilot received or
+        # accepted the command. A real MAVLink command is only confirmed
+        # once its matching COMMAND_ACK comes back, carrying a real
+        # MAV_RESULT - waiting for it here is what turns "the socket call
+        # didn't throw" into "the autopilot actually ran this".
         try:
             sink.command_long_send(
                 target_system, target_component, command, 0, param1, param2, param3, param4, param5, param6, param7
             )
         except OSError as error:
             return MavlinkSendResult(False, f"MAVLink send failed: {error}", (command,))
-        return MavlinkSendResult(True, "sent", (command,))
+
+        try:
+            ack = sink.recv_match(type="COMMAND_ACK", blocking=True, timeout=ack_timeout_seconds)
+        except OSError as error:
+            return MavlinkSendResult(False, f"MAVLink COMMAND_ACK read failed: {error}", (command,))
+        if ack is None:
+            return MavlinkSendResult(
+                False,
+                f"no COMMAND_ACK received within {ack_timeout_seconds}s - the autopilot may not have executed command {command}",
+                (command,),
+            )
+        # A real COMMAND_ACK is a pymavlink message object with real
+        # `.command`/`.result` attributes (not a dict) - `getattr()` here
+        # also tolerates a test double that returns something shaped
+        # differently, failing closed instead of raising AttributeError.
+        ack_command = getattr(ack, "command", None)
+        ack_result = getattr(ack, "result", None)
+        if ack_command != command:
+            return MavlinkSendResult(
+                False,
+                f"COMMAND_ACK was for command {ack_command!r}, not the sent command {command} - stale or mismatched ack",
+                (command,),
+            )
+        if ack_result != _MAV_RESULT_ACCEPTED:
+            return MavlinkSendResult(
+                False, f"autopilot did not accept command {command} (MAV_RESULT={ack_result!r})", (command,)
+            )
+        return MavlinkSendResult(True, "sent and acknowledged by the autopilot", (command,))
