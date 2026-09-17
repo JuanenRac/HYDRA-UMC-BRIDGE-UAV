@@ -19,15 +19,46 @@ from hydra_umc_bridge_uav import BridgeJob, CellState, JobPhase, MachineState, U
 from hydra_umc_bridge_uav.mavlink_transport import MavlinkFlightControl
 
 
+class FakeAck:
+    """Mirrors a real pymavlink COMMAND_ACK message - a real object with
+    `.command`/`.result` attributes, never a dict, matching what
+    `_send_one()`'s own `getattr()` reads expect."""
+
+    def __init__(self, command: int, result: int) -> None:
+        self.command = command
+        self.result = result
+
+
 class FakeMavlinkSink:
+    """Real regression fixture for the COMMAND_ACK wait: defaults to
+    acknowledging every sent command as MAV_RESULT_ACCEPTED (0), matching
+    a healthy autopilot, so existing tests that only care about WHICH
+    command was sent don't each need to wire up their own ack. Tests that
+    care about the ack itself override `next_ack`/`next_ack_is_stale` or
+    leave `sent` non-empty with no ack queued to prove a timeout is
+    reported, not silently treated as success."""
+
     def __init__(self):
         self.sent: list[tuple] = []
         self.raise_on_send: OSError | None = None
+        self.raise_on_recv: OSError | None = None
+        self.next_ack_result: int | None = 0  # MAV_RESULT_ACCEPTED by default
+        self.next_ack_command: object = "same-as-sent"  # sentinel: echo the real sent command
+        self.ack_timeout: bool = False  # True: recv_match() returns None, simulating no COMMAND_ACK at all
 
     def command_long_send(self, target_system, target_component, command, confirmation, *params):
         if self.raise_on_send:
             raise self.raise_on_send
         self.sent.append((target_system, target_component, command, confirmation, params))
+
+    def recv_match(self, type, blocking, timeout):
+        if self.raise_on_recv:
+            raise self.raise_on_recv
+        if self.ack_timeout or not self.sent:
+            return None
+        last_command = self.sent[-1][2]
+        ack_command = last_command if self.next_ack_command == "same-as-sent" else self.next_ack_command
+        return FakeAck(ack_command, self.next_ack_result)
 
 
 class MavlinkFlightControlTests(unittest.TestCase):
@@ -175,6 +206,48 @@ class MavlinkFlightControlTests(unittest.TestCase):
         result = self.control.send(self.sink, 1, 1, dispatch)
         self.assertFalse(result.sent)
         self.assertIn("link disconnected", result.reason)
+
+    def test_no_command_ack_within_timeout_is_reported_not_a_false_success(self):
+        # Real regression: _send_one() used to report sent=True purely
+        # because command_long_send() didn't raise - it never waited for
+        # a real COMMAND_ACK at all, so a command the autopilot silently
+        # dropped (link too weak, autopilot busy, wrong target_system)
+        # was reported back to the rest of the ecosystem as a confirmed
+        # takeoff/mission action that never actually happened.
+        self.sink.ack_timeout = True
+        dispatch = UavDispatch(True, "TAKEOFF", "cell and external machine are ready")
+        result = self.control.send(self.sink, 1, 1, dispatch, takeoff_altitude_m=10.0, ack_timeout_seconds=0.01)
+        self.assertFalse(result.sent)
+        self.assertIn("no COMMAND_ACK received", result.reason)
+        # The command genuinely left this process - only the ack is missing.
+        self.assertEqual(len(self.sink.sent), 1)
+
+    def test_a_command_ack_read_failure_is_reported_not_swallowed(self):
+        self.sink.raise_on_recv = OSError("link disconnected mid-ack")
+        dispatch = UavDispatch(True, "LAND", "emergency land requested")
+        result = self.control.send(self.sink, 1, 1, dispatch)
+        self.assertFalse(result.sent)
+        self.assertIn("link disconnected mid-ack", result.reason)
+
+    def test_a_rejected_command_ack_is_reported_not_a_false_success(self):
+        # A real autopilot that answers with anything but MAV_RESULT_
+        # ACCEPTED (0) - e.g. MAV_RESULT_DENIED (2) from a failed pre-arm
+        # check - must never be reported back as a confirmed send.
+        self.sink.next_ack_result = 2  # MAV_RESULT_DENIED
+        dispatch = UavDispatch(True, "ARM", "cell and external machine are ready")
+        result = self.control.send(self.sink, 1, 1, dispatch, confirm_arm=True)
+        self.assertFalse(result.sent)
+        self.assertIn("did not accept", result.reason)
+
+    def test_a_stale_command_ack_for_a_different_command_is_rejected(self):
+        # A COMMAND_ACK carries its own `.command` field precisely so a
+        # late-arriving ack for a PREVIOUS command can never be mistaken
+        # for confirmation of the one just sent.
+        self.sink.next_ack_command = 999  # doesn't match any command this bridge sends
+        dispatch = UavDispatch(True, "LAND", "emergency land requested")
+        result = self.control.send(self.sink, 1, 1, dispatch)
+        self.assertFalse(result.sent)
+        self.assertIn("stale or mismatched ack", result.reason)
 
     def test_end_to_end_through_the_real_coordinator_gate_before_sending(self):
         job = BridgeJob("job-1", "idempotency-1", "uav-1", JobPhase.LOAD, MachineState.IDLE, {})

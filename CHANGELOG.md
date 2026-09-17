@@ -6,6 +6,23 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.0.8] - A sent MAVLink command is now confirmed by a real COMMAND_ACK, not just a socket call that didn't throw
+
+`mavlink_transport.py`'s `_send_one()` used to report `sent=True` purely because `command_long_send()`
+itself raised no exception - that only proves the bytes left this process, never that the autopilot
+received or accepted the command. A dropped packet, a wrong `target_system`, a busy autopilot, or a
+real pre-arm/pre-takeoff refusal all used to come back as a false confirmed send. `_send_one()` now
+waits for the matching real `COMMAND_ACK` (a configurable timeout, 2 seconds by default) before
+reporting success, checks that the ack's own `command` field actually matches what was just sent (a
+stale ack for a previous command is never mistaken for this one), and only accepts a real
+`MAV_RESULT_ACCEPTED`. `open_mavlink_connection()` now returns a small adapter exposing both the real
+`command_long_send()` and `recv_match()` methods a genuine `pymavlink` connection splits across two
+different objects - the previous version only ever returned the sending half, so a real `COMMAND_ACK`
+could never actually have been read back through it even if the code had tried. 5 new tests cover a
+missing ack (timeout), a read failure, a rejected result, and a mismatched/stale ack - the existing 47
+tests still pass unchanged against the same fake sink, now answering with a real accepted ack by
+default.
+
 ## [0.0.7] - A PX4/ArduPilot-shaped MAVLink autopilot emulator, not a record-only sink
 
 Until now the only `MavlinkCommandSink` double here was `FakeMavlinkSink`

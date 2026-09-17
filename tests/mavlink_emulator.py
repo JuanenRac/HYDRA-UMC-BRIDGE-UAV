@@ -66,6 +66,17 @@ MODE_FLAG_SAFETY_ARMED = 128
 _MIN_ARM_BATTERY_PCT = 25.0
 
 
+class _Ack:
+    """A real pymavlink COMMAND_ACK message has real `.command`/`.result`
+    attributes, never dict keys - this is what `recv_match()` below hands
+    back, kept separate from the dict-shaped `acks`/`last_ack` this
+    emulator's own pre-existing tests already read."""
+
+    def __init__(self, command: int, result: int) -> None:
+        self.command = command
+        self.result = result
+
+
 class MavlinkFlightControllerEmulator:
     """A ``MavlinkCommandSink`` PX4-shaped autopilot. Single link, single
     vehicle - not thread-safe, exactly like a real serial/UDP MAVLink link."""
@@ -83,6 +94,7 @@ class MavlinkFlightControllerEmulator:
         self.failsafe_active = False
         self.acks: list[dict] = []
         self.commands: list[tuple[int, tuple[float, ...]]] = []
+        self._pending_acks: list["_Ack"] = []
 
     # ---- physical-side drivers ----------------------------------------
     def fail_prearm(self, ok: bool = False) -> None:
@@ -130,11 +142,27 @@ class MavlinkFlightControllerEmulator:
         result = self._process(command, params)
         ack = {"command": command, "result": result}
         self.acks.append(ack)
+        self._pending_acks.append(_Ack(command, result))
         return ack  # a real link returns nothing here; the ACK arrives as its own message
 
     @property
     def last_ack(self) -> dict:
         return self.acks[-1]
+
+    def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None:
+        """The real `MavlinkCommandSink.recv_match()` seam
+        (`mavlink_transport.py`'s `_send_one()` calls this to wait for a
+        real COMMAND_ACK). Unlike `last_ack` above (a dict, kept only for
+        this emulator's own existing tests), this returns a real
+        attribute-style ack object - `command`/`result`, not `["command"]`/
+        `["result"]` - matching a real pymavlink message and what
+        `_send_one()` itself reads via `getattr()`. `type` is accepted for
+        interface-parity with pymavlink but ignored - `command_long_send()`
+        above only ever queues COMMAND_ACK, the one type this bridge waits
+        for."""
+        if not self._pending_acks:
+            return None
+        return self._pending_acks.pop(0)
 
     def _process(self, command: int, params: tuple[float, ...]) -> int:
         if command == _CMD_COMPONENT_ARM_DISARM:
