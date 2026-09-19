@@ -50,13 +50,13 @@ lifecycle, a hard pre-arm failure denying the arm, no-GPS temporarily
 rejecting it, an in-flight disarm denied, and a link-loss failsafe
 switching to RTL and flagging CRITICAL. 47 tests total.
 
-## [0.0.6] - REV-007/REV-008: real regressions
+## [0.0.6] - real regressions
 
 Closer review reproduced 2 real regressions (each
 with a real fake-sink probe, no vehicle involved). Both fixed here,
 each with new regression tests:
 
-- **REV-007 [P0]:** the arm gate used `not confirm_arm`, and Python's
+- the arm gate used `not confirm_arm`, and Python's
   own truthiness rules made this dangerously permissive - a caller
   passing the STRING `'false'` (non-empty, therefore truthy) made
   `not confirm_arm` evaluate to `False`, arming a real vehicle despite
@@ -67,9 +67,9 @@ each with new regression tests:
   (nothing else); every numeric flight parameter (altitude, latitude,
   longitude) is now explicitly checked to be a real `int`/`float` and
   not a `bool` before any finite/range check runs.
-- **REV-008 [P1], shared with HYDRA-UMC-SDK and 4 other bridges:**
+- **Shared with HYDRA-UMC-SDK and 4 other bridges:**
   HYDRA-UMC-SDK's own `BridgeJob` constructor now correctly rejects an
-  unrecognised `phase` at construction time (its own real SDK-01 fix) -
+  unrecognised `phase` at construction time (its own real fix) -
   this project's own coordinator test used to construct one directly
   with a raw string to prove the coordinator's dispatch-level fallback,
   which the SDK's own hardened constructor no longer allows at all.
@@ -80,9 +80,9 @@ each with new regression tests:
 - 5 new regression tests (36 total), each reproducing its own
   exact scenario before the fix and passing after it.
 
-## [0.0.5] - UAV-01/UAV-02: finite/range validation and a real arm gate
+## [0.0.5] - Finite/range validation and a real arm gate
 
-- **UAV-01 (P0):** `TAKEOFF`'s `takeoff_altitude_m` and `GOTO_WAYPOINT`'s
+- `TAKEOFF`'s `takeoff_altitude_m` and `GOTO_WAYPOINT`'s
   `waypoint_lat`/`waypoint_lon`/`waypoint_alt_m` reached a real
   `COMMAND_LONG` with zero validation - a `NaN` altitude sailed straight
   through with `sent=True` reported by a fake sink. Fixed: altitude must
@@ -92,7 +92,7 @@ each with new regression tests:
   deployment-specific profile parameter, not a universal physical
   constant, and stays real, deferred future work rather than an invented
   number.
-- **UAV-02 (P1):** the request named
+- The request named
   `PRE_FLIGHT_CHECK` genuinely arms the vehicle
   (`MAV_CMD_COMPONENT_ARM_DISARM`, param1=1) - PX4/ArduPilot run their
   own pre-arm check suite as part of processing an arm request, so there
