@@ -6,6 +6,16 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.0.9] - Flight-state table and a simulated vehicle
+
+- **Flight-state table and a simulated vehicle** (`simulated_uav.py`): `TRANSITIONS` states
+  which flight request is legal from which vehicle state. Telemetry is a read-only
+  snapshot; authorization is its own explicit grant, required by every request that
+  leaves the ground; arming is a vehicle state reached only by an accepted `ARM`.
+  `RETURN_TO_LAUNCH` and `LAND` are accepted from every state whatever the
+  coordinator or authorization said. The vehicle imports no transport and cannot fly.
+  Eight new tests (60 in total); the README test counts were brought up to date.
+
 ## [0.0.8] - A sent MAVLink command is now confirmed by a real COMMAND_ACK, not just a socket call that didn't throw
 
 `mavlink_transport.py`'s `_send_one()` used to report `sent=True` purely because `command_long_send()`
