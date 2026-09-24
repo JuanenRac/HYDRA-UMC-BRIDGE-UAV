@@ -22,7 +22,7 @@ GPL-3.0-or-later - see LICENSE
 
 ---
 
-> **誠実性チェック - 今日実際に動くもの:** 依存関係のないフライトリクエストコア（`coordinator.py` の `UavCoordinator`。すべてのディスパッチは `HYDRA-UMC-SDK` 自身の本物の `evaluate_job()` を通過する）、決定論的なリンク断ハートビートウォッチドッグ（`heartbeat.py` の `HeartbeatMonitor`）、および本物の MAVLink コマンドトランスポート（`mavlink_transport.py` の `MavlinkFlightControl`）は本物であり、47件の通過するユニットテストで検証されている（`python tools/build_test.py` - `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`、および実際のものではなくプロトコルに忠実な手書きの MAVLink オートパイロットエミュレータに対してブリッジを動かす `test_mavlink_emulator.py`）。これらはいずれも、本物の `pymavlink` インストール、本物の無線・テレメトリーリンク、あるいは物理的な UAV・フライトコントローラに対しては検証されていない - `test_mavlink_transport.py` 独自の模擬 MAVLink 接続が `pymavlink` を完全に置き換えており（本物のライブラリがインストールされていなくてもこれらのテストは通過する）、実際の MAVLink・OSDK トランスポートがまだ選定・検証されていないため、実機向けの `run` コマンドもまだ存在しない。詳細は下記の「現状と次のステップ」に既に明記されており、これまでに実際に出荷された内容は `CHANGELOG.md` を参照。
+> **誠実性チェック - 今日実際に動くもの:** 依存関係のないフライトリクエストコア（`coordinator.py` の `UavCoordinator`。すべてのディスパッチは `HYDRA-UMC-SDK` 自身の本物の `evaluate_job()` を通過する）、決定論的なリンク断ハートビートウォッチドッグ（`heartbeat.py` の `HeartbeatMonitor`）、および本物の MAVLink コマンドトランスポート（`mavlink_transport.py` の `MavlinkFlightControl`）は本物であり、60件の通過するユニットテストで検証されている（`python tools/build_test.py` - `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`、および実際のものではなくプロトコルに忠実な手書きの MAVLink オートパイロットエミュレータに対してブリッジを動かす `test_mavlink_emulator.py`）。これらはいずれも、本物の `pymavlink` インストール、本物の無線・テレメトリーリンク、あるいは物理的な UAV・フライトコントローラに対しては検証されていない - `test_mavlink_transport.py` 独自の模擬 MAVLink 接続が `pymavlink` を完全に置き換えており（本物のライブラリがインストールされていなくてもこれらのテストは通過する）、実際の MAVLink・OSDK トランスポートがまだ選定・検証されていないため、実機向けの `run` コマンドもまだ存在しない。詳細は下記の「現状と次のステップ」に既に明記されており、これまでに実際に出荷された内容は `CHANGELOG.md` を参照。
 
 ---
 
@@ -78,10 +78,12 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── __init__.py
 │       ├── coordinator.py       # UavCoordinator: 依存関係なしの飛行リクエストゲート
 │       ├── heartbeat.py         # HeartbeatMonitor: 実在する決定論的なリンク喪失フェイルセーフ
-│       └── mavlink_transport.py # 検証済みのUavDispatchを実際のMAVLink COMMAND_LONGとして送信
+│       ├── mavlink_transport.py # 検証済みのUavDispatchを実際のMAVLink COMMAND_LONGとして送信
+│       └── simulated_uav.py     # 飛行状態テーブル + シミュレート機体:テレメトリ・認可・アーム状態を分離、トランスポートなし
 ├── tests/
 │   ├── test_coordinator.py      # 連携コアの決定論的ユニットテスト
 │   ├── test_heartbeat.py        # ウォッチドッグの境界値に対する決定論的テスト
+│   ├── test_simulated_uav.py    # 状態テーブルとシミュレート機体のテスト
 │   ├── test_mavlink_transport.py # 疑似MAVLink接続に対する実MAV_CMD形状テスト
 │   ├── mavlink_emulator.py       # プロトコル忠実な MAVLink autopilot エミュレータ（現実的なテストダブル）
 │   └── test_mavlink_emulator.py  # MAVLink autopilot エミュレータに対する bridge の振る舞い
@@ -126,7 +128,7 @@ bash build.sh
 
 ## ✅ 現状と次のステップ
 
-**現時点で実在するもの:** バージョン `0.0.8`。依存関係なしの連携コア(`UavCoordinator`)に加えて、境界値が完全にテストされた実在するリンク喪失ハートビート・ウォッチドッグ(`HeartbeatMonitor`)、フェイルクローズのフェーズルーティング、静的な `plan-only` 飛行リクエストスキーマ、各リクエストを実際の番号付き `MAV_CMD` にマッピングする実在するMAVLinkコマンドトランスポート(`MavlinkFlightControl`)——武装化には今やリテラルなブール値 `confirm_arm is True` が必須となり(文字列 `'false'` のような単に真値であるだけの値は決して許可されない)、あらゆる数値の飛行パラメーターは有限性/範囲チェックの前に真の非ブール数値であることが確認されるようになり、送信されたコマンドは実在する `COMMAND_ACK`(`MAV_RESULT_ACCEPTED`)が返ってきて初めて確認済みとして報告されるようになった——SDKチェックアウトを伴いCIに組み込まれた非破壊的なbuild-testスクリプトを備えて機能している。
+**現時点で実在するもの:** バージョン `0.0.9`。依存関係なしの連携コア(`UavCoordinator`)に加えて、境界値が完全にテストされた実在するリンク喪失ハートビート・ウォッチドッグ(`HeartbeatMonitor`)、フェイルクローズのフェーズルーティング、静的な `plan-only` 飛行リクエストスキーマ、各リクエストを実際の番号付き `MAV_CMD` にマッピングする実在するMAVLinkコマンドトランスポート(`MavlinkFlightControl`)——武装化には今やリテラルなブール値 `confirm_arm is True` が必須となり(文字列 `'false'` のような単に真値であるだけの値は決して許可されない)、あらゆる数値の飛行パラメーターは有限性/範囲チェックの前に真の非ブール数値であることが確認されるようになり、送信されたコマンドは実在する `COMMAND_ACK`(`MAV_RESULT_ACCEPTED`)が返ってきて初めて確認済みとして報告されるようになった——SDKチェックアウトを伴いCIに組み込まれた非破壊的なbuild-testスクリプトを備えて機能している。
 
 **統合境界:** このブリッジは連携境界に過ぎない —— 飛行制御ノードではなく、HYDRA-UMC-SERVER、MCUの限界、ウォッチドッグ、E-STOPを迂回することはできない。送信されるすべてのジョブは、依然としてすべての兄弟ブリッジが使う同じ共有ゲートを通過する。`HeartbeatMonitor` 自身のフェイルセーフシグナルは連携層の問題であり、フライトコントローラー自身の独立したリンク喪失フェイルセーフの代替では決してない。
 
