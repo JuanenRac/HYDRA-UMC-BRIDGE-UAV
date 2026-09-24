@@ -34,7 +34,7 @@ GPL-3.0-or-later - see LICENSE
 
 ### 主な機能:
 * ✅ **実在する依存関係なしの飛行リクエストコア:** `coordinator.py` の `UavCoordinator` はMAVLinkやベンダーSDKのインポートが一切ない —— 意図的に純粋なPythonであり、実際のUAVが接続されていないどのホストでもテスト可能である。*(実装済み、`tests/test_coordinator.py` でテスト済み)*
-* ✅ **実在する命名済み飛行リクエスト語彙:** `ARM`、`TAKEOFF`、`GOTO_WAYPOINT`、`HOVER_AND_CAPTURE`、`RETURN_TO_LAUNCH` —— 生の姿勢/スロットルコマンドは決して扱わない。通常のミッション完了を表す `COMPLETE` と緊急時の `ABORT` は、どちらも同じ実在する `RETURN_TO_LAUNCH` リクエストに解決される。*(実装済み)*
+* ✅ **実在する命名済み飛行リクエスト語彙:** `ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`, `LAND` - 生の姿勢/スロットルコマンドは決して使いません。通常のミッション `COMPLETE` と緊急の `ABORT` は、どちらも同じ実在の `RETURN_TO_LAUNCH` リクエストに解決されます。`LAND` は実在し、明確に別物です - MAVLink 自身の `MAV_CMD_NAV_LAND` 対 `MAV_CMD_NAV_RETURN_TO_LAUNCH`([公式 MAVLink common メッセージセット](https://mavlink.io/en/messages/common.html)で確認済み)- RTL だけでは対応できない実際のケース、つまり先に帰還せずすぐ降下する場合(例: バッテリー残量が少なすぎる、または帰路が安全でない)のためです。`emergency_land_request()` は単独のリクエストとして提供され、`JobPhase` 駆動の `dispatch()` フローの外に意図的に置かれています - `HeartbeatMonitor` の独立したシグナルと同じ考え方です。*(実装済み)*
 * ✅ **実在する必須のリンク喪失ハートビート・ウォッチドッグ:** `HeartbeatMonitor` は、明示的な `now` によって駆動される決定論的なフェイルセーフ状態機械である —— 実際の時計を読み取ることは一切なく、一度も観測されなければ最初のチェックから `LOST` を報告し、タイムアウトちょうどの瞬間はまだ `OK` として扱う(真に超過した場合のみ、設定された `RETURN_TO_LAUNCH`/ホバーのフェイルセーフが発動する)。*(実装済み、`tests/test_heartbeat.py` で決定論的な境界値の完全なスイートによりテスト済み)*
 * ✅ **実在する共有安全ゲート:** `UavCoordinator.dispatch()` を通じて送信されるすべてのジョブは、`HYDRA-UMC-SDK` の `bridge_contract` にある `evaluate_job()` によって評価される。これは他のすべての兄弟ブリッジとHYDRA-UMC-SERVERが使うのと同じゲートである。生産フェーズには外部機械が `IDLE` であり、HYDRA-UMCセルが `READY` であることが必要だが、`ABORT` は故障中でも要求可能なままである。*(実装済み)*
 * ✅ **フェイルクローズのフェーズルーティングと静的エビデンス:** 未知の将来SDKフェーズは拒否される。`inspect_request_plan.py` は、独立した `LAND` リクエストを今や含む静的スキーマ `1.1` の飛行リクエストプランを、トランスポートを一切開かずに出力する。*(実装・テスト済み)*
