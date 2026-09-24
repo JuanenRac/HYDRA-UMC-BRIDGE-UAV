@@ -40,7 +40,7 @@ class CoordinatorTests(unittest.TestCase):
         self.assertTrue(result.accepted)
         self.assertEqual(result.request, "RETURN_TO_LAUNCH")
 
-    # REV-008 (P1): SDK-01's
+    # 's
     # own real fix now rejects an unrecognised `phase` AT CONSTRUCTION
     # TIME (`BridgeJob.__post_init__` requires a real `JobPhase` member) -
     # this test used to construct one directly with a raw string, which
