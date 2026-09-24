@@ -20,7 +20,7 @@ from _readme_parity import check_readme_section_parity
 ROOT = Path(__file__).resolve().parent.parent
 REQUIRED_DOCUMENTS = ("README.md", "README_spa.md", "README_fra.md", "README_ita.md", "README_deu.md", "README_zho.md", "README_jpn.md", "CHANGELOG.md", "LICENSE", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "SUPPORT.md")
 REQUIRED_MANIFEST_KEYS = ("schema_version", "ecosystem", "name", "version", "role", "stack", "technologies", "deployment_target", "maturity", "family", "parent", "build", "notes", "native_version")
-SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
+SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:\.\d+)?$")
 
 # Found while investigating a systemic pattern of stale version/test-count
 # claims in README prose (2026-09-07): a version bump already updates the
@@ -34,7 +34,7 @@ SEMVER = re.compile(r"^\d+\.\d+\.\d+$")
 # manifest version. It skips lines describing the odometer versioning
 # scheme itself (those always show an arrow between two version numbers,
 # e.g. "0.0.9 -> 0.1.0").
-VERSION_PROSE_TOKEN = re.compile(r"\bv?(\d+\.\d+\.\d+)\b")
+VERSION_PROSE_TOKEN = re.compile(r"\bv?(\d+\.\d+\.\d+(?:\.\d+)?)\b")
 VERSION_PROSE_LABELS = (
     "Real today", "Real hoy", "Réel aujourd'hui", "Reale oggi", "Heute real",
     "目前真实的部分", "現時点で実在するもの",
@@ -50,7 +50,7 @@ VERSION_PROSE_LABEL_PATTERN = re.compile(
 
 def validate_readme_version_prose(manifest: dict) -> None:
     real_version = manifest["version"]
-    name_pattern = re.compile(re.escape(manifest["name"]) + r"\s+v(\d+\.\d+\.\d+)")
+    name_pattern = re.compile(re.escape(manifest["name"]) + r"\s+v(\d+\.\d+\.\d+(?:\.\d+)?)")
     offenders: list[str] = []
     for document_name in REQUIRED_DOCUMENTS:
         if not document_name.startswith("README"):
@@ -73,13 +73,24 @@ def validate_readme_version_prose(manifest: dict) -> None:
         suffix = "" if len(offenders) <= 10 else f" (+{len(offenders) - 10} more)"
         fail(f"README states a stale current-version number: {preview}{suffix}")
 
-CHANGELOG_VERSION = re.compile(r"(?im)^#{1,3}\s*\[?(\d+\.\d+\.\d+)(?:\]|\s|$)")
+CHANGELOG_VERSION = re.compile(r"(?im)^#{1,3}\s*\[?(\d+\.\d+\.\d+(?:\.\d+)?)(?:\]|\s|$)")
 LOCAL_LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+[\"'][^)]*)?\)")
 EXCLUDED_DIRECTORIES = {".git", ".venv", "venv", "node_modules", "build", "dist", "target", "__pycache__", ".gradle"}
 
 def fail(message: str) -> None:
     print(f"CI_VALIDATION=FAIL {message}", file=sys.stderr)
     raise SystemExit(1)
+
+_THREE_GROUPS = re.compile(r"(\([^()]*\))\\\.(\([^()]*\))\\\.(\([^()]*\))(?!\(\?:\\\.)")
+
+
+def _with_optional_fourth_group(pattern: str) -> str:
+    """The native-version pattern, made to accept a fourth `.N` component too."""
+    match = _THREE_GROUPS.search(pattern)
+    if match is None:
+        return pattern
+    return pattern[: match.end()] + r"(?:\." + match.group(3) + ")?" + pattern[match.end() :]
+
 
 def native_version(path: Path, pattern: str | dict[str, str]) -> str:
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -90,9 +101,12 @@ def native_version(path: Path, pattern: str | dict[str, str]) -> str:
             if match is None: raise ValueError(f"native {component} version component not found")
             values.append(match.group(1))
         return ".".join(values)
-    match = re.search(pattern, text, re.MULTILINE)
+    match = re.search(_with_optional_fourth_group(pattern), text, re.MULTILINE)
     if match is None or len(match.groups()) < 3: raise ValueError("native version pattern did not expose major.minor.patch")
-    return ".".join(match.group(index) for index in (1, 2, 3))
+    parts = [match.group(index) for index in (1, 2, 3)]
+    if len(match.groups()) >= 4 and match.group(4) is not None:
+        parts.append(match.group(4))
+    return ".".join(parts)
 
 def validate_markdown_links() -> None:
     broken: list[str] = []
