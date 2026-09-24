@@ -84,7 +84,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
         self.assertEqual(params[0], 1)
 
     def test_arm_without_explicit_confirmation_is_refused_regression_for_uav_02(self):
-        # UAV-02 (P1): a real arm command must never fire just because the shared
+        # a real arm command must never fire just because the shared
         # cell/machine gate already said yes - it needs its own explicit,
         # separate opt-in from the caller, defaulting to refused.
         dispatch = UavDispatch(True, "ARM", "cell and external machine are ready")
@@ -94,7 +94,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
         self.assertEqual(self.sink.sent, [])
 
     def test_arm_with_a_truthy_non_boolean_confirm_arm_is_still_refused_regression_for_rev_007(self):
-        # REV-007 (P0): the
+        # the
         # old check was `not confirm_arm`, and Python's own truthiness
         # rules made the non-empty STRING 'false' evaluate as truthy -
         # `not 'false'` is `False`, so a caller passing that string armed
@@ -117,7 +117,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
         self.assertEqual(params[6], 25.0)  # param7 is the 7th of 7 params, index 6
 
     def test_takeoff_rejects_non_finite_or_non_positive_altitude_regression_for_uav_01(self):
-        # UAV-01 (P0): a NaN altitude used to sail straight through into a real
+        # a NaN altitude used to sail straight through into a real
         # MAV_CMD_NAV_TAKEOFF param7 with sent=True reported.
         for bad_altitude in (float("nan"), float("inf"), float("-inf"), 0.0, -5.0):
             with self.subTest(altitude=bad_altitude):
@@ -127,7 +127,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
                 self.assertEqual(self.sink.sent, [])
 
     def test_takeoff_rejects_a_boolean_altitude_regression_for_rev_007(self):
-        # REV-007 (P0): `bool`
+        # `bool`
         # is a real Python subclass of `int` - `math.isfinite(True)` is
         # `True` and `True <= 0` is `False` (since `True == 1`), so
         # `takeoff_altitude_m=True` used to sail through every existing
@@ -161,7 +161,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
         self.assertEqual(self.sink.sent, [])
 
     def test_goto_waypoint_rejects_non_finite_or_out_of_range_coordinates_regression_for_uav_01(self):
-        # UAV-01 regression - latitude/longitude/altitude all get the
+        # regression - latitude/longitude/altitude all get the
         # same real validation TAKEOFF's own altitude does above.
         base = {"waypoint_lat": 47.0, "waypoint_lon": 8.0, "waypoint_alt_m": 30.0}
         bad_cases = [
@@ -171,7 +171,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
             {**base, "waypoint_lon": -181.0},  # beyond the real +/-180 longitude range
             {**base, "waypoint_alt_m": float("nan")},
             {**base, "waypoint_alt_m": -1.0},
-            {**base, "waypoint_lat": True},  # REV-007: bool must never pass as a real coordinate
+            {**base, "waypoint_lat": True},  # bool must never pass as a real coordinate
             {**base, "waypoint_alt_m": True},
         ]
         for kwargs in bad_cases:
