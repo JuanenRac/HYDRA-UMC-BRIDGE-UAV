@@ -6,6 +6,11 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.1.0] - The gate can use the machine state the autopilot reports
+
+- **Observed machine state.** `UavCoordinator.dispatch()` takes the state the autopilot reported as an optional argument; when it is given it replaces the `machine_state` a requester wrote in the job (a message anybody on the broker may publish) in the shared gate. Without it the claim is still used.
+- Four new tests (tests/test_observed_state.py).
+
 ## [0.0.9] - Flight-state table and a simulated vehicle
 
 - **Flight-state table and a simulated vehicle** (`simulated_uav.py`): `TRANSITIONS` states

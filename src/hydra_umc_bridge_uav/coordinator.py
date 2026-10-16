@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from hydra_umc_sdk.bridge_contract import BridgeJob, CellState, JobPhase, evaluate_job
+from hydra_umc_sdk.bridge_contract import BridgeJob, CellState, JobPhase, MachineState, evaluate_job
 
 
 @dataclass(frozen=True)
@@ -96,11 +96,12 @@ class UavCoordinator:
         phase_requests = tuple(dict.fromkeys(self._phase_requests.values()))
         return UavRequestPlan("1.1", "plan-only", phase_requests + (self.LAND,))
 
-    def dispatch(self, job: BridgeJob, cell_state: CellState) -> UavDispatch:
+    def dispatch(self, job: BridgeJob, cell_state: CellState, observed_machine_state: MachineState | None = None) -> UavDispatch:
         request = self._phase_requests.get(job.phase)
         if request is None:
             return UavDispatch(False, "none", "job phase has no mapped flight request")
-        decision = evaluate_job(job, cell_state)
+        # `observed_machine_state` is what the autopilot reported about the vehicle; when given it replaces the claim written in the job (see HYDRA-UMC-SDK's evaluate_job)
+        decision = evaluate_job(job, cell_state, observed_machine_state)
         return UavDispatch(decision.allowed, request, decision.reason)
 
     def emergency_land_request(self) -> UavDispatch:

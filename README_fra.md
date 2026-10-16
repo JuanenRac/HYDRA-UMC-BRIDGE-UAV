@@ -10,7 +10,7 @@ GPL-3.0-or-later - see LICENSE
 
 # 🛩️ HYDRA-UMC-BRIDGE-UAV
 
-<p align="center"><a href="README.md">🇺🇸 English</a> | <a href="README_spa.md">🇪🇸 Español</a> | 🇫🇷 <b>Français</b> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 简体中文</a> | <a href="README_jpn.md">🇯🇵 日本語</a></p>
+<p align="center"><a href="README.md">🇺🇸 English</a> | <a href="README_spa.md">🇪🇸 Español</a> | 🇫🇷 <b>Français</b> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 简体中文</a> | <a href="README_jpn.md">🇯🇵 日本語</a> | <a href="README_por.md">🇵🇹 Português</a></p>
 
 ### 🔗 Frontière de coordination sans dépendance entre HYDRA-UMC et les UAV équipés de caméra
 
@@ -22,7 +22,7 @@ GPL-3.0-or-later - see LICENSE
 
 ---
 
-> **Vérification d'honnêteté - ce qui fonctionne réellement aujourd'hui :** le cœur de requêtes de vol sans dépendance (`coordinator.py` avec `UavCoordinator`, faisant passer chaque envoi par le propre `evaluate_job()` de `HYDRA-UMC-SDK`), le chien de garde déterministe de perte de liaison par heartbeat (`heartbeat.py` avec `HeartbeatMonitor`), et le vrai transport de commandes MAVLink (`mavlink_transport.py` avec `MavlinkFlightControl`) sont réels et couverts par 60 tests unitaires qui passent (`python tools/build_test.py` - `test_coordinator.py`, `test_heartbeat.py`, `test_mavlink_transport.py`, plus `test_mavlink_emulator.py` qui fait tourner le bridge contre un émulateur de pilote automatique MAVLink fidèle au protocole mais écrit à la main, pas un vrai). Rien de tout cela n'a été testé contre une vraie installation `pymavlink`, une vraie liaison radio/télémétrie, ou un UAV/contrôleur de vol physique - la fausse connexion MAVLink propre à `test_mavlink_transport.py` remplace entièrement `pymavlink` (la vraie bibliothèque n'a même pas besoin d'être installée pour que ces tests passent), et il n'existe pas encore de commande `run` en direct car aucun transport MAVLink/OSDK réel n'a été choisi ni validé. Voir « État actuel et prochaines étapes » ci-dessous, qui le dit déjà clairement, et `CHANGELOG.md` pour ce qui a été exactement livré jusqu'à présent.
+> **Vérification d'honnêteté - ce qui fonctionne réellement aujourd'hui :** le cœur de requêtes de vol sans dépendance (`coordinator.py` avec `UavCoordinator`, faisant passer chaque envoi par le propre `evaluate_job()` de `HYDRA-UMC-SDK`), le chien de garde déterministe de perte de liaison par heartbeat (`heartbeat.py` avec `HeartbeatMonitor`), et le vrai transport de commandes MAVLink (`mavlink_transport.py` avec `MavlinkFlightControl`) sont réels et couverts par 64 tests unitaires qui passent (`python tools/build_test.py` - `test_coordinator.py`, `test_heartbeat.py`, `test_mavlink_transport.py`, plus `test_mavlink_emulator.py` qui fait tourner le bridge contre un émulateur de pilote automatique MAVLink fidèle au protocole mais écrit à la main, pas un vrai). Rien de tout cela n'a été testé contre une vraie installation `pymavlink`, une vraie liaison radio/télémétrie, ou un UAV/contrôleur de vol physique - la fausse connexion MAVLink propre à `test_mavlink_transport.py` remplace entièrement `pymavlink` (la vraie bibliothèque n'a même pas besoin d'être installée pour que ces tests passent), et il n'existe pas encore de commande `run` en direct car aucun transport MAVLink/OSDK réel n'a été choisi ni validé. Voir « État actuel et prochaines étapes » ci-dessous, qui le dit déjà clairement, et `CHANGELOG.md` pour ce qui a été exactement livré jusqu'à présent.
 
 ---
 
@@ -41,6 +41,7 @@ Il appartient à la famille **Mobile & Autonomous Bridges**, aux côtés de `HYD
 * ✅ **Transport de commandes MAVLink réel :** `mavlink_transport.py`'s `MavlinkFlightControl` envoie un dispatch déjà validé comme un vrai `COMMAND_LONG`, mappé vers un `MAV_CMD` réel et numéroté (`MAV_CMD_NAV_TAKEOFF`/`MAV_CMD_DO_REPOSITION`/`MAV_CMD_NAV_LOITER_UNLIM`/`MAV_CMD_IMAGE_START_CAPTURE`/`MAV_CMD_NAV_RETURN_TO_LAUNCH`/`MAV_CMD_NAV_LAND`/`MAV_CMD_COMPONENT_ARM_DISARM`) - un dispatch rejeté n'atteint jamais le réseau. *(implémenté, testé dans `tests/test_mavlink_transport.py`)*
 * ✅ **Build/test non mutant :** `build-test.bat`/`.sh` compilent le code source et exécutent des tests unitaires déterministes sans changer la version ni le CHANGELOG. *(implémenté, voir COMPILATION ET EXÉCUTION ci-dessous)*
 * 🔜 **Un adaptateur de transport DJI OSDK** (pour une plateforme non-MAVLink) — introduit seulement après la sélection et le test de ce SDK. *(prévu)*
+* ✅ **État observé de la machine :** `UavCoordinator.dispatch()` accepte l'état rapporté par le pilote automatique, que la porte partagée utilise à la place du `machine_state` écrit dans le travail (un message que n'importe qui sur le broker peut publier) ; sans rapport, la déclaration est toujours utilisée. *(implémenté, testé dans `tests/test_observed_state.py`)*
 
 ---
 
@@ -82,6 +83,7 @@ HYDRA-UMC-BRIDGE-UAV/
 │       └── simulated_uav.py     # Table d'états de vol + véhicule simulé : télémétrie, autorisation et armement séparés, aucun transport
 ├── tests/
 │   ├── test_coordinator.py      # Tests unitaires déterministes du noyau de coordination
+│   ├── test_observed_state.py   # La porte utilise l'état de la machine que rapporte le pilote automatique
 │   ├── test_heartbeat.py        # Tests déterministes des cas limites du watchdog
 │   ├── test_simulated_uav.py    # Tests de la table d'états et du véhicule simulé
 │   ├── test_mavlink_transport.py # Tests de forme MAV_CMD réels contre une connexion MAVLink simulée
@@ -128,7 +130,7 @@ bash build.sh
 
 ## ✅ État actuel et prochaines étapes
 
-**Réel aujourd'hui :** version `0.0.9`, fonctionnel en tant que noyau de coordination sans dépendance (`UavCoordinator`) plus un watchdog réel de perte de liaison entièrement testé sur ses cas limites (`HeartbeatMonitor`), un routage de phases fermé, un schéma de requêtes de vol statique `plan-only`, un transport de commandes MAVLink réel (`MavlinkFlightControl`) mappant chaque requête vers son `MAV_CMD` réel et numéroté - l'armement exige désormais le booléen littéral `confirm_arm is True` (jamais une valeur simplement vraie comme la chaîne `'false'`), chaque paramètre numérique de vol est vérifié comme un nombre réel non booléen avant toute vérification de finitude/plage, et une commande envoyée n'est confirmée qu'une fois son véritable `COMMAND_ACK` reçu avec `MAV_RESULT_ACCEPTED` -, et des scripts build-test non mutants intégrés en CI avec un checkout du SDK.
+**Réel aujourd'hui :** version `0.1.0`, fonctionnel en tant que noyau de coordination sans dépendance (`UavCoordinator`) plus un watchdog réel de perte de liaison entièrement testé sur ses cas limites (`HeartbeatMonitor`), un routage de phases fermé, un schéma de requêtes de vol statique `plan-only`, un transport de commandes MAVLink réel (`MavlinkFlightControl`) mappant chaque requête vers son `MAV_CMD` réel et numéroté - l'armement exige désormais le booléen littéral `confirm_arm is True` (jamais une valeur simplement vraie comme la chaîne `'false'`), chaque paramètre numérique de vol est vérifié comme un nombre réel non booléen avant toute vérification de finitude/plage, et une commande envoyée n'est confirmée qu'une fois son véritable `COMMAND_ACK` reçu avec `MAV_RESULT_ACCEPTED` -, et des scripts build-test non mutants intégrés en CI avec un checkout du SDK.
 
 **Frontière d'intégration :** ce pont n'est qu'une frontière de coordination — ce n'est pas un nœud de contrôle de vol, et il ne peut pas contourner HYDRA-UMC-SERVER, les limites du MCU, les watchdogs ou l'E-STOP ; chaque tâche envoyée passe toujours par le même portail partagé utilisé par tous les ponts frères. Le signal de failsafe propre de `HeartbeatMonitor` relève de la couche de coordination, et n'est jamais un substitut au failsafe indépendant propre du contrôleur de vol.
 
