@@ -18,7 +18,7 @@ from _doc_policy import check_public_private_boundary
 from _readme_parity import check_readme_section_parity
 
 ROOT = Path(__file__).resolve().parent.parent
-REQUIRED_DOCUMENTS = ("README.md", "README_spa.md", "README_fra.md", "README_ita.md", "README_deu.md", "README_zho.md", "README_jpn.md", "CHANGELOG.md", "LICENSE", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "SUPPORT.md")
+REQUIRED_DOCUMENTS = ("README.md", "README_spa.md", "README_fra.md", "README_ita.md", "README_deu.md", "README_zho.md", "README_jpn.md", "README_por.md", "CHANGELOG.md", "LICENSE", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md", "SUPPORT.md")
 REQUIRED_MANIFEST_KEYS = ("schema_version", "ecosystem", "name", "version", "role", "stack", "technologies", "deployment_target", "maturity", "family", "parent", "build", "notes", "native_version")
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:\.\d+)?$")
 
