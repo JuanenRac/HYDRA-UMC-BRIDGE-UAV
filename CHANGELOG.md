@@ -6,6 +6,11 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.1.3]
+
+- Successful incremental build: synchronized package metadata and `hydra-umc.project.json`.
+- The licence is written as GPL-3.0-or-later in every header and in the package metadata.
+
 ## [0.1.2] - Maturity lowered to functional
 - Maturity is functional: the code, tests and documentation are in place, but nothing here has been verified on real hardware yet, so the manifest no longer claims the established level.
 
@@ -19,7 +24,7 @@ GPL-3.0-or-later - see LICENSE
 - **Capture and loiter parameters.** `IMAGE_START_CAPTURE` takes one image (it used to ask for images until stopped, which was never sent) and can be addressed to a camera component (`camera_component`); the loiter keeps the heading.
 - **`open_mavlink_connection()`** stops waiting for a heartbeat after `heartbeat_timeout_seconds` with a clear error, and the object it returns carries the `target_system` / `target_component` of the vehicle.
 - **`HeartbeatMonitor`** refuses a `failsafe_action` that the transport cannot send; the documented hover policy never existed and would have done nothing on a link loss. `RETURN_TO_LAUNCH` or `LAND`.
-- **Documentation.** Units and the altitude reference are documented; the README no longer says the MAVLink transport is missing, no longer claims a bidirectional link with telemetry, and its diagram follows the real direction of the commands; the test emulator says what it does not model; `LICENSE` carries the full GPL-3.0 text.
+- **Documentation.** Units and the altitude reference are documented; the README no longer says the MAVLink transport is missing, no longer claims a bidirectional link with telemetry, and its diagram follows the real direction of the commands; the test emulator says what it does not model; `LICENSE` carries the full GPL-3.0-or-later text.
 - Not run against PX4 or ArduPilot SITL, nor a real vehicle: the wire format is checked against the emulator only. The altitude of `TAKEOFF` is still the autopilot's own reference, because a `COMMAND_LONG` carries no frame, and a forced disarm, mission upload, link-loss wiring of the heartbeat monitor and the retry with an incremented `confirmation` are not implemented.
 - 20 new tests (84 in total); an unused import in the CI validator removed.
 
