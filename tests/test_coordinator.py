@@ -65,6 +65,29 @@ class CoordinatorTests(unittest.TestCase):
         self.assertFalse(result.accepted)
         self.assertEqual(result.request, "none")
 
+    def test_a_normal_end_of_mission_still_brings_the_vehicle_home_whatever_the_cell_or_machine_says(self):
+        # COMPLETE -> return to launch: the vehicle is flying (not IDLE) and the cell may have been inhibited meanwhile.
+        for cell in (CellState.INHIBITED, CellState.FAULT):
+            for machine in (MachineState.RUNNING, MachineState.FAULT):
+                with self.subTest(cell=cell, machine=machine):
+                    result = self.coordinator.dispatch(job(JobPhase.COMPLETE, machine), cell)
+                    self.assertTrue(result.accepted, result.reason)
+                    self.assertEqual(result.request, "RETURN_TO_LAUNCH")
+        observed = self.coordinator.dispatch(job(JobPhase.COMPLETE), CellState.READY, MachineState.RUNNING)
+        self.assertTrue(observed.accepted)
+
+    def test_the_other_flight_phases_are_still_gated_by_the_cell_and_the_machine(self):
+        for phase in (JobPhase.PREPARE, JobPhase.LOAD, JobPhase.PROCESS, JobPhase.UNLOAD):
+            with self.subTest(phase=phase):
+                self.assertFalse(self.coordinator.dispatch(job(phase), CellState.INHIBITED).accepted)
+                self.assertFalse(self.coordinator.dispatch(job(phase), CellState.READY, MachineState.RUNNING).accepted)
+
+    def test_disarm_is_a_standalone_always_allowed_request(self):
+        disarm = self.coordinator.disarm_request()
+        self.assertTrue(disarm.accepted)
+        self.assertEqual(disarm.request, "DISARM")
+        self.assertIn("DISARM", self.coordinator.request_plan().requests)
+
     def test_request_plan_is_static_and_explicitly_not_a_runtime(self):
         plan = self.coordinator.request_plan().to_dict()
         self.assertEqual(plan["schema_version"], "1.1")

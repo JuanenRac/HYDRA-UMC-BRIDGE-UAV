@@ -6,6 +6,20 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.1.1] - An explicit altitude frame, a flight envelope and stops that always get through
+
+- **`GOTO_WAYPOINT` is a `COMMAND_INT` with an explicit altitude frame.** The position goes out as degrees x 1e7 (a `COMMAND_LONG` rounds it to float32, and an autopilot may accept a positional command only as a `COMMAND_INT`), the altitude reference is named - `altitude_frame="relative"` (the default, above the takeoff point) or `"amsl"` - and the yaw is NaN (keep the heading) instead of 0, which turned the vehicle north at every reposition. Before, the reference was undefined: a `COMMAND_LONG` carries no frame, so each autopilot chose its own.
+- **`FlightEnvelope`.** An optional ceiling and radius from home, set by the deployment, that `send()` checks for `TAKEOFF` and `GOTO_WAYPOINT` (it needs a relative altitude to compare). Without one only the universal range checks apply, as before.
+- **A stop is never held back.** `RETURN_TO_LAUNCH`, `LAND` and the new `DISARM` form `UavCoordinator.SAFE_STATE_REQUESTS`: a `COMPLETE` return home is now accepted whatever the cell and the machine state say (a vehicle in flight is not `IDLE`, so it used to be refused exactly when it should come home), and the MAVLink transport sends them even when the dispatch carries a refusal, as the simulated vehicle always did. The productive phases stay behind the shared gate.
+- **`DISARM`** (`MAV_CMD_COMPONENT_ARM_DISARM`, `param1=0`) as a standalone request, so an `ARM` followed by a refused `TAKEOFF` does not leave the vehicle armed on the ground. It is never forced: the autopilot refuses it in flight by itself, and there is deliberately no kill.
+- **`COMMAND_ACK` handling.** The wait skips the acknowledgements of other commands and, when the message carries its source, of other systems on the shared link, instead of failing on the first one; `IN_PROGRESS` waits for the final result.
+- **Capture and loiter parameters.** `IMAGE_START_CAPTURE` takes one image (it used to ask for images until stopped, which was never sent) and can be addressed to a camera component (`camera_component`); the loiter keeps the heading.
+- **`open_mavlink_connection()`** stops waiting for a heartbeat after `heartbeat_timeout_seconds` with a clear error, and the object it returns carries the `target_system` / `target_component` of the vehicle.
+- **`HeartbeatMonitor`** refuses a `failsafe_action` that the transport cannot send; the documented hover policy never existed and would have done nothing on a link loss. `RETURN_TO_LAUNCH` or `LAND`.
+- **Documentation.** Units and the altitude reference are documented; the README no longer says the MAVLink transport is missing, no longer claims a bidirectional link with telemetry, and its diagram follows the real direction of the commands; the test emulator says what it does not model; `LICENSE` carries the full GPL-3.0 text.
+- Not run against PX4 or ArduPilot SITL, nor a real vehicle: the wire format is checked against the emulator only. The altitude of `TAKEOFF` is still the autopilot's own reference, because a `COMMAND_LONG` carries no frame, and a forced disarm, mission upload, link-loss wiring of the heartbeat monitor and the retry with an incremented `confirmation` are not implemented.
+- 20 new tests (84 in total); an unused import in the CI validator removed.
+
 ## [0.1.0] - The gate can use the machine state the autopilot reports
 
 - **Observed machine state.** `UavCoordinator.dispatch()` takes the state the autopilot reported as an optional argument; when it is given it replaces the `machine_state` a requester wrote in the job (a message anybody on the broker may publish) in the shared gate. Without it the claim is still used.

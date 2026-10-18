@@ -53,9 +53,15 @@ class HeartbeatMonitorTests(unittest.TestCase):
         self.assertEqual(monitor.state(now=11.0).status, LinkStatus.OK)
 
     def test_custom_failsafe_action_is_honored(self):
-        monitor = HeartbeatMonitor(timeout_s=2.0, failsafe_action="HOVER")
+        monitor = HeartbeatMonitor(timeout_s=2.0, failsafe_action="LAND")
         state = monitor.state(now=0.0)
-        self.assertEqual(state.failsafe_action, "HOVER")
+        self.assertEqual(state.failsafe_action, "LAND")
+
+    def test_a_failsafe_action_the_transport_cannot_send_is_refused_at_construction(self):
+        for unsupported in ("HOVER", "", "return_to_launch", None):
+            with self.subTest(action=unsupported):
+                with self.assertRaises(ValueError):
+                    HeartbeatMonitor(timeout_s=2.0, failsafe_action=unsupported)
 
     def test_checking_state_never_mutates_the_monitor(self):
         # A real, easy-to-get-wrong bug class for a stateful watchdog: a

@@ -29,7 +29,7 @@ def flown(uav, *phases):
 
 class SimulatedUavTests(unittest.TestCase):
     def test_every_request_has_a_rule(self):
-        requests = set(UavCoordinator._phase_requests.values()) | {UavCoordinator.LAND}
+        requests = set(UavCoordinator._phase_requests.values()) | {UavCoordinator.LAND, UavCoordinator.DISARM}
         self.assertEqual(requests, set(TRANSITIONS))
 
     def test_a_full_sortie_walks_the_table(self):
@@ -83,6 +83,17 @@ class SimulatedUavTests(unittest.TestCase):
                 refused = dispatch(JobPhase.ABORT, cell=CellState.FAULT)
                 refused = type(refused)(False, request, "refused upstream")
                 self.assertTrue(uav.apply(refused).applied, (state, request))
+
+    def test_disarm_is_legal_only_on_the_ground(self):
+        disarm = UavCoordinator().disarm_request()
+        armed = SimulatedUav()
+        armed._state = UavState.ARMED
+        self.assertTrue(armed.apply(disarm).applied)
+        self.assertEqual(armed.telemetry().state, UavState.GROUNDED)
+        for state in (UavState.AIRBORNE, UavState.HOVERING, UavState.RETURNING, UavState.LANDING):
+            flying = SimulatedUav()
+            flying._state = state
+            self.assertFalse(flying.apply(disarm).applied, state)
 
     def test_telemetry_is_a_snapshot_that_cannot_change_the_vehicle(self):
         uav = SimulatedUav()

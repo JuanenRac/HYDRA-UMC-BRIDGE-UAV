@@ -22,23 +22,24 @@ GPL-3.0-or-later - see LICENSE
 
 ---
 
-> **诚实检查——今天真正可运行的部分：** 无依赖的飞行请求核心（`coordinator.py` 中的 `UavCoordinator`，每次派发都会经过 `HYDRA-UMC-SDK` 自身真正的 `evaluate_job()`）、确定性的心跳断链看门狗（`heartbeat.py` 中的 `HeartbeatMonitor`），以及真正的 MAVLink 命令传输（`mavlink_transport.py` 中的 `MavlinkFlightControl`）都是真实的，并由 64 个通过的单元测试覆盖（`python tools/build_test.py` —— `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`，以及让该桥接对抗一个协议忠实但纯手写的 MAVLink 自动驾驶仪模拟器（而非真实设备）的 `test_mavlink_emulator.py`）。以上这些都从未针对真实安装的 `pymavlink`、真实的无线电/遥测链路或实体 UAV/飞控进行过验证——`test_mavlink_transport.py` 自带的伪造 MAVLink 连接完全替代了 `pymavlink`（这些测试甚至不需要安装真正的库就能通过），并且目前还没有实时的 `run` 命令，因为尚未选定或验证任何真实的 MAVLink/OSDK 传输方案。详见下文的"当前状态与后续步骤"（已经如实说明了这一点），以及 `CHANGELOG.md` 中目前具体已交付的内容。
+> **诚实检查——今天真正可运行的部分：** 无依赖的飞行请求核心（`coordinator.py` 中的 `UavCoordinator`，每次派发都会经过 `HYDRA-UMC-SDK` 自身真正的 `evaluate_job()`）、确定性的心跳断链看门狗（`heartbeat.py` 中的 `HeartbeatMonitor`），以及真正的 MAVLink 命令传输（`mavlink_transport.py` 中的 `MavlinkFlightControl`）都是真实的，并由 84 个通过的单元测试覆盖（`python tools/build_test.py` —— `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`，以及让该桥接对抗一个协议忠实但纯手写的 MAVLink 自动驾驶仪模拟器（而非真实设备）的 `test_mavlink_emulator.py`）。以上这些都从未针对真实安装的 `pymavlink`、真实的无线电/遥测链路或实体 UAV/飞控进行过验证——`test_mavlink_transport.py` 自带的伪造 MAVLink 连接完全替代了 `pymavlink`（这些测试甚至不需要安装真正的库就能通过），并且目前还没有实时的 `run` 命令，因为尚未选定或验证任何真实的 MAVLink/OSDK 传输方案。详见下文的"当前状态与后续步骤"（已经如实说明了这一点），以及 `CHANGELOG.md` 中目前具体已交付的内容。
 
 ---
 
 ## 1. 🛠️ 技术概览
 
-**HYDRA-UMC-BRIDGE-UAV** 是 HYDRA-UMC 与搭载摄像头的无人机(UAV)之间双向的高层协调边界,可通过 Wi-Fi、无线电链路或蜂窝(4G/5G)遥测连接访问。它校验并转发一套小型的、具名的高层飞行请求词汇(`ARM`、`TAKEOFF`、`GOTO_WAYPOINT`、`HOVER_AND_CAPTURE`、`RETURN_TO_LAUNCH`),并单独运行一个真实的、强制性的链路丢失心跳(heartbeat)看门狗。它从不计算飞行控制或姿态稳定,也不能绕过 HYDRA-UMC-SERVER、MCU 限位、看门狗或急停(E-STOP)。
+**HYDRA-UMC-BRIDGE-UAV** 是 HYDRA-UMC 与搭载摄像头的无人机(UAV)之间的高层协调边界,可通过 Wi-Fi、无线电链路或蜂窝(4G/5G)遥测连接访问。它校验并转发一套小型的、具名的高层飞行请求词汇(`ARM`、`TAKEOFF`、`GOTO_WAYPOINT`、`HOVER_AND_CAPTURE`、`RETURN_TO_LAUNCH`),并单独运行一个真实的、强制性的链路丢失心跳(heartbeat)看门狗。它从不计算飞行控制或姿态稳定,也不能绕过 HYDRA-UMC-SERVER、MCU 限位、看门狗或急停(E-STOP)。 目前来自飞行器的唯一回传路径是命令确认(`COMMAND_ACK`);不读取遥测数据。
 
 它与 `HYDRA-UMC-BRIDGE-DROIDS` 和 `HYDRA-UMC-BRIDGE-AMR` 同属 **Mobile & Autonomous Bridges** 家族,并与固定式的 **External Automation Bridges**(CNC、LASER、OPENPNP、PRINTER3D、ROS2)共享同一个 `HYDRA-UMC-SDK` 任务与安全契约。
 
 ### 核心特性:
 * ✅ **真实的无依赖飞行请求核心:** `coordinator.py` 中的 `UavCoordinator` 完全没有导入 MAVLink 或任何厂商 SDK——它刻意保持为纯 Python,可以在任何主机上测试,无需连接真实的 UAV。*(已实现,并在 `tests/test_coordinator.py` 中测试)*
 * ✅ **真实的具名飞行请求词汇:** `ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`, `LAND`——绝不是原始的姿态/油门命令。正常任务的 `COMPLETE` 与紧急的 `ABORT` 都会解析为同一个真实的 `RETURN_TO_LAUNCH` 请求。`LAND` 是真实且确实不同的——MAVLink 自身的 `MAV_CMD_NAV_LAND` 与 `MAV_CMD_NAV_RETURN_TO_LAUNCH`(已对照[官方 MAVLink common 消息集](https://mavlink.io/en/messages/common.html)核实)——用于仅靠 RTL 无法覆盖的真实情形:立即下降,而不是先飞回家(例如电池电量过低,或返航路径不安全)。`emergency_land_request()` 将其作为独立请求提供,有意置于由 `JobPhase` 驱动的 `dispatch()` 流程之外——理由与 `HeartbeatMonitor` 自身独立的信号相同。*(已实现)*
-* ✅ **一个真实的、强制性的链路丢失心跳看门狗:** `HeartbeatMonitor` 是一个确定性的、由显式 `now` 驱动的故障保护状态机——它从不读取真实时钟,如果从未收到过观测就会从第一次检查开始就报告 `LOST`,并把恰好等于超时时刻的情况仍视为 `OK`(只有真正超出超时才会触发配置好的 `RETURN_TO_LAUNCH`/悬停故障保护)。*(已实现,并在 `tests/test_heartbeat.py` 中通过一整套确定性边界测试进行了测试)*
+* ✅ **一个真实的、强制性的链路丢失心跳看门狗:** `HeartbeatMonitor` 是一个确定性的、由显式 `now` 驱动的故障保护状态机——它从不读取真实时钟,如果从未收到过观测就会从第一次检查开始就报告 `LOST`,并把恰好等于超时时刻的情况仍视为 `OK`(只有真正超出超时才会触发配置好的 `RETURN_TO_LAUNCH`/`LAND` 故障保护)。*(已实现,并在 `tests/test_heartbeat.py` 中通过一整套确定性边界测试进行了测试)*
 * ✅ **真实的共享安全门控:** 每个通过 `UavCoordinator.dispatch()` 派发的任务都会由 `HYDRA-UMC-SDK` 的 `bridge_contract` 中的 `evaluate_job()` 评估,这与所有兄弟桥接以及 HYDRA-UMC-SERVER 使用的是同一个门控;生产性阶段需要外部机器处于 `IDLE` 且 HYDRA-UMC 单元处于 `READY`,而 `ABORT` 在故障期间仍可请求。*(已实现)*
 * ✅ **安全拒绝的阶段路由与静态证据:** 未知的未来 SDK 阶段会被拒绝。`inspect_request_plan.py` 会输出静态模式 `1.1` 的飞行请求计划(现已包含独立的 `LAND` 请求),且不会打开任何传输通道。*(已实现,已测试)*
 * ✅ **真实的 MAVLink 命令传输:** `mavlink_transport.py` 的 `MavlinkFlightControl` 将一个已通过门控的派发发送为真实的 `COMMAND_LONG`,映射到真实的、编号的 `MAV_CMD`(`MAV_CMD_NAV_TAKEOFF`/`MAV_CMD_DO_REPOSITION`/`MAV_CMD_NAV_LOITER_UNLIM`/`MAV_CMD_IMAGE_START_CAPTURE`/`MAV_CMD_NAV_RETURN_TO_LAUNCH`/`MAV_CMD_NAV_LAND`/`MAV_CMD_COMPONENT_ARM_DISARM`)——被拒绝的派发永远不会到达网络。*(已实现,并在 `tests/test_mavlink_transport.py` 中测试)*
+* ✅ **明确的高度基准、飞行包线与安全状态请求:** `GOTO_WAYPOINT` 以 `COMMAND_INT` 发出(位置为度 × 1e7,保持当前航向),并带有明确的 `altitude_frame` - `"relative"`(相对起飞点的米数,默认)或 `"amsl"`;可选的 `FlightEnvelope`(由部署方设定的高度上限和距起点半径)会拒绝超出范围的目标;`RETURN_TO_LAUNCH`、`LAND` 和独立的 `DISARM`(从不强制)即使被闸门拒绝也会发送,`COMPLETE` 的正常返航无论单元和机器状态如何都会被接受;等待 `COMMAND_ACK` 时会跳过其他命令和其他系统的确认,并把 `IN_PROGRESS` 视为尚未完成。*(已实现,已测试;线上格式仅针对模拟器验证 - 从未针对 PX4/ArduPilot SITL 或真实自驾仪验证,`TAKEOFF` 的高度仍是自驾仪自己的基准,因为 `COMMAND_LONG` 不携带坐标系)*
 * ✅ **非变更式构建/测试:** `build-test.bat`/`.sh` 编译源码并运行确定性单元测试,不改变版本或 CHANGELOG。*(已实现,见下方"构建与运行")*
 * 🔜 **一个 DJI OSDK 传输适配器**(面向非 MAVLink 平台)——只有在选定并测试了该 SDK 之后才会引入。*(计划中)*
 * ✅ **观测到的机器状态：** `UavCoordinator.dispatch()` 接受自动驾驶仪上报的状态，共享闸门使用它而不是作业中写的 `machine_state`（任何人都能在代理上发布的消息）；没有上报时仍使用声明值。*（已实现，已在 `tests/test_observed_state.py` 中测试）*
@@ -49,12 +50,12 @@ GPL-3.0-or-later - see LICENSE
 
 ```mermaid
 flowchart LR
-    UAV["搭载摄像头的 UAV<br/>(Wi-Fi / 无线电 / 4G-5G 遥测)"] -- "飞行请求" --> BRIDGE["BRIDGE-UAV<br/>UavCoordinator.dispatch()"]
+    BRIDGE["BRIDGE-UAV<br/>UavCoordinator.dispatch()"] -- "MAVLink" --> UAV["搭载摄像头的 UAV<br/>(Wi-Fi / 无线电 / 4G-5G 遥测)"]
+    UAV -- "COMMAND_ACK" --> BRIDGE
     UAV -- "心跳" --> HB["HeartbeatMonitor<br/>.observe() / .state()"]
     HB -- "LOST -> failsafe_action" --> BRIDGE
     BRIDGE -- BridgeJob --> SDK["HYDRA-UMC-SDK<br/>evaluate_job()"]
-    SDK -- GateDecision --> SERVER["HYDRA-UMC-SERVER"]
-    SERVER -- "任务 / 中止" --> MCU["MCU 安全"]
+    SDK -- GateDecision --> BRIDGE
 ```
 
 ---
@@ -65,7 +66,7 @@ flowchart LR
 * **为什么 `HeartbeatMonitor` 接收显式的 `now`,而不是读取真实时钟。** 本项目起步时所依据的架构笔记明确指出,一个 UAV 桥接必须(REQUIRES)具备这个看门狗——要证明它在超时边界上的精确行为(而不只是"它最终会超时"),唯一的办法就是不依赖一个基于真实 sleep、缓慢且不稳定的测试套件,而是把时间变成一个显式的、可测试的输入。
 * **为什么 `COMPLETE` 和 `ABORT` 都会解析为 `RETURN_TO_LAUNCH`。** 对一台 UAV 而言,完成任务和紧急中止有着相同的真实正确结果:回家。在静态计划中把它们收敛为同一个请求名称(去重,而不是重复列出),诚实地反映了这一点,而不是发明两个不同的"回家"动词。
 * **为什么本桥接自身的心跳明确地不能替代飞控自身的故障保护。** Pixhawk/PX4 和 DJI 自身的固件已经在无线电/遥测层面实现了真实的、近乎经过认证的链路丢失故障保护——本桥接的 `HeartbeatMonitor` 是面向 HYDRA-UMC 自身状态的协调层信号,两者必须独立并存;参见 `docs/BRIDGE_GUIDE.md` 自身的硬件验收门控。
-* **为什么 MAVLink/OSDK 传输适配器尚未加入本仓库。** 在选定并测试某个具体飞控真实的命令/遥测协议之前就对其做出承诺,会有引入这个本地无依赖核心无法验证的假设的风险。
+* **为什么本仓库尚无 DJI OSDK 传输适配器。**(MAVLink 传输已存在,见上文。) 在选定并测试某个具体飞控真实的命令/遥测协议之前就对其做出承诺,会有引入这个本地无依赖核心无法验证的假设的风险。
 * **它如何融入整个生态系统。** BRIDGE-UAV 位于真实的 UAV 与 `HYDRA-UMC-SDK` → `HYDRA-UMC-SERVER` → MCU 安全之间——它是一个协调边界,绝不是飞行控制节点,也不能绕过 HYDRA-UMC-SERVER、MCU 限位、看门狗或急停。
 
 ---
@@ -79,7 +80,7 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── __init__.py
 │       ├── coordinator.py       # UavCoordinator:无依赖的飞行请求门控
 │       ├── heartbeat.py         # HeartbeatMonitor:真实的、确定性的链路丢失故障保护
-│       ├── mavlink_transport.py # 将已验证的 UavDispatch 作为真实的 MAVLink COMMAND_LONG 发送
+│       ├── mavlink_transport.py # 将已验证的 UavDispatch 作为真实的 MAVLink COMMAND_LONG / COMMAND_INT 发送
 │       └── simulated_uav.py     # 飞行状态表 + 模拟飞行器:遥测、授权与解锁相互分离,无传输
 ├── tests/
 │   ├── test_coordinator.py      # 协调核心的确定性单元测试
@@ -124,13 +125,13 @@ bash build-test.sh
 bash build.sh
 ```
 
-`build-test` 使用 `py_compile` 编译 `src/` 下的每个模块,并运行完整的 `unittest` 套件(`tests/test_coordinator.py`、`tests/test_heartbeat.py`)——以确定性的方式进行,没有真实 UAV 连接,没有网络,也不会改变版本/CHANGELOG。`build` 会先运行同样的验证,只有成功后才调用 `tools/bump_version.py`,在 `pyproject.toml`、`hydra-umc.project.json` 和 `CHANGELOG.md` 之间同步版本号。目前尚无真正的硬件 `run` 命令——这需要经过验证的 MAVLink/OSDK 传输适配器和真实的 UAV。
+`build-test` 使用 `py_compile` 编译 `src/` 下的每个模块,并运行完整的 `unittest` 套件(`tests/` 下的所有 `test_*.py` 文件)——以确定性的方式进行,没有真实 UAV 连接,没有网络,也不会改变版本/CHANGELOG。`build` 会先运行同样的验证,只有成功后才调用 `tools/bump_version.py`,在 `pyproject.toml`、`hydra-umc.project.json` 和 `CHANGELOG.md` 之间同步版本号。目前尚无真正的硬件 `run` 命令——这需要经过验证的 MAVLink/OSDK 传输适配器和真实的 UAV。
 
 ---
 
 ## ✅ 当前状态与后续步骤
 
-**目前真实的部分:** 版本 `0.1.0`,作为一个无依赖协调核心(`UavCoordinator`)是功能齐备的,并配有一个真实的、经过完整边界测试的链路丢失心跳看门狗(`HeartbeatMonitor`)、安全拒绝的阶段路由、静态 `plan-only` 飞行请求模式、一个将每个请求映射到其真实编号 `MAV_CMD` 的真实 MAVLink 命令传输(`MavlinkFlightControl`)——解锁现在要求字面上的布尔值 `confirm_arm is True`(绝不接受仅仅为真的值,例如字符串 `'false'`),每一个数值型飞行参数在做任何有限性/范围检查之前都会先被确认为真正的非布尔数字,并且发送的命令只有在收到带 `MAV_RESULT_ACCEPTED` 的真实 `COMMAND_ACK` 后才会被视为已确认——以及已接入 CI 并带 SDK 检出的非变更式 build-test 脚本。
+**目前真实的部分:** 版本 `0.1.1`,作为一个无依赖协调核心(`UavCoordinator`)是功能齐备的,并配有一个真实的、经过完整边界测试的链路丢失心跳看门狗(`HeartbeatMonitor`)、安全拒绝的阶段路由、静态 `plan-only` 飞行请求模式、一个将每个请求映射到其真实编号 `MAV_CMD` 的真实 MAVLink 命令传输(`MavlinkFlightControl`)——解锁现在要求字面上的布尔值 `confirm_arm is True`(绝不接受仅仅为真的值,例如字符串 `'false'`),每一个数值型飞行参数在做任何有限性/范围检查之前都会先被确认为真正的非布尔数字,并且发送的命令只有在收到带 `MAV_RESULT_ACCEPTED` 的真实 `COMMAND_ACK` 后才会被视为已确认——以及已接入 CI 并带 SDK 检出的非变更式 build-test 脚本。
 
 **集成边界:** 本桥接只是一个协调边界——它不是飞行控制节点,也不能绕过 HYDRA-UMC-SERVER、MCU 限位、看门狗或急停;每个被派发的任务仍然要经过所有兄弟桥接使用的同一个共享门控。`HeartbeatMonitor` 自身的故障保护信号是协调层的事务,绝不能替代飞控自身独立的链路丢失故障保护。
 

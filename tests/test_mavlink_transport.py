@@ -13,10 +13,11 @@ of pymavlink - only open_mavlink_connection() itself needs it, and it
 isn't exercised here.
 """
 
+import math
 import unittest
 
 from hydra_umc_bridge_uav import BridgeJob, CellState, JobPhase, MachineState, UavCoordinator, UavDispatch
-from hydra_umc_bridge_uav.mavlink_transport import MavlinkFlightControl
+from hydra_umc_bridge_uav.mavlink_transport import FlightEnvelope, MavlinkFlightControl
 
 
 class FakeAck:
@@ -40,6 +41,8 @@ class FakeMavlinkSink:
 
     def __init__(self):
         self.sent: list[tuple] = []
+        self.sent_int: list[tuple] = []
+        self.queued_acks: list[object] = []  # delivered before the default ack
         self.raise_on_send: OSError | None = None
         self.raise_on_recv: OSError | None = None
         self.next_ack_result: int | None = 0  # MAV_RESULT_ACCEPTED by default
@@ -51,12 +54,19 @@ class FakeMavlinkSink:
             raise self.raise_on_send
         self.sent.append((target_system, target_component, command, confirmation, params))
 
+    def command_int_send(self, target_system, target_component, frame, command, current, autocontinue, *params):
+        if self.raise_on_send:
+            raise self.raise_on_send
+        self.sent_int.append((target_system, target_component, frame, command, current, autocontinue, params))
+
     def recv_match(self, type, blocking, timeout):
         if self.raise_on_recv:
             raise self.raise_on_recv
-        if self.ack_timeout or not self.sent:
+        if self.queued_acks:
+            return self.queued_acks.pop(0)
+        if self.ack_timeout or not (self.sent or self.sent_int):
             return None
-        last_command = self.sent[-1][2]
+        last_command = self.sent[-1][2] if self.sent else self.sent_int[-1][3]
         ack_command = last_command if self.next_ack_command == "same-as-sent" else self.next_ack_command
         return FakeAck(ack_command, self.next_ack_result)
 
@@ -148,11 +158,70 @@ class MavlinkFlightControlTests(unittest.TestCase):
             self.sink, 1, 1, dispatch, waypoint_lat=47.3977, waypoint_lon=8.5456, waypoint_alt_m=30.0
         )
         self.assertTrue(result.sent)
-        _, _, command, _, params = self.sink.sent[0]
+        self.assertEqual(self.sink.sent, [])  # a positional command is a COMMAND_INT, never a float32 COMMAND_LONG
+        _, _, frame, command, _, _, params = self.sink.sent_int[0]
         self.assertEqual(command, 192)
-        self.assertEqual(params[4], 47.3977)  # param5 = lat
-        self.assertEqual(params[5], 8.5456)  # param6 = lon
-        self.assertEqual(params[6], 30.0)  # param7 = alt
+        self.assertEqual(frame, 6)  # MAV_FRAME_GLOBAL_RELATIVE_ALT_INT: 30 m above the takeoff point
+        self.assertEqual(params[4], 473977000)  # x = lat * 1e7
+        self.assertEqual(params[5], 85456000)  # y = lon * 1e7
+        self.assertEqual(params[6], 30.0)  # z = alt
+        self.assertTrue(math.isnan(params[3]))  # yaw: keep the heading, 0 would turn the vehicle north
+
+    def test_goto_waypoint_can_name_an_amsl_altitude_explicitly(self):
+        dispatch = UavDispatch(True, "GOTO_WAYPOINT", "cell and external machine are ready")
+        result = self.control.send(
+            self.sink, 1, 1, dispatch, waypoint_lat=40.0, waypoint_lon=-3.0, waypoint_alt_m=680.0, altitude_frame="amsl"
+        )
+        self.assertTrue(result.sent)
+        self.assertEqual(self.sink.sent_int[0][2], 5)  # MAV_FRAME_GLOBAL_INT
+
+    def test_an_unknown_altitude_frame_is_refused_before_any_send(self):
+        dispatch = UavDispatch(True, "GOTO_WAYPOINT", "cell and external machine are ready")
+        for frame in ("agl", "", None, 6):
+            with self.subTest(frame=frame):
+                result = self.control.send(
+                    self.sink, 1, 1, dispatch, waypoint_lat=40.0, waypoint_lon=-3.0, waypoint_alt_m=30.0, altitude_frame=frame
+                )
+                self.assertFalse(result.sent)
+        self.assertEqual(self.sink.sent_int, [])
+
+    def test_the_flight_envelope_limits_altitude_and_distance_from_home(self):
+        envelope = FlightEnvelope(max_altitude_m=50.0, max_radius_m=1000.0, home_lat=40.0, home_lon=-3.0)
+        dispatch = UavDispatch(True, "GOTO_WAYPOINT", "cell and external machine are ready")
+        inside = self.control.send(
+            self.sink, 1, 1, dispatch, waypoint_lat=40.001, waypoint_lon=-3.0, waypoint_alt_m=30.0, envelope=envelope
+        )
+        self.assertTrue(inside.sent, inside.reason)
+        for lat, lon, alt in ((40.001, -3.0, 51.0), (40.5, -3.0, 30.0), (40.0, -2.5, 30.0)):
+            with self.subTest(lat=lat, lon=lon, alt=alt):
+                refused = self.control.send(
+                    self.sink, 1, 1, dispatch, waypoint_lat=lat, waypoint_lon=lon, waypoint_alt_m=alt, envelope=envelope
+                )
+                self.assertFalse(refused.sent)
+                self.assertIn("envelope", refused.reason)
+        self.assertEqual(len(self.sink.sent_int), 1)
+
+    def test_the_flight_envelope_also_caps_the_takeoff_altitude_and_needs_a_relative_waypoint(self):
+        envelope = FlightEnvelope(max_altitude_m=50.0, max_radius_m=1000.0, home_lat=40.0, home_lon=-3.0)
+        takeoff = UavDispatch(True, "TAKEOFF", "cell and external machine are ready")
+        self.assertFalse(self.control.send(self.sink, 1, 1, takeoff, takeoff_altitude_m=80.0, envelope=envelope).sent)
+        self.assertTrue(self.control.send(self.sink, 1, 1, takeoff, takeoff_altitude_m=40.0, envelope=envelope).sent)
+        goto = UavDispatch(True, "GOTO_WAYPOINT", "cell and external machine are ready")
+        refused = self.control.send(
+            self.sink, 1, 1, goto, waypoint_lat=40.0, waypoint_lon=-3.0, waypoint_alt_m=30.0,
+            altitude_frame="amsl", envelope=envelope,
+        )
+        self.assertFalse(refused.sent)
+
+    def test_a_flight_envelope_with_nonsense_limits_cannot_be_built(self):
+        for kwargs in (
+            {"max_altitude_m": 0.0}, {"max_altitude_m": float("nan")}, {"max_radius_m": -1.0},
+            {"max_radius_m": True}, {"home_lat": 91.0}, {"home_lon": float("inf")},
+        ):
+            with self.subTest(**kwargs):
+                base = {"max_altitude_m": 50.0, "max_radius_m": 1000.0, "home_lat": 40.0, "home_lon": -3.0}
+                with self.assertRaises(ValueError):
+                    FlightEnvelope(**{**base, **kwargs})
 
     def test_goto_waypoint_without_coordinates_is_rejected_before_any_send(self):
         dispatch = UavDispatch(True, "GOTO_WAYPOINT", "cell and external machine are ready")
@@ -188,6 +257,37 @@ class MavlinkFlightControlTests(unittest.TestCase):
         self.assertTrue(result.sent)
         self.assertEqual(result.commands, (17, 2000))
         self.assertEqual([entry[2] for entry in self.sink.sent], [17, 2000])
+        loiter_params, capture_params = self.sink.sent[0][4], self.sink.sent[1][4]
+        self.assertTrue(math.isnan(loiter_params[3]))  # keep the heading
+        self.assertEqual(capture_params[:3], (0, 0, 1))  # one image; 0 would mean "capture until stopped"
+
+    def test_the_capture_goes_to_the_camera_component_when_one_is_given(self):
+        dispatch = UavDispatch(True, "HOVER_AND_CAPTURE", "cell and external machine are ready")
+        self.control.send(self.sink, 1, 1, dispatch, camera_component=100)
+        self.assertEqual([entry[1] for entry in self.sink.sent], [1, 100])
+
+    def test_disarm_is_sent_not_forced_and_even_when_the_dispatch_carries_a_refusal(self):
+        for dispatch in (UavCoordinator().disarm_request(), UavDispatch(False, "DISARM", "refused upstream")):
+            self.sink.sent.clear()
+            result = self.control.send(self.sink, 1, 1, dispatch)
+            self.assertTrue(result.sent, result.reason)
+            _, _, command, _, params = self.sink.sent[0]
+            self.assertEqual((command, params[0], params[1]), (400, 0, 0))  # arm=0, force=0
+
+    def test_a_return_to_launch_and_a_land_are_sent_even_when_the_dispatch_carries_a_refusal(self):
+        for request, command in (("RETURN_TO_LAUNCH", 20), ("LAND", 21)):
+            with self.subTest(request=request):
+                self.sink.sent.clear()
+                result = self.control.send(self.sink, 1, 1, UavDispatch(False, request, "refused upstream"))
+                self.assertTrue(result.sent, result.reason)
+                self.assertEqual(self.sink.sent[0][2], command)
+
+    def test_a_refused_dispatch_of_any_other_request_still_never_reaches_the_network(self):
+        for request in ("ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE"):
+            with self.subTest(request=request):
+                result = self.control.send(self.sink, 1, 1, UavDispatch(False, request, "refused"), confirm_arm=True)
+                self.assertFalse(result.sent)
+        self.assertEqual((self.sink.sent, self.sink.sent_int), ([], []))
 
     def test_return_to_launch_sends_the_real_rtl_command(self):
         dispatch = UavDispatch(True, "RETURN_TO_LAUNCH", "cell and external machine are ready")
@@ -245,9 +345,36 @@ class MavlinkFlightControlTests(unittest.TestCase):
         # for confirmation of the one just sent.
         self.sink.next_ack_command = 999  # doesn't match any command this bridge sends
         dispatch = UavDispatch(True, "LAND", "emergency land requested")
-        result = self.control.send(self.sink, 1, 1, dispatch)
+        result = self.control.send(self.sink, 1, 1, dispatch, ack_timeout_seconds=0.05)
         self.assertFalse(result.sent)
         self.assertIn("stale or mismatched ack", result.reason)
+
+    def test_an_ack_of_another_command_is_skipped_and_the_real_one_that_follows_is_used(self):
+        # The link is shared with a ground station and a camera: an ACK that is not ours must not fail the command.
+        self.sink.queued_acks = [FakeAck(400, 0)]  # e.g. a late ACK of an earlier arm
+        dispatch = UavDispatch(True, "LAND", "emergency land requested")
+        result = self.control.send(self.sink, 1, 1, dispatch)
+        self.assertTrue(result.sent, result.reason)
+
+    def test_an_ack_from_another_system_is_skipped(self):
+        class ForeignAck(FakeAck):
+            def get_srcSystem(self):
+                return 255  # the ground station
+
+        self.sink.queued_acks = [ForeignAck(21, 4)]  # a "failed" for the same command, from someone else
+        dispatch = UavDispatch(True, "LAND", "emergency land requested")
+        result = self.control.send(self.sink, 1, 1, dispatch)
+        self.assertTrue(result.sent, result.reason)
+
+    def test_in_progress_waits_for_the_final_ack_and_without_one_is_not_a_success(self):
+        self.sink.queued_acks = [FakeAck(21, 5)]  # MAV_RESULT_IN_PROGRESS, then the default accepted ACK
+        dispatch = UavDispatch(True, "LAND", "emergency land requested")
+        self.assertTrue(self.control.send(self.sink, 1, 1, dispatch).sent)
+
+        self.sink.next_ack_result = 5
+        stuck = self.control.send(self.sink, 1, 1, dispatch, ack_timeout_seconds=0.05)
+        self.assertFalse(stuck.sent)
+        self.assertIn("in progress", stuck.reason)
 
     def test_end_to_end_through_the_real_coordinator_gate_before_sending(self):
         job = BridgeJob("job-1", "idempotency-1", "uav-1", JobPhase.LOAD, MachineState.IDLE, {})

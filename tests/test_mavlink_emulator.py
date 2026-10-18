@@ -80,6 +80,31 @@ class BridgeAgainstMavlinkAutopilotTests(unittest.TestCase):
         self._send("GOTO_WAYPOINT", waypoint_lat=40.0, waypoint_lon=-3.0, waypoint_alt_m=15.0)
         self.assertEqual(self.fc.last_ack["result"], RESULT_ACCEPTED)
 
+    def test_the_reposition_reaches_the_autopilot_as_a_command_int_with_a_known_frame_and_exact_position(self) -> None:
+        self._send("ARM", confirm_arm=True)
+        self._send("TAKEOFF")
+        self.fc.step()
+        result = self._send("GOTO_WAYPOINT", waypoint_lat=40.4167754, waypoint_lon=-3.7037902, waypoint_alt_m=15.0)
+        self.assertTrue(result.sent, result.reason)
+        self.assertEqual(self.fc.last_position_int["frame"], 6)
+        self.assertEqual((self.fc.last_position_int["x"], self.fc.last_position_int["y"]), (404167754, -37037902))
+
+    def test_a_reposition_sent_as_a_command_long_is_unsupported_like_on_ardupilot(self) -> None:
+        self.fc.command_long_send(1, 1, 192, 0, -1, 0, 0, 0, 40.0, -3.0, 15.0)
+        self.assertEqual(self.fc.last_ack["result"], RESULT_UNSUPPORTED)
+
+    def test_disarm_on_the_ground_is_accepted_and_in_flight_is_denied_by_the_autopilot(self) -> None:
+        self._send("ARM", confirm_arm=True)
+        self.assertTrue(self._send("DISARM").sent)
+        self.assertFalse(self.fc.armed)
+
+        self._send("ARM", confirm_arm=True)
+        self._send("TAKEOFF")
+        self.fc.step()
+        flying = self._send("DISARM")
+        self.assertFalse(flying.sent)
+        self.assertTrue(self.fc.armed)
+
     def test_hover_and_capture_sends_loiter_then_image_start_capture_both_accepted(self) -> None:
         self._send("ARM", confirm_arm=True)
         self._send("TAKEOFF")

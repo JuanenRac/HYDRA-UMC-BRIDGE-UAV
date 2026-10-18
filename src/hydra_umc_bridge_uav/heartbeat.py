@@ -28,6 +28,10 @@ from enum import Enum
 import math
 
 
+# The requests the MAVLink transport can actually send as a link-loss response.
+FAILSAFE_ACTIONS = frozenset({"RETURN_TO_LAUNCH", "LAND"})
+
+
 class LinkStatus(str, Enum):
     OK = "OK"
     LOST = "LOST"
@@ -39,7 +43,7 @@ class HeartbeatState:
     seconds_since_last_heartbeat: float
     # The real action this bridge would request if a transport adapter
     # existed - RETURN_TO_LAUNCH by default (see UavCoordinator's own
-    # ABORT mapping), configurable to a hover-in-place policy instead.
+    # ABORT mapping), or LAND to come down where the vehicle is.
     failsafe_action: str | None
 
 
@@ -54,6 +58,8 @@ class HeartbeatMonitor:
     def __init__(self, timeout_s: float, failsafe_action: str = "RETURN_TO_LAUNCH") -> None:
         if not math.isfinite(timeout_s) or timeout_s <= 0:
             raise ValueError("timeout_s must be a finite, positive number of seconds")
+        if failsafe_action not in FAILSAFE_ACTIONS:
+            raise ValueError(f"failsafe_action must be one of {sorted(FAILSAFE_ACTIONS)}, got {failsafe_action!r}")
         self._timeout_s = timeout_s
         self._failsafe_action = failsafe_action
         self._last_heartbeat_at: float | None = None

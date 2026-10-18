@@ -24,7 +24,11 @@ numeric IDs (github.com/mavlink/mavlink common message set):
   * ``NAV_TAKEOFF`` (22) -> climbing to param7 metres, but ``DENIED`` while
     disarmed.
   * ``DO_REPOSITION`` (192) / ``NAV_LOITER_UNLIM`` (17) -> moving / hovering,
-    ``TEMPORARILY_REJECTED`` while still on the ground.
+    ``TEMPORARILY_REJECTED`` while still on the ground. A reposition is only
+    understood as a ``COMMAND_INT`` (as ArduPilot does): by ``COMMAND_LONG`` it
+    is ``MAV_RESULT_UNSUPPORTED``. A ``COMMAND_INT`` must name an altitude frame
+    this emulator knows (global or global-relative), and the position arrives
+    as degrees * 1e7, kept in ``last_position_int``.
   * ``NAV_RETURN_TO_LAUNCH`` (20) / ``NAV_LAND`` (21) -> returning / landing;
     ``step()`` finishes the descent and auto-disarms on the ground.
   * ``IMAGE_START_CAPTURE`` (2000) -> accepted (payload command).
@@ -92,6 +96,7 @@ class MavlinkFlightControllerEmulator:
         self.battery_pct = 92.0
         self.prearm_ok = True
         self.failsafe_active = False
+        self.last_position_int: dict | None = None
         self.acks: list[dict] = []
         self.commands: list[tuple[int, tuple[float, ...]]] = []
         self._pending_acks: list["_Ack"] = []
@@ -145,6 +150,42 @@ class MavlinkFlightControllerEmulator:
         self._pending_acks.append(_Ack(command, result))
         return ack  # a real link returns nothing here; the ACK arrives as its own message
 
+    def command_int_send(
+        self,
+        target_system: int,
+        target_component: int,
+        frame: int,
+        command: int,
+        current: int,
+        autocontinue: int,
+        param1: float,
+        param2: float,
+        param3: float,
+        param4: float,
+        x: int,
+        y: int,
+        z: float,
+    ) -> object:
+        params = (param1, param2, param3, param4, x, y, z)
+        self.commands.append((command, params))
+        if frame not in (5, 6):
+            result = RESULT_DENIED  # an altitude frame this emulator does not know
+        else:
+            self.last_position_int = {"frame": frame, "x": x, "y": y, "z": z, "yaw": param4}
+            result = self._process_int(command, params)
+        ack = {"command": command, "result": result}
+        self.acks.append(ack)
+        self._pending_acks.append(_Ack(command, result))
+        return ack
+
+    def _process_int(self, command: int, params: tuple[float, ...]) -> int:
+        if command == _CMD_DO_REPOSITION:
+            if self.flight_phase not in ("FLYING", "HOVERING"):
+                return RESULT_TEMPORARILY_REJECTED
+            self.flight_phase = "FLYING"
+            return RESULT_ACCEPTED
+        return RESULT_UNSUPPORTED
+
     @property
     def last_ack(self) -> dict:
         return self.acks[-1]
@@ -191,10 +232,7 @@ class MavlinkFlightControllerEmulator:
             return RESULT_ACCEPTED
 
         if command == _CMD_DO_REPOSITION:
-            if self.flight_phase not in ("FLYING", "HOVERING"):
-                return RESULT_TEMPORARILY_REJECTED
-            self.flight_phase = "FLYING"
-            return RESULT_ACCEPTED
+            return RESULT_UNSUPPORTED  # only understood as a COMMAND_INT, see the module docstring
 
         if command == _CMD_NAV_LOITER_UNLIM:
             if self.flight_phase not in ("FLYING", "HOVERING"):

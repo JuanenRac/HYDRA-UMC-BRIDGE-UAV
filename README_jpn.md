@@ -22,23 +22,24 @@ GPL-3.0-or-later - see LICENSE
 
 ---
 
-> **誠実性チェック - 今日実際に動くもの:** 依存関係のないフライトリクエストコア（`coordinator.py` の `UavCoordinator`。すべてのディスパッチは `HYDRA-UMC-SDK` 自身の本物の `evaluate_job()` を通過する）、決定論的なリンク断ハートビートウォッチドッグ（`heartbeat.py` の `HeartbeatMonitor`）、および本物の MAVLink コマンドトランスポート（`mavlink_transport.py` の `MavlinkFlightControl`）は本物であり、64件の通過するユニットテストで検証されている（`python tools/build_test.py` - `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`、および実際のものではなくプロトコルに忠実な手書きの MAVLink オートパイロットエミュレータに対してブリッジを動かす `test_mavlink_emulator.py`）。これらはいずれも、本物の `pymavlink` インストール、本物の無線・テレメトリーリンク、あるいは物理的な UAV・フライトコントローラに対しては検証されていない - `test_mavlink_transport.py` 独自の模擬 MAVLink 接続が `pymavlink` を完全に置き換えており（本物のライブラリがインストールされていなくてもこれらのテストは通過する）、実際の MAVLink・OSDK トランスポートがまだ選定・検証されていないため、実機向けの `run` コマンドもまだ存在しない。詳細は下記の「現状と次のステップ」に既に明記されており、これまでに実際に出荷された内容は `CHANGELOG.md` を参照。
+> **誠実性チェック - 今日実際に動くもの:** 依存関係のないフライトリクエストコア（`coordinator.py` の `UavCoordinator`。すべてのディスパッチは `HYDRA-UMC-SDK` 自身の本物の `evaluate_job()` を通過する）、決定論的なリンク断ハートビートウォッチドッグ（`heartbeat.py` の `HeartbeatMonitor`）、および本物の MAVLink コマンドトランスポート（`mavlink_transport.py` の `MavlinkFlightControl`）は本物であり、84件の通過するユニットテストで検証されている（`python tools/build_test.py` - `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`、および実際のものではなくプロトコルに忠実な手書きの MAVLink オートパイロットエミュレータに対してブリッジを動かす `test_mavlink_emulator.py`）。これらはいずれも、本物の `pymavlink` インストール、本物の無線・テレメトリーリンク、あるいは物理的な UAV・フライトコントローラに対しては検証されていない - `test_mavlink_transport.py` 独自の模擬 MAVLink 接続が `pymavlink` を完全に置き換えており（本物のライブラリがインストールされていなくてもこれらのテストは通過する）、実際の MAVLink・OSDK トランスポートがまだ選定・検証されていないため、実機向けの `run` コマンドもまだ存在しない。詳細は下記の「現状と次のステップ」に既に明記されており、これまでに実際に出荷された内容は `CHANGELOG.md` を参照。
 
 ---
 
 ## 1. 🛠️ 技術概要
 
-**HYDRA-UMC-BRIDGE-UAV** は、HYDRA-UMCとカメラ搭載ドローン(UAV)との間の双方向・高レベルの連携境界であり、Wi-Fi、無線リンク、またはセルラー(4G/5G)テレメトリ接続経由で到達可能である。小規模で命名された高レベルの飛行リクエストの語彙(`ARM`、`TAKEOFF`、`GOTO_WAYPOINT`、`HOVER_AND_CAPTURE`、`RETURN_TO_LAUNCH`)を検証・転送し、それとは別に実在する必須のリンク喪失ハートビート・ウォッチドッグを実行する。飛行制御や姿勢安定化を計算することは一切なく、HYDRA-UMC-SERVER、MCUの限界、ウォッチドッグ、E-STOPを迂回することはできない。
+**HYDRA-UMC-BRIDGE-UAV** は、HYDRA-UMCとカメラ搭載ドローン(UAV)との間の高レベルの連携境界であり、Wi-Fi、無線リンク、またはセルラー(4G/5G)テレメトリ接続経由で到達可能である。小規模で命名された高レベルの飛行リクエストの語彙(`ARM`、`TAKEOFF`、`GOTO_WAYPOINT`、`HOVER_AND_CAPTURE`、`RETURN_TO_LAUNCH`)を検証・転送し、それとは別に実在する必須のリンク喪失ハートビート・ウォッチドッグを実行する。飛行制御や姿勢安定化を計算することは一切なく、HYDRA-UMC-SERVER、MCUの限界、ウォッチドッグ、E-STOPを迂回することはできない。 現時点で機体からの戻り経路はコマンドの確認応答(`COMMAND_ACK`)のみで、テレメトリは読み取らない。
 
 `HYDRA-UMC-BRIDGE-DROIDS` および `HYDRA-UMC-BRIDGE-AMR` とともに **Mobile & Autonomous Bridges** ファミリーに属し、静的な **External Automation Bridges**(CNC、LASER、OPENPNP、PRINTER3D、ROS2)と同じ `HYDRA-UMC-SDK` のジョブ・安全契約を共有している。
 
 ### 主な機能:
 * ✅ **実在する依存関係なしの飛行リクエストコア:** `coordinator.py` の `UavCoordinator` はMAVLinkやベンダーSDKのインポートが一切ない —— 意図的に純粋なPythonであり、実際のUAVが接続されていないどのホストでもテスト可能である。*(実装済み、`tests/test_coordinator.py` でテスト済み)*
 * ✅ **実在する命名済み飛行リクエスト語彙:** `ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`, `LAND` - 生の姿勢/スロットルコマンドは決して使いません。通常のミッション `COMPLETE` と緊急の `ABORT` は、どちらも同じ実在の `RETURN_TO_LAUNCH` リクエストに解決されます。`LAND` は実在し、明確に別物です - MAVLink 自身の `MAV_CMD_NAV_LAND` 対 `MAV_CMD_NAV_RETURN_TO_LAUNCH`([公式 MAVLink common メッセージセット](https://mavlink.io/en/messages/common.html)で確認済み)- RTL だけでは対応できない実際のケース、つまり先に帰還せずすぐ降下する場合(例: バッテリー残量が少なすぎる、または帰路が安全でない)のためです。`emergency_land_request()` は単独のリクエストとして提供され、`JobPhase` 駆動の `dispatch()` フローの外に意図的に置かれています - `HeartbeatMonitor` の独立したシグナルと同じ考え方です。*(実装済み)*
-* ✅ **実在する必須のリンク喪失ハートビート・ウォッチドッグ:** `HeartbeatMonitor` は、明示的な `now` によって駆動される決定論的なフェイルセーフ状態機械である —— 実際の時計を読み取ることは一切なく、一度も観測されなければ最初のチェックから `LOST` を報告し、タイムアウトちょうどの瞬間はまだ `OK` として扱う(真に超過した場合のみ、設定された `RETURN_TO_LAUNCH`/ホバーのフェイルセーフが発動する)。*(実装済み、`tests/test_heartbeat.py` で決定論的な境界値の完全なスイートによりテスト済み)*
+* ✅ **実在する必須のリンク喪失ハートビート・ウォッチドッグ:** `HeartbeatMonitor` は、明示的な `now` によって駆動される決定論的なフェイルセーフ状態機械である —— 実際の時計を読み取ることは一切なく、一度も観測されなければ最初のチェックから `LOST` を報告し、タイムアウトちょうどの瞬間はまだ `OK` として扱う(真に超過した場合のみ、設定された `RETURN_TO_LAUNCH`/`LAND` のフェイルセーフが発動する)。*(実装済み、`tests/test_heartbeat.py` で決定論的な境界値の完全なスイートによりテスト済み)*
 * ✅ **実在する共有安全ゲート:** `UavCoordinator.dispatch()` を通じて送信されるすべてのジョブは、`HYDRA-UMC-SDK` の `bridge_contract` にある `evaluate_job()` によって評価される。これは他のすべての兄弟ブリッジとHYDRA-UMC-SERVERが使うのと同じゲートである。生産フェーズには外部機械が `IDLE` であり、HYDRA-UMCセルが `READY` であることが必要だが、`ABORT` は故障中でも要求可能なままである。*(実装済み)*
 * ✅ **フェイルクローズのフェーズルーティングと静的エビデンス:** 未知の将来SDKフェーズは拒否される。`inspect_request_plan.py` は、独立した `LAND` リクエストを今や含む静的スキーマ `1.1` の飛行リクエストプランを、トランスポートを一切開かずに出力する。*(実装・テスト済み)*
 * ✅ **実在するMAVLinkコマンドトランスポート:** `mavlink_transport.py` の `MavlinkFlightControl` は、既にゲートを通過したディスパッチを実際の `COMMAND_LONG` として送信し、実際の番号付き `MAV_CMD`(`MAV_CMD_NAV_TAKEOFF`/`MAV_CMD_DO_REPOSITION`/`MAV_CMD_NAV_LOITER_UNLIM`/`MAV_CMD_IMAGE_START_CAPTURE`/`MAV_CMD_NAV_RETURN_TO_LAUNCH`/`MAV_CMD_NAV_LAND`/`MAV_CMD_COMPONENT_ARM_DISARM`)にマッピングする —— 拒否されたディスパッチはネットワークに到達しない。*(実装済み、`tests/test_mavlink_transport.py` でテスト済み)*
+* ✅ **明示的な高度基準、飛行エンベロープ、安全状態への要求:** `GOTO_WAYPOINT` は `COMMAND_INT`(位置は度 × 1e7、機首方位は維持)として送られ、`altitude_frame` を明示します - `"relative"`(離陸地点からのメートル、既定)または `"amsl"`。任意の `FlightEnvelope`(導入先が決める上限高度と原点からの半径)は範囲外を拒否します。`RETURN_TO_LAUNCH`、`LAND`、単独の `DISARM`(強制はしない)はゲートが拒否した場合でも送信され、`COMPLETE` による通常の帰還はセルや機械の状態に関わらず受け入れられます。`COMMAND_ACK` の待機は他のコマンドや他のシステムの応答を読み飛ばし、`IN_PROGRESS` は未完了として扱います。*(実装済み、テスト済み。ワイヤ形式はエミュレーターに対してのみ確認しており、PX4/ArduPilot の SITL や実際のオートパイロットでは未確認です。`TAKEOFF` の高度は `COMMAND_LONG` が基準を持たないため、引き続きオートパイロット自身の基準です)*
 * ✅ **非破壊的なビルド/テスト:** `build-test.bat`/`.sh` はソースをコンパイルし、バージョンやCHANGELOGを変更せずに決定論的なユニットテストを実行する。*(実装済み、下記「ビルドと実行」を参照)*
 * 🔜 **DJI OSDKトランスポートアダプター**(非MAVLinkプラットフォーム向け)—— そのSDKが選定・テストされた後にのみ導入される。*(計画中)*
 * ✅ **観測した機器の状態:** `UavCoordinator.dispatch()` はオートパイロットが報告した状態を受け取り、共有ゲートはジョブに書かれた `machine_state`（ブローカー上の誰でも発行できるメッセージ）の代わりにそれを使います。報告がない場合は従来どおり申告値を使います。*（実装済み、`tests/test_observed_state.py` でテスト済み）*
@@ -49,12 +50,12 @@ GPL-3.0-or-later - see LICENSE
 
 ```mermaid
 flowchart LR
-    UAV["カメラ搭載UAV<br/>(Wi-Fi / 無線 / 4G-5Gテレメトリ)"] -- "飛行リクエスト" --> BRIDGE["BRIDGE-UAV<br/>UavCoordinator.dispatch()"]
+    BRIDGE["BRIDGE-UAV<br/>UavCoordinator.dispatch()"] -- "MAVLink" --> UAV["カメラ搭載UAV<br/>(Wi-Fi / 無線 / 4G-5Gテレメトリ)"]
+    UAV -- "COMMAND_ACK" --> BRIDGE
     UAV -- "ハートビート" --> HB["HeartbeatMonitor<br/>.observe() / .state()"]
     HB -- "LOST -> failsafe_action" --> BRIDGE
     BRIDGE -- BridgeJob --> SDK["HYDRA-UMC-SDK<br/>evaluate_job()"]
-    SDK -- GateDecision --> SERVER["HYDRA-UMC-SERVER"]
-    SERVER -- "ジョブ / 中止" --> MCU["MCU安全"]
+    SDK -- GateDecision --> BRIDGE
 ```
 
 ---
@@ -65,7 +66,7 @@ flowchart LR
 * **なぜ `HeartbeatMonitor` は実際の時計を読み取るのではなく、明示的な `now` を受け取るのか。** 本プロジェクトが出発点とした貼り付けられたアーキテクチャノートは、UAVブリッジがこのウォッチドッグを必須とすることを明示している —— タイムアウト境界での正確な挙動(単に「いずれタイムアウトする」ではなく)を証明する唯一の方法は、不安定で低速な実スリープベースのテストスイートに頼らず、時間を明示的でテスト可能な入力にすることである。
 * **なぜ `COMPLETE` と `ABORT` はどちらも `RETURN_TO_LAUNCH` に解決されるのか。** 完了したミッションと緊急中止は、UAVにとって同じ実在する正しい結果を持つ——帰還することである。静的プランにおいてこれらを同じリクエスト名に統合すること(重複排除であり、繰り返しではない)は、2つの異なる「帰還する」という動詞を発明するのではなく、これを正直に反映している。
 * **なぜこのブリッジ自身のハートビートは、フライトコントローラー自身のフェイルセーフの代替に明示的にならないのか。** Pixhawk/PX4やDJI自身のファームウェアは、無線/テレメトリレベルですでに実在する準認証済みのリンク喪失フェイルセーフを実装している —— このブリッジの `HeartbeatMonitor` はHYDRA-UMC自身の状態のための連携層のシグナルであり、両者は独立して存在しなければならない。`docs/BRIDGE_GUIDE.md` 自身のハードウェア受け入れゲートを参照。
-* **なぜMAVLink/OSDKトランスポートアダプターがまだこのリポジトリにないのか。** 特定のフライトコントローラーの実際のコマンド/テレメトリプロトコルに、それが選定・テストされる前にコミットすることは、この依存関係のないローカルコアが検証できない前提を組み込むリスクを伴う。
+* **なぜDJI OSDKトランスポートアダプターがまだこのリポジトリにないのか。**(MAVLinkトランスポートは上記のとおり存在する。) 特定のフライトコントローラーの実際のコマンド/テレメトリプロトコルに、それが選定・テストされる前にコミットすることは、この依存関係のないローカルコアが検証できない前提を組み込むリスクを伴う。
 * **エコシステムの他部分とどう関係するか。** BRIDGE-UAVは実際のUAVと `HYDRA-UMC-SDK` → `HYDRA-UMC-SERVER` → MCU安全との間に位置する —— 連携境界であり、飛行制御ノードでは決してなく、HYDRA-UMC-SERVER、MCUの限界、ウォッチドッグ、E-STOPを迂回することはできない。
 
 ---
@@ -79,7 +80,7 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── __init__.py
 │       ├── coordinator.py       # UavCoordinator: 依存関係なしの飛行リクエストゲート
 │       ├── heartbeat.py         # HeartbeatMonitor: 実在する決定論的なリンク喪失フェイルセーフ
-│       ├── mavlink_transport.py # 検証済みのUavDispatchを実際のMAVLink COMMAND_LONGとして送信
+│       ├── mavlink_transport.py # 検証済みのUavDispatchを実際のMAVLink COMMAND_LONG / COMMAND_INTとして送信
 │       └── simulated_uav.py     # 飛行状態テーブル + シミュレート機体:テレメトリ・認可・アーム状態を分離、トランスポートなし
 ├── tests/
 │   ├── test_coordinator.py      # 連携コアの決定論的ユニットテスト
@@ -124,13 +125,13 @@ bash build-test.sh
 bash build.sh
 ```
 
-`build-test` は `src/` 配下の各モジュールを `py_compile` でコンパイルし、`unittest` の全スイート(`tests/test_coordinator.py`、`tests/test_heartbeat.py`)を実行する —— 実際のUAV接続もネットワークもなく決定論的に動作し、バージョンやCHANGELOGを変更しない。`build` はまず同じ検証を実行し、成功した場合のみ `tools/bump_version.py` を呼び出して `pyproject.toml`、`hydra-umc.project.json`、`CHANGELOG.md` の間でバージョンを同期する。実際のハードウェア向け `run` コマンドはまだ存在しない —— それには検証済みのMAVLink/OSDKトランスポートアダプターと実際のUAVが必要である。
+`build-test` は `src/` 配下の各モジュールを `py_compile` でコンパイルし、`unittest` の全スイート(`tests/` 配下のすべての `test_*.py`)を実行する —— 実際のUAV接続もネットワークもなく決定論的に動作し、バージョンやCHANGELOGを変更しない。`build` はまず同じ検証を実行し、成功した場合のみ `tools/bump_version.py` を呼び出して `pyproject.toml`、`hydra-umc.project.json`、`CHANGELOG.md` の間でバージョンを同期する。実際のハードウェア向け `run` コマンドはまだ存在しない —— それには検証済みのMAVLink/OSDKトランスポートアダプターと実際のUAVが必要である。
 
 ---
 
 ## ✅ 現状と次のステップ
 
-**現時点で実在するもの:** バージョン `0.1.0`。依存関係なしの連携コア(`UavCoordinator`)に加えて、境界値が完全にテストされた実在するリンク喪失ハートビート・ウォッチドッグ(`HeartbeatMonitor`)、フェイルクローズのフェーズルーティング、静的な `plan-only` 飛行リクエストスキーマ、各リクエストを実際の番号付き `MAV_CMD` にマッピングする実在するMAVLinkコマンドトランスポート(`MavlinkFlightControl`)——武装化には今やリテラルなブール値 `confirm_arm is True` が必須となり(文字列 `'false'` のような単に真値であるだけの値は決して許可されない)、あらゆる数値の飛行パラメーターは有限性/範囲チェックの前に真の非ブール数値であることが確認されるようになり、送信されたコマンドは実在する `COMMAND_ACK`(`MAV_RESULT_ACCEPTED`)が返ってきて初めて確認済みとして報告されるようになった——SDKチェックアウトを伴いCIに組み込まれた非破壊的なbuild-testスクリプトを備えて機能している。
+**現時点で実在するもの:** バージョン `0.1.1`。依存関係なしの連携コア(`UavCoordinator`)に加えて、境界値が完全にテストされた実在するリンク喪失ハートビート・ウォッチドッグ(`HeartbeatMonitor`)、フェイルクローズのフェーズルーティング、静的な `plan-only` 飛行リクエストスキーマ、各リクエストを実際の番号付き `MAV_CMD` にマッピングする実在するMAVLinkコマンドトランスポート(`MavlinkFlightControl`)——武装化には今やリテラルなブール値 `confirm_arm is True` が必須となり(文字列 `'false'` のような単に真値であるだけの値は決して許可されない)、あらゆる数値の飛行パラメーターは有限性/範囲チェックの前に真の非ブール数値であることが確認されるようになり、送信されたコマンドは実在する `COMMAND_ACK`(`MAV_RESULT_ACCEPTED`)が返ってきて初めて確認済みとして報告されるようになった——SDKチェックアウトを伴いCIに組み込まれた非破壊的なbuild-testスクリプトを備えて機能している。
 
 **統合境界:** このブリッジは連携境界に過ぎない —— 飛行制御ノードではなく、HYDRA-UMC-SERVER、MCUの限界、ウォッチドッグ、E-STOPを迂回することはできない。送信されるすべてのジョブは、依然としてすべての兄弟ブリッジが使う同じ共有ゲートを通過する。`HeartbeatMonitor` 自身のフェイルセーフシグナルは連携層の問題であり、フライトコントローラー自身の独立したリンク喪失フェイルセーフの代替では決してない。
 

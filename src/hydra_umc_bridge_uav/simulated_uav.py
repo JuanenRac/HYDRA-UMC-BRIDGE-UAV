@@ -49,11 +49,15 @@ TRANSITIONS: dict[str, tuple[frozenset[UavState], UavState]] = {
     # A stop is legal from every state; the target depends on where it starts.
     U.RETURN_TO_LAUNCH: (frozenset(UavState), UavState.RETURNING),
     U.LAND: (frozenset(UavState), UavState.LANDING),
+    # Only on the ground: an autopilot refuses a disarm in flight.
+    U.DISARM: (frozenset({UavState.GROUNDED, UavState.ARMED}), UavState.GROUNDED),
 }
 
 # Requests that take the vehicle off the ground and therefore need a grant.
 NEEDS_AUTHORIZATION = frozenset({U.ARM, U.TAKEOFF, U.GOTO_WAYPOINT, U.HOVER_AND_CAPTURE})
-ALWAYS_ACCEPTED = frozenset({U.RETURN_TO_LAUNCH, U.LAND})
+# The same set the MAVLink transport sends whatever the dispatch said; DISARM
+# is left out here because it is only legal on the ground (see TRANSITIONS).
+ALWAYS_ACCEPTED = U.SAFE_STATE_REQUESTS - {U.DISARM}
 
 
 @dataclass(frozen=True)

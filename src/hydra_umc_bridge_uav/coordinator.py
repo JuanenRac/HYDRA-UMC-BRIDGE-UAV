@@ -75,6 +75,17 @@ class UavCoordinator:
     # same reasoning as heartbeat.py's own separate, standalone signal) -
     # exposed as its own real, explicit request instead.
     LAND = "LAND"
+    # Disarm on the ground (MAV_CMD_COMPONENT_ARM_DISARM, param1=0, not forced:
+    # the autopilot itself refuses it in flight). Like LAND it is standalone,
+    # outside the JobPhase flow: ARM followed by a refused TAKEOFF must not
+    # leave the propellers armed on the ground.
+    DISARM = "DISARM"
+
+    # The requests that bring the vehicle to a safe state. Nothing - not a
+    # cell that is not READY, not a machine that is not IDLE - may stop them
+    # from being dispatched or sent: the simulated vehicle and the MAVLink
+    # transport both read this one set.
+    SAFE_STATE_REQUESTS = frozenset({RETURN_TO_LAUNCH, LAND, DISARM})
 
     # ABORT maps to the real, standard UAV failsafe action name
     # (RTL/"Return to Launch") - the same action a link-loss failsafe
@@ -94,7 +105,7 @@ class UavCoordinator:
         """Return the static flight-request vocabulary without opening any real transport."""
 
         phase_requests = tuple(dict.fromkeys(self._phase_requests.values()))
-        return UavRequestPlan("1.1", "plan-only", phase_requests + (self.LAND,))
+        return UavRequestPlan("1.1", "plan-only", phase_requests + (self.LAND, self.DISARM))
 
     def dispatch(self, job: BridgeJob, cell_state: CellState, observed_machine_state: MachineState | None = None) -> UavDispatch:
         request = self._phase_requests.get(job.phase)
@@ -102,6 +113,11 @@ class UavCoordinator:
             return UavDispatch(False, "none", "job phase has no mapped flight request")
         # `observed_machine_state` is what the autopilot reported about the vehicle; when given it replaces the claim written in the job (see HYDRA-UMC-SDK's evaluate_job)
         decision = evaluate_job(job, cell_state, observed_machine_state)
+        if not decision.allowed and request in self.SAFE_STATE_REQUESTS:
+            # A normal end of mission (COMPLETE -> return to launch) with the cell
+            # inhibited or the vehicle not IDLE (it is flying) must still bring the
+            # vehicle home: the gate is for starting work, never for coming back.
+            return UavDispatch(True, request, f"{request} is always forwarded ({decision.reason})")
         return UavDispatch(decision.allowed, request, decision.reason)
 
     def emergency_land_request(self) -> UavDispatch:
@@ -113,3 +129,9 @@ class UavCoordinator:
         one real MAVLink command this coordinator never exposed at all."""
 
         return UavDispatch(True, self.LAND, "emergency land requested - always forwarded regardless of cell/machine state")
+
+    def disarm_request(self) -> UavDispatch:
+        """Real, standalone DISARM request (not forced; only effective on the
+        ground). Always allowed: it only ever takes the vehicle to the safe state."""
+
+        return UavDispatch(True, self.DISARM, "disarm requested - always forwarded regardless of cell/machine state")
