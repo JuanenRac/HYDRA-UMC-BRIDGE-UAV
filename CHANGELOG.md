@@ -6,6 +6,12 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.1.4]
+
+- The wait for a `COMMAND_ACK` now ends at its deadline even on a busy shared link: acknowledgements from other systems were skipped without looking at the clock, so a neighbour that kept acknowledging its own commands could keep a request (a return to launch included) waiting for ever instead of reporting that no acknowledgement came.
+- Tests for the safe-state requests that go out when the gate said no, the flight envelope limits, the link adapter and the acknowledgement wait.
+- Synchronized package metadata and `hydra-umc.project.json`.
+
 ## [0.1.3]
 
 - Successful incremental build: synchronized package metadata and `hydra-umc.project.json`.

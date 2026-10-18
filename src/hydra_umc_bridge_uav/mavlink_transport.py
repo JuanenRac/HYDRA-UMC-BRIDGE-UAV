@@ -489,7 +489,10 @@ class MavlinkFlightControl:
                 break
             source_system = getattr(ack, "get_srcSystem", None)
             if callable(source_system) and source_system() != target_system:
-                continue  # an ACK from some other system on the same link
+                # an ACK from some other system on the same link; it must not extend the wait past the deadline
+                if time.monotonic() >= deadline:
+                    break
+                continue
             # A real COMMAND_ACK is a pymavlink message object with real
             # `.command`/`.result` attributes (not a dict) - `getattr()` here
             # also tolerates a test double that returns something shaped
