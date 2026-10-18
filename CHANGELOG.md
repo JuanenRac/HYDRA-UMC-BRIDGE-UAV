@@ -6,6 +6,9 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [0.1.2] - Maturity lowered to functional
+- Maturity is functional: the code, tests and documentation are in place, but nothing here has been verified on real hardware yet, so the manifest no longer claims the established level.
+
 ## [0.1.1] - An explicit altitude frame, a flight envelope and stops that always get through
 
 - **`GOTO_WAYPOINT` is a `COMMAND_INT` with an explicit altitude frame.** The position goes out as degrees x 1e7 (a `COMMAND_LONG` rounds it to float32, and an autopilot may accept a positional command only as a `COMMAND_INT`), the altitude reference is named - `altitude_frame="relative"` (the default, above the takeoff point) or `"amsl"` - and the yaw is NaN (keep the heading) instead of 0, which turned the vehicle north at every reposition. Before, the reference was undefined: a `COMMAND_LONG` carries no frame, so each autopilot chose its own.
