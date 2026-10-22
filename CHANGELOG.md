@@ -6,6 +6,11 @@ GPL-3.0-or-later - see LICENSE
 
 # Changelog
 
+## [Unreleased]
+
+- Added `tools/hydra_project_tool.py`: the same `validate`, `test`, `version`, `status` and `bump` commands in every repository. The checks run with `HYDRA_UMC_CI=1` and fail if the version changes; only `bump` changes it.
+- The SDK is now fetched at a release tag instead of the main branch, so a change of the SDK cannot break this repository by itself.
+
 ## [0.1.4]
 
 - The wait for a `COMMAND_ACK` now ends at its deadline even on a busy shared link: acknowledgements from other systems were skipped without looking at the clock, so a neighbour that kept acknowledging its own commands could keep a request (a return to launch included) waiting for ever instead of reporting that no acknowledgement came.
