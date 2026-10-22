@@ -18,7 +18,7 @@ from hydra_umc_bridge_uav.simulated_uav import (
 
 def dispatch(phase, cell=CellState.READY):
     job = BridgeJob("job-1", "idem-1", "uav-1", phase, MachineState.IDLE, {})
-    return UavCoordinator().dispatch(job, cell)
+    return UavCoordinator().dispatch(job, cell, MachineState.IDLE)
 
 
 def flown(uav, *phases):

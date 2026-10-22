@@ -378,7 +378,7 @@ class MavlinkFlightControlTests(unittest.TestCase):
 
     def test_end_to_end_through_the_real_coordinator_gate_before_sending(self):
         job = BridgeJob("job-1", "idempotency-1", "uav-1", JobPhase.LOAD, MachineState.IDLE, {})
-        dispatch = UavCoordinator().dispatch(job, CellState.READY)
+        dispatch = UavCoordinator().dispatch(job, CellState.READY, MachineState.IDLE)
         result = self.control.send(self.sink, 1, 1, dispatch, takeoff_altitude_m=10.0)
         self.assertTrue(result.sent)
         self.assertEqual(result.commands, (22,))

@@ -111,7 +111,7 @@ class UavCoordinator:
         request = self._phase_requests.get(job.phase)
         if request is None:
             return UavDispatch(False, "none", "job phase has no mapped flight request")
-        # `observed_machine_state` is what the autopilot reported about the vehicle; when given it replaces the claim written in the job (see HYDRA-UMC-SDK's evaluate_job)
+        # `observed_machine_state` is what the autopilot reported about the vehicle; the claim written in the job is not a reading, so without it the SDK gate refuses every flight phase (fail-closed). Coming home (SAFE_STATE_REQUESTS) is forwarded regardless, below
         decision = evaluate_job(job, cell_state, observed_machine_state)
         if not decision.allowed and request in self.SAFE_STATE_REQUESTS:
             # A normal end of mission (COMPLETE -> return to launch) with the cell

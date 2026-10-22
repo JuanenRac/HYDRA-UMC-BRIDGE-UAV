@@ -20,23 +20,23 @@ class CoordinatorTests(unittest.TestCase):
         self.coordinator = UavCoordinator()
 
     def test_ready_job_requests_the_waypoint_flight(self):
-        result = self.coordinator.dispatch(job(), CellState.READY)
+        result = self.coordinator.dispatch(job(), CellState.READY, MachineState.IDLE)
         self.assertTrue(result.accepted)
         self.assertEqual(result.request, "GOTO_WAYPOINT")
 
     def test_busy_machine_is_not_reused(self):
-        result = self.coordinator.dispatch(job(state=MachineState.RUNNING), CellState.READY)
+        result = self.coordinator.dispatch(job(), CellState.READY, MachineState.RUNNING)
         self.assertFalse(result.accepted)
 
     def test_abort_requests_return_to_launch_and_stays_available_during_fault(self):
-        result = self.coordinator.dispatch(job(JobPhase.ABORT, MachineState.FAULT), CellState.FAULT)
+        result = self.coordinator.dispatch(job(JobPhase.ABORT, MachineState.FAULT), CellState.FAULT, MachineState.FAULT)
         self.assertTrue(result.accepted)
         self.assertEqual(result.request, "RETURN_TO_LAUNCH")
 
     def test_complete_also_requests_return_to_launch(self):
         # COMPLETE and ABORT deliberately share the same real request name -
         # a normal mission end and an emergency abort both mean "come home".
-        result = self.coordinator.dispatch(job(JobPhase.COMPLETE), CellState.READY)
+        result = self.coordinator.dispatch(job(JobPhase.COMPLETE), CellState.READY, MachineState.IDLE)
         self.assertTrue(result.accepted)
         self.assertEqual(result.request, "RETURN_TO_LAUNCH")
 
@@ -61,7 +61,7 @@ class CoordinatorTests(unittest.TestCase):
         # reads) rather than a real BridgeJob the SDK would now refuse to
         # construct at all.
         unknown = SimpleNamespace(phase="SOME_FUTURE_PHASE")
-        result = self.coordinator.dispatch(unknown, CellState.READY)
+        result = self.coordinator.dispatch(unknown, CellState.READY, MachineState.IDLE)
         self.assertFalse(result.accepted)
         self.assertEqual(result.request, "none")
 
@@ -70,16 +70,28 @@ class CoordinatorTests(unittest.TestCase):
         for cell in (CellState.INHIBITED, CellState.FAULT):
             for machine in (MachineState.RUNNING, MachineState.FAULT):
                 with self.subTest(cell=cell, machine=machine):
-                    result = self.coordinator.dispatch(job(JobPhase.COMPLETE, machine), cell)
+                    result = self.coordinator.dispatch(job(JobPhase.COMPLETE), cell, machine)
                     self.assertTrue(result.accepted, result.reason)
                     self.assertEqual(result.request, "RETURN_TO_LAUNCH")
         observed = self.coordinator.dispatch(job(JobPhase.COMPLETE), CellState.READY, MachineState.RUNNING)
         self.assertTrue(observed.accepted)
 
+    def test_the_flight_phases_are_refused_when_the_vehicle_state_was_not_read(self):
+        # the claim in the job message is not a reading of the autopilot
+        for phase in (JobPhase.PREPARE, JobPhase.LOAD, JobPhase.PROCESS, JobPhase.UNLOAD):
+            with self.subTest(phase=phase):
+                result = self.coordinator.dispatch(job(phase), CellState.READY)
+                self.assertFalse(result.accepted)
+                self.assertIn("did not read", result.reason)
+
+    def test_coming_home_does_not_need_a_reading_of_the_vehicle(self):
+        self.assertTrue(self.coordinator.dispatch(job(JobPhase.COMPLETE), CellState.READY).accepted)
+        self.assertTrue(self.coordinator.dispatch(job(JobPhase.ABORT), CellState.READY).accepted)
+
     def test_the_other_flight_phases_are_still_gated_by_the_cell_and_the_machine(self):
         for phase in (JobPhase.PREPARE, JobPhase.LOAD, JobPhase.PROCESS, JobPhase.UNLOAD):
             with self.subTest(phase=phase):
-                self.assertFalse(self.coordinator.dispatch(job(phase), CellState.INHIBITED).accepted)
+                self.assertFalse(self.coordinator.dispatch(job(phase), CellState.INHIBITED, MachineState.IDLE).accepted)
                 self.assertFalse(self.coordinator.dispatch(job(phase), CellState.READY, MachineState.RUNNING).accepted)
 
     def test_disarm_is_a_standalone_always_allowed_request(self):
