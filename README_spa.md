@@ -112,7 +112,7 @@ HYDRA-UMC-BRIDGE-UAV/
 ├── images/
 │   └── HYDRA_UMC_BANNER.svg     # Banner del README
 ├── build-test.bat / build-test.sh  # Solo valida, nunca modifica el repositorio
-├── build.bat / build.sh            # Valida y luego sube versión + CHANGELOG si tiene éxito
+├── build.bat / build.sh            # Valida y compila (compilar nunca cambia la versión)
 ├── pyproject.toml               # Metadatos del paquete; depende de HYDRA-UMC-SDK (git)
 ├── hydra-umc.project.json       # Manifiesto del ecosistema (versión, madurez, familia)
 ├── CHANGELOG.md
@@ -130,7 +130,7 @@ Requiere Python 3.11+. `tools/build_test.py` espera `HYDRA-UMC-SDK` clonado como
 ```bash
 # Windows
 build-test.bat      # solo valida — sin cambio de versión/CHANGELOG
-build.bat            # valida y luego sube versión + CHANGELOG si tiene éxito
+build.bat            # Valida y compila (compilar nunca cambia la versión)
 
 # Linux/macOS
 bash build-test.sh
