@@ -48,6 +48,7 @@ GPL-3.0-or-later - see LICENSE
 * ✅ **実在する依存関係なしの飛行リクエストコア:** `coordinator.py` の `UavCoordinator` はMAVLinkやベンダーSDKのインポートが一切ない —— 意図的に純粋なPythonであり、実際のUAVが接続されていないどのホストでもテスト可能である。*(実装済み、`tests/test_coordinator.py` でテスト済み)*
 * ✅ **実在する命名済み飛行リクエスト語彙:** `ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`, `LAND` - 生の姿勢/スロットルコマンドは決して使いません。通常のミッション `COMPLETE` と緊急の `ABORT` は、どちらも同じ実在の `RETURN_TO_LAUNCH` リクエストに解決されます。`LAND` は実在し、明確に別物です - MAVLink 自身の `MAV_CMD_NAV_LAND` 対 `MAV_CMD_NAV_RETURN_TO_LAUNCH`([公式 MAVLink common メッセージセット](https://mavlink.io/en/messages/common.html)で確認済み)- RTL だけでは対応できない実際のケース、つまり先に帰還せずすぐ降下する場合(例: バッテリー残量が少なすぎる、または帰路が安全でない)のためです。`emergency_land_request()` は単独のリクエストとして提供され、`JobPhase` 駆動の `dispatch()` フローの外に意図的に置かれています - `HeartbeatMonitor` の独立したシグナルと同じ考え方です。*(実装済み)*
 * ✅ **実在する必須のリンク喪失ハートビート・ウォッチドッグ:** `HeartbeatMonitor` は、明示的な `now` によって駆動される決定論的なフェイルセーフ状態機械である —— 実際の時計を読み取ることは一切なく、一度も観測されなければ最初のチェックから `LOST` を報告し、タイムアウトちょうどの瞬間はまだ `OK` として扱う(真に超過した場合のみ、設定された `RETURN_TO_LAUNCH`/`LAND` のフェイルセーフが発動する)。*(実装済み、`tests/test_heartbeat.py` で決定論的な境界値の完全なスイートによりテスト済み)*
+* ✅ **ブリッジ自身の地上局ハートビート:** `gcs_heartbeat.py` の `GcsHeartbeat` が、バックグラウンドスレッドで `MAV_TYPE_GCS` タイプの MAVLink `HEARTBEAT` を送信します(既定 1 Hz、`HYDRA_UAV_GCS_HEARTBEAT_HZ` で 0.1〜10、`0` で無効)。ブリッジが停止すると、オートパイロット自身の地上局喪失フェイルセーフが働きます。送信できなかった拍はカウントされ報告されますが、例外として投げられることはありません。*(実装済み、`tests/test_gcs_heartbeat.py` で模擬リンクを使ってテスト済み。実機のオートパイロットでは未検証)*
 * ✅ **実在する共有安全ゲート:** `UavCoordinator.dispatch()` を通じて送信されるすべてのジョブは、`HYDRA-UMC-SDK` の `bridge_contract` にある `evaluate_job()` によって評価される。これは他のすべての兄弟ブリッジとHYDRA-UMC-SERVERが使うのと同じゲートである。生産フェーズには外部機械が `IDLE` であり、HYDRA-UMCセルが `READY` であることが必要だが、`ABORT` は故障中でも要求可能なままである。*(実装済み)*
 * ✅ **フェイルクローズのフェーズルーティングと静的エビデンス:** 未知の将来SDKフェーズは拒否される。`inspect_request_plan.py` は、独立した `LAND` リクエストを今や含む静的スキーマ `1.1` の飛行リクエストプランを、トランスポートを一切開かずに出力する。*(実装・テスト済み)*
 * ✅ **実在するMAVLinkコマンドトランスポート:** `mavlink_transport.py` の `MavlinkFlightControl` は、既にゲートを通過したディスパッチを実際の `COMMAND_LONG` として送信し、実際の番号付き `MAV_CMD`(`MAV_CMD_NAV_TAKEOFF`/`MAV_CMD_DO_REPOSITION`/`MAV_CMD_NAV_LOITER_UNLIM`/`MAV_CMD_IMAGE_START_CAPTURE`/`MAV_CMD_NAV_RETURN_TO_LAUNCH`/`MAV_CMD_NAV_LAND`/`MAV_CMD_COMPONENT_ARM_DISARM`)にマッピングする —— 拒否されたディスパッチはネットワークに到達しない。*(実装済み、`tests/test_mavlink_transport.py` でテスト済み)*
@@ -92,6 +93,7 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── __init__.py
 │       ├── coordinator.py       # UavCoordinator: 依存関係なしの飛行リクエストゲート
 │       ├── heartbeat.py         # HeartbeatMonitor: 実在する決定論的なリンク喪失フェイルセーフ
+│       ├── gcs_heartbeat.py     # 設定可能な周期の自前地上局 HEARTBEAT
 │       ├── mavlink_transport.py # 検証済みのUavDispatchを実際のMAVLink COMMAND_LONG / COMMAND_INTとして送信
 │       └── simulated_uav.py     # 飛行状態テーブル + シミュレート機体:テレメトリ・認可・アーム状態を分離、トランスポートなし
 ├── tests/

@@ -182,6 +182,10 @@ class _PymavlinkConnectionSink:
     def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None:
         return self._connection.recv_match(type=type, blocking=blocking, timeout=timeout)
 
+    def heartbeat_send(self, type: int, autopilot: int, base_mode: int, custom_mode: int, system_status: int) -> object:
+        """The bridge's own HEARTBEAT as a ground station (see gcs_heartbeat.py)."""
+        return self._connection.mav.heartbeat_send(type, autopilot, base_mode, custom_mode, system_status)
+
 
 def open_mavlink_connection(
     connection_string: str, *, heartbeat_timeout_seconds: float = _DEFAULT_HEARTBEAT_TIMEOUT_SECONDS

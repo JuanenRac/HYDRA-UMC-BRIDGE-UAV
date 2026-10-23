@@ -48,6 +48,7 @@ GPL-3.0-or-later - see LICENSE
 * ✅ **真实的无依赖飞行请求核心:** `coordinator.py` 中的 `UavCoordinator` 完全没有导入 MAVLink 或任何厂商 SDK——它刻意保持为纯 Python,可以在任何主机上测试,无需连接真实的 UAV。*(已实现,并在 `tests/test_coordinator.py` 中测试)*
 * ✅ **真实的具名飞行请求词汇:** `ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`, `LAND`——绝不是原始的姿态/油门命令。正常任务的 `COMPLETE` 与紧急的 `ABORT` 都会解析为同一个真实的 `RETURN_TO_LAUNCH` 请求。`LAND` 是真实且确实不同的——MAVLink 自身的 `MAV_CMD_NAV_LAND` 与 `MAV_CMD_NAV_RETURN_TO_LAUNCH`(已对照[官方 MAVLink common 消息集](https://mavlink.io/en/messages/common.html)核实)——用于仅靠 RTL 无法覆盖的真实情形:立即下降,而不是先飞回家(例如电池电量过低,或返航路径不安全)。`emergency_land_request()` 将其作为独立请求提供,有意置于由 `JobPhase` 驱动的 `dispatch()` 流程之外——理由与 `HeartbeatMonitor` 自身独立的信号相同。*(已实现)*
 * ✅ **一个真实的、强制性的链路丢失心跳看门狗:** `HeartbeatMonitor` 是一个确定性的、由显式 `now` 驱动的故障保护状态机——它从不读取真实时钟,如果从未收到过观测就会从第一次检查开始就报告 `LOST`,并把恰好等于超时时刻的情况仍视为 `OK`(只有真正超出超时才会触发配置好的 `RETURN_TO_LAUNCH`/`LAND` 故障保护)。*(已实现,并在 `tests/test_heartbeat.py` 中通过一整套确定性边界测试进行了测试)*
+* ✅ **桥接器自身的地面站心跳:** `gcs_heartbeat.py` 中的 `GcsHeartbeat` 在后台线程中发送类型为 `MAV_TYPE_GCS` 的 MAVLink `HEARTBEAT`(默认 1 Hz,`HYDRA_UAV_GCS_HEARTBEAT_HZ` 取值 0.1 到 10,`0` 为关闭),这样桥接器停止时,自动驾驶仪自身的地面站丢失失效保护会触发。无法发送的心跳会被计数并上报,绝不抛出异常。*(已实现,在 `tests/test_gcs_heartbeat.py` 中用模拟链路测试;尚未在真实自动驾驶仪上试过)*
 * ✅ **真实的共享安全门控:** 每个通过 `UavCoordinator.dispatch()` 派发的任务都会由 `HYDRA-UMC-SDK` 的 `bridge_contract` 中的 `evaluate_job()` 评估,这与所有兄弟桥接以及 HYDRA-UMC-SERVER 使用的是同一个门控;生产性阶段需要外部机器处于 `IDLE` 且 HYDRA-UMC 单元处于 `READY`,而 `ABORT` 在故障期间仍可请求。*(已实现)*
 * ✅ **安全拒绝的阶段路由与静态证据:** 未知的未来 SDK 阶段会被拒绝。`inspect_request_plan.py` 会输出静态模式 `1.1` 的飞行请求计划(现已包含独立的 `LAND` 请求),且不会打开任何传输通道。*(已实现,已测试)*
 * ✅ **真实的 MAVLink 命令传输:** `mavlink_transport.py` 的 `MavlinkFlightControl` 将一个已通过门控的派发发送为真实的 `COMMAND_LONG`,映射到真实的、编号的 `MAV_CMD`(`MAV_CMD_NAV_TAKEOFF`/`MAV_CMD_DO_REPOSITION`/`MAV_CMD_NAV_LOITER_UNLIM`/`MAV_CMD_IMAGE_START_CAPTURE`/`MAV_CMD_NAV_RETURN_TO_LAUNCH`/`MAV_CMD_NAV_LAND`/`MAV_CMD_COMPONENT_ARM_DISARM`)——被拒绝的派发永远不会到达网络。*(已实现,并在 `tests/test_mavlink_transport.py` 中测试)*
@@ -92,6 +93,7 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── __init__.py
 │       ├── coordinator.py       # UavCoordinator:无依赖的飞行请求门控
 │       ├── heartbeat.py         # HeartbeatMonitor:真实的、确定性的链路丢失故障保护
+│       ├── gcs_heartbeat.py     # 速率可配置的自有地面站 HEARTBEAT
 │       ├── mavlink_transport.py # 将已验证的 UavDispatch 作为真实的 MAVLink COMMAND_LONG / COMMAND_INT 发送
 │       └── simulated_uav.py     # 飞行状态表 + 模拟飞行器:遥测、授权与解锁相互分离,无传输
 ├── tests/
