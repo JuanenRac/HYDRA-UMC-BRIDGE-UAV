@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [0.1.5] - A `run` command keeps the heartbeat going and own ground-station heartbeat
 
 - **The phase table and the gate are the shared phase coordinator of the SDK** (`hydra_umc_sdk.phase_coordinator`), the same one the AMR and droid bridges use. The requests, the order of the vocabulary and the answers are unchanged; coming home, landing and disarming are still always forwarded.
 - **A `run` command keeps the heartbeat going**: `hydra-umc-bridge-uav run --connection <URL>` (also `python -m hydra_umc_bridge_uav run`) opens the MAVLink link, starts the ground-station heartbeat at `HYDRA_UAV_GCS_HEARTBEAT_HZ` or `--heartbeat-hz` (a rate of 0 is refused, there would be nothing to do), prints one JSON status line every `--status-every` seconds and stops cleanly on Ctrl-C, SIGTERM or after `--duration`; it sends nothing else to the vehicle. Exit codes: 0 stopped normally, 1 the link could not be opened or no beat was sent, 2 a bad option. 7 new tests with a recorder of the link; never run against a real autopilot or SITL.
@@ -12,6 +12,10 @@ All notable changes to this project are documented here.
 - Added `tools/hydra_project_tool.py`: the same `validate`, `test`, `version`, `status` and `bump` commands in every repository. The checks run with `HYDRA_UMC_CI=1` and fail if the version changes; only `bump` changes it.
 - The SDK is now fetched at a release tag instead of the main branch, so a change of the SDK cannot break this repository by itself.
 - The SDK is pinned to 0.3.6, whose gate refuses a productive job when the bridge did not read the state of its machine. `UavCoordinator.dispatch()` must be given the state the autopilot reported; without it every flight phase is refused and the claim written in the job message is no longer trusted. Coming home (return to launch) is still forwarded without a reading. The tests now pass the observed state explicitly and check both the refusal and the return-home exception.
+
+## [0.1.5]
+
+- Successful incremental build: synchronized package metadata and `hydra-umc.project.json`.
 
 ## [0.1.4]
 

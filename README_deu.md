@@ -32,7 +32,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Version | `0.1.4` |
+| Version | `0.1.5` |
 | Reifegrad | Funktionsfähig |
 | Tests | 124 (`python tools/build_test.py`) |
 | Technik | Python / MAVLink / HYDRA-UMC-SDK |
@@ -145,7 +145,7 @@ bash build.sh
 
 ## ✅ Aktueller Status & Nächste Schritte
 
-**Heute real:** Version `0.1.4`, funktionsfähig als abhängigkeitsfreier Koordinationskern (`UavCoordinator`) plus ein echter, vollständig grenzwertgetesteter Heartbeat-Watchdog für Verbindungsverlust (`HeartbeatMonitor`), ausfallsicherem Phasenrouting, einem statischen `plan-only`-Flugantragsschema, einem echten MAVLink-Befehlstransport (`MavlinkFlightControl`), der jede Anfrage auf ihr echtes, nummeriertes `MAV_CMD` abbildet - das Bewaffnen erfordert jetzt das buchstäbliche Boolesche `confirm_arm is True` (niemals einen bloß wahrheitswertigen Wert wie die Zeichenkette `'false'`), jeder numerische Flugparameter wird vor jeder Endlichkeits-/Bereichsprüfung als echte, nicht-boolesche Zahl geprüft, und ein gesendeter Befehl wird erst bestätigt, sobald sein echtes `COMMAND_ACK` mit `MAV_RESULT_ACCEPTED` eintrifft -, sowie nicht-mutierenden Build-Test-Skripten, die in CI mit SDK-Checkout eingebunden sind.
+**Heute real:** Version `0.1.5`, funktionsfähig als abhängigkeitsfreier Koordinationskern (`UavCoordinator`) plus ein echter, vollständig grenzwertgetesteter Heartbeat-Watchdog für Verbindungsverlust (`HeartbeatMonitor`), ausfallsicherem Phasenrouting, einem statischen `plan-only`-Flugantragsschema, einem echten MAVLink-Befehlstransport (`MavlinkFlightControl`), der jede Anfrage auf ihr echtes, nummeriertes `MAV_CMD` abbildet - das Bewaffnen erfordert jetzt das buchstäbliche Boolesche `confirm_arm is True` (niemals einen bloß wahrheitswertigen Wert wie die Zeichenkette `'false'`), jeder numerische Flugparameter wird vor jeder Endlichkeits-/Bereichsprüfung als echte, nicht-boolesche Zahl geprüft, und ein gesendeter Befehl wird erst bestätigt, sobald sein echtes `COMMAND_ACK` mit `MAV_RESULT_ACCEPTED` eintrifft -, sowie nicht-mutierenden Build-Test-Skripten, die in CI mit SDK-Checkout eingebunden sind.
 
 **Integrationsgrenze:** diese Brücke ist ausschließlich eine Koordinationsgrenze — sie ist kein Flugsteuerungsknoten und kann HYDRA-UMC-SERVER, MCU-Grenzen, Watchdogs oder den E-STOP nicht umgehen; jeder versendete Auftrag durchläuft weiterhin dasselbe gemeinsame Gatter, das jede Schwesterbrücke verwendet. Das eigene Failsafe-Signal von `HeartbeatMonitor` ist eine Angelegenheit der Koordinationsschicht, niemals ein Ersatz für den eigenen, unabhängigen Failsafe des Flugcontrollers bei Verbindungsverlust.
 
