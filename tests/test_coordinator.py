@@ -129,3 +129,13 @@ class CoordinatorTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SharedCoordinatorTests(unittest.TestCase):
+    def test_the_vocabulary_and_the_safe_requests_come_from_the_shared_coordinator(self):
+        from hydra_umc_sdk.phase_coordinator import PhaseCoordinator
+
+        coordinator = UavCoordinator()
+        self.assertIsInstance(coordinator._phases, PhaseCoordinator)
+        self.assertEqual(coordinator._phases.safe_actions, UavCoordinator.SAFE_STATE_REQUESTS)
+        self.assertEqual(coordinator.request_plan().requests, ("ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE", "RETURN_TO_LAUNCH", "LAND", "DISARM"))

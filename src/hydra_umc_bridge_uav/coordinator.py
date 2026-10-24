@@ -19,7 +19,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from hydra_umc_sdk.bridge_contract import BridgeJob, CellState, JobPhase, MachineState, evaluate_job
+from hydra_umc_sdk.bridge_contract import BridgeJob, CellState, JobPhase, MachineState
+from hydra_umc_sdk.phase_coordinator import PhaseCoordinator
 
 
 @dataclass(frozen=True)
@@ -101,24 +102,22 @@ class UavCoordinator:
         JobPhase.ABORT: RETURN_TO_LAUNCH,
     }
 
+    def __init__(self) -> None:
+        # the table of phases, the gate and the requests that are always forwarded are the shared coordinator of the SDK
+        self._phases = PhaseCoordinator(self._phase_requests, safe_actions=self.SAFE_STATE_REQUESTS, extra_actions=(self.LAND, self.DISARM))
+
     def request_plan(self) -> UavRequestPlan:
         """Return the static flight-request vocabulary without opening any real transport."""
 
-        phase_requests = tuple(dict.fromkeys(self._phase_requests.values()))
-        return UavRequestPlan("1.1", "plan-only", phase_requests + (self.LAND, self.DISARM))
+        return UavRequestPlan("1.1", "plan-only", self._phases.vocabulary())
 
     def dispatch(self, job: BridgeJob, cell_state: CellState, observed_machine_state: MachineState | None = None) -> UavDispatch:
-        request = self._phase_requests.get(job.phase)
+        request = self._phases.action_for(job.phase)
         if request is None:
             return UavDispatch(False, "none", "job phase has no mapped flight request")
-        # `observed_machine_state` is what the autopilot reported about the vehicle; the claim written in the job is not a reading, so without it the SDK gate refuses every flight phase (fail-closed). Coming home (SAFE_STATE_REQUESTS) is forwarded regardless, below
-        decision = evaluate_job(job, cell_state, observed_machine_state)
-        if not decision.allowed and request in self.SAFE_STATE_REQUESTS:
-            # A normal end of mission (COMPLETE -> return to launch) with the cell
-            # inhibited or the vehicle not IDLE (it is flying) must still bring the
-            # vehicle home: the gate is for starting work, never for coming back.
-            return UavDispatch(True, request, f"{request} is always forwarded ({decision.reason})")
-        return UavDispatch(decision.allowed, request, decision.reason)
+        # `observed_machine_state` is what the autopilot reported about the vehicle; the claim written in the job is not a reading, so without it the SDK gate refuses every flight phase (fail-closed). Coming home (SAFE_STATE_REQUESTS) is forwarded regardless: the gate is for starting work, never for coming back
+        decision = self._phases.decide(job, cell_state, observed_machine_state)
+        return UavDispatch(decision.accepted, request, decision.reason)
 
     def emergency_land_request(self) -> UavDispatch:
         """Real, standalone LAND request - see the LAND constant's own
@@ -128,10 +127,12 @@ class UavCoordinator:
         evaluate_job() already applies to ABORT/RTL, applied here to the
         one real MAVLink command this coordinator never exposed at all."""
 
-        return UavDispatch(True, self.LAND, "emergency land requested - always forwarded regardless of cell/machine state")
+        decision = self._phases.always_forwarded(self.LAND, "emergency land requested")
+        return UavDispatch(decision.accepted, self.LAND, decision.reason)
 
     def disarm_request(self) -> UavDispatch:
         """Real, standalone DISARM request (not forced; only effective on the
         ground). Always allowed: it only ever takes the vehicle to the safe state."""
 
-        return UavDispatch(True, self.DISARM, "disarm requested - always forwarded regardless of cell/machine state")
+        decision = self._phases.always_forwarded(self.DISARM, "disarm requested")
+        return UavDispatch(decision.accepted, self.DISARM, decision.reason)
