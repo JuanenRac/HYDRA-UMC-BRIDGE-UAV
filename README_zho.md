@@ -108,7 +108,9 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── heartbeat.py         # HeartbeatMonitor:真实的、确定性的链路丢失故障保护
 │       ├── gcs_heartbeat.py     # 速率可配置的自有地面站 HEARTBEAT
 │       ├── mavlink_transport.py # 将已验证的 UavDispatch 作为真实的 MAVLink COMMAND_LONG / COMMAND_INT 发送
-│       └── simulated_uav.py     # 飞行状态表 + 模拟飞行器:遥测、授权与解锁相互分离,无传输
+│       ├── simulated_uav.py     # 飞行状态表 + 模拟飞行器:遥测、授权与解锁相互分离,无传输
+│       ├── __main__.py          # python -m hydra_umc_bridge_uav 的入口
+│       └── cli.py               # 命令行
 ├── tests/
 │   ├── test_coordinator.py      # 协调核心的确定性单元测试
 │   ├── test_observed_state.py   # 闸门使用自动驾驶仪上报的机器状态
@@ -116,12 +118,19 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── test_simulated_uav.py    # 状态表与模拟飞行器的测试
 │   ├── test_mavlink_transport.py # 针对模拟 MAVLink 连接的真实 MAV_CMD 格式测试
 │   ├── mavlink_emulator.py       # 协议忠实的 MAVLink autopilot 模拟器（真实的测试替身）
-│   └── test_mavlink_emulator.py  # 针对 MAVLink autopilot 模拟器的 bridge 行为
+│   ├── test_mavlink_emulator.py  # 针对 MAVLink autopilot 模拟器的 bridge 行为
+│   ├── test_cli.py               # 命令行测试
+│   ├── test_edge_cases.py        # 安全状态请求、链路适配器和信封边界
+│   └── test_gcs_heartbeat.py     # 自有地面站心跳测试
 ├── tools/
 │   ├── build_test.py            # 非变更式编译 + 测试运行器 (build-test.bat/.sh)
 │   ├── bump_version.py          # 同步 pyproject.toml、清单和 CHANGELOG.md
 │   ├── ci_validate.py           # 无依赖、非破坏性的CI基线检查 (由 .github/workflows/ci.yml 使用)
-│   └── inspect_request_plan.py  # 打印静态飞行请求计划(不打开传输通道)
+│   ├── inspect_request_plan.py  # 打印静态飞行请求计划(不打开传输通道)
+│   ├── _doc_policy.py           # 家族共享的文档规则 (HYDRA-UMC-SDK 的副本,保持同步)
+│   ├── _readme_parity.py        # 检查八个 README 结构一致 (HYDRA-UMC-SDK 的副本,保持同步)
+│   ├── hydra_project_tool.py    # 每个仓库相同的命令: validate、test、ci、version、status、bump
+│   └── extra_build_steps.py     # 除共享构建测试外,本仓库自己的构建步骤 (自带的单元测试)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # 范围、兼容平台、脚本、硬件验收门控
 ├── images/

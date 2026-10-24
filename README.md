@@ -108,7 +108,9 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── heartbeat.py         # HeartbeatMonitor: real, deterministic link-loss failsafe
 │       ├── gcs_heartbeat.py     # Own ground-station HEARTBEAT at a configurable rate
 │       ├── mavlink_transport.py # Sends an already-gated UavDispatch as a real MAVLink COMMAND_LONG / COMMAND_INT
-│       └── simulated_uav.py     # Flight-state table + simulated vehicle: telemetry, authorization and arming kept apart, no transport
+│       ├── simulated_uav.py     # Flight-state table + simulated vehicle: telemetry, authorization and arming kept apart, no transport
+│       ├── __main__.py          # Entry point of python -m hydra_umc_bridge_uav
+│       └── cli.py               # The command line
 ├── tests/
 │   ├── test_coordinator.py      # Deterministic unit tests for the coordination core
 │   ├── test_observed_state.py   # The gate uses the machine state the autopilot reports
@@ -116,12 +118,19 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── test_simulated_uav.py    # Tests of the state table and the simulated vehicle
 │   ├── test_mavlink_transport.py # Real MAV_CMD shape tests against a fake MAVLink connection
 │   ├── mavlink_emulator.py       # Protocol-faithful MAVLink autopilot emulator (realistic test double)
-│   └── test_mavlink_emulator.py  # Bridge behaviour against the MAVLink autopilot emulator
+│   ├── test_mavlink_emulator.py  # Bridge behaviour against the MAVLink autopilot emulator
+│   ├── test_cli.py               # Command line tests
+│   ├── test_edge_cases.py        # Safe-state requests, link adapter and envelope boundaries
+│   └── test_gcs_heartbeat.py     # Own ground-station heartbeat tests
 ├── tools/
 │   ├── build_test.py            # Non-mutating compile + test runner (build-test.bat/.sh)
 │   ├── bump_version.py          # Synchronizes pyproject.toml, manifest and CHANGELOG.md
 │   ├── ci_validate.py           # Dependency-free, non-destructive CI baseline (used by .github/workflows/ci.yml)
-│   └── inspect_request_plan.py  # Prints the static flight-request plan (no transport opened)
+│   ├── inspect_request_plan.py  # Prints the static flight-request plan (no transport opened)
+│   ├── _doc_policy.py           # Documentation rules shared by the family (a copy of HYDRA-UMC-SDK's, kept in sync)
+│   ├── _readme_parity.py        # Check that the eight READMEs share one structure (a copy of HYDRA-UMC-SDK's, kept in sync)
+│   ├── hydra_project_tool.py    # The same commands in every repository: validate, test, ci, version, status, bump
+│   └── extra_build_steps.py     # The build steps of this repository beyond the shared build test (its own unit tests)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # Scope, compatible platforms, scripts, hardware acceptance gate
 ├── images/

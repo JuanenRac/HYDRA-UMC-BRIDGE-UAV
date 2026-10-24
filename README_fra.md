@@ -108,7 +108,9 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── heartbeat.py         # HeartbeatMonitor : failsafe déterministe réel de perte de liaison
 │       ├── gcs_heartbeat.py     # HEARTBEAT propre de station au sol à cadence configurable
 │       ├── mavlink_transport.py # Envoie un UavDispatch déjà validé comme un vrai COMMAND_LONG / COMMAND_INT MAVLink
-│       └── simulated_uav.py     # Table d'états de vol + véhicule simulé : télémétrie, autorisation et armement séparés, aucun transport
+│       ├── simulated_uav.py     # Table d'états de vol + véhicule simulé : télémétrie, autorisation et armement séparés, aucun transport
+│       ├── __main__.py          # Point d'entrée de python -m hydra_umc_bridge_uav
+│       └── cli.py               # La ligne de commande
 ├── tests/
 │   ├── test_coordinator.py      # Tests unitaires déterministes du noyau de coordination
 │   ├── test_observed_state.py   # La porte utilise l'état de la machine que rapporte le pilote automatique
@@ -116,12 +118,19 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── test_simulated_uav.py    # Tests de la table d'états et du véhicule simulé
 │   ├── test_mavlink_transport.py # Tests de forme MAV_CMD réels contre une connexion MAVLink simulée
 │   ├── mavlink_emulator.py       # Émulateur MAVLink autopilot fidèle au protocole (double de test réaliste)
-│   └── test_mavlink_emulator.py  # Comportement du bridge face à l'émulateur MAVLink autopilot
+│   ├── test_mavlink_emulator.py  # Comportement du bridge face à l'émulateur MAVLink autopilot
+│   ├── test_cli.py               # Tests de la ligne de commande
+│   ├── test_edge_cases.py        # Demandes d'état sûr, adaptateur de liaison et limites de l'enveloppe
+│   └── test_gcs_heartbeat.py     # Tests du battement de cœur propre de la station au sol
 ├── tools/
 │   ├── build_test.py            # Compilateur + lanceur de tests non mutant (build-test.bat/.sh)
 │   ├── bump_version.py          # Synchronise pyproject.toml, manifeste et CHANGELOG.md
 │   ├── ci_validate.py           # Base CI sans dépendances et non destructive (utilisée par .github/workflows/ci.yml)
-│   └── inspect_request_plan.py  # Affiche le plan de requêtes de vol statique (aucun transport ouvert)
+│   ├── inspect_request_plan.py  # Affiche le plan de requêtes de vol statique (aucun transport ouvert)
+│   ├── _doc_policy.py           # Règles de documentation partagées par la famille (copie de celle de HYDRA-UMC-SDK, tenue synchronisée)
+│   ├── _readme_parity.py        # Contrôle que les huit README partagent la même structure (copie de celui de HYDRA-UMC-SDK, tenue synchronisée)
+│   ├── hydra_project_tool.py    # Les mêmes commandes dans chaque dépôt : validate, test, ci, version, status, bump
+│   └── extra_build_steps.py     # Les étapes de compilation propres à ce dépôt en plus du test de compilation partagé (ses tests unitaires)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # Portée, plateformes compatibles, scripts, portail d'acceptation matérielle
 ├── images/

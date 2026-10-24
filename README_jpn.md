@@ -108,7 +108,9 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── heartbeat.py         # HeartbeatMonitor: 実在する決定論的なリンク喪失フェイルセーフ
 │       ├── gcs_heartbeat.py     # 設定可能な周期の自前地上局 HEARTBEAT
 │       ├── mavlink_transport.py # 検証済みのUavDispatchを実際のMAVLink COMMAND_LONG / COMMAND_INTとして送信
-│       └── simulated_uav.py     # 飛行状態テーブル + シミュレート機体:テレメトリ・認可・アーム状態を分離、トランスポートなし
+│       ├── simulated_uav.py     # 飛行状態テーブル + シミュレート機体:テレメトリ・認可・アーム状態を分離、トランスポートなし
+│       ├── __main__.py          # python -m hydra_umc_bridge_uav のエントリポイント
+│       └── cli.py               # コマンドライン
 ├── tests/
 │   ├── test_coordinator.py      # 連携コアの決定論的ユニットテスト
 │   ├── test_observed_state.py   # ゲートはオートパイロットが報告した機器の状態を使う
@@ -116,12 +118,19 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── test_simulated_uav.py    # 状態テーブルとシミュレート機体のテスト
 │   ├── test_mavlink_transport.py # 疑似MAVLink接続に対する実MAV_CMD形状テスト
 │   ├── mavlink_emulator.py       # プロトコル忠実な MAVLink autopilot エミュレータ（現実的なテストダブル）
-│   └── test_mavlink_emulator.py  # MAVLink autopilot エミュレータに対する bridge の振る舞い
+│   ├── test_mavlink_emulator.py  # MAVLink autopilot エミュレータに対する bridge の振る舞い
+│   ├── test_cli.py               # コマンドラインのテスト
+│   ├── test_edge_cases.py        # 安全状態の要求、リンクアダプター、エンベロープの境界
+│   └── test_gcs_heartbeat.py     # 自前の地上局ハートビートのテスト
 ├── tools/
 │   ├── build_test.py            # 非破壊的なコンパイル+テストランナー (build-test.bat/.sh)
 │   ├── bump_version.py          # pyproject.toml、マニフェスト、CHANGELOG.md を同期
 │   ├── ci_validate.py           # 依存関係なし・非破壊のCIベースライン (.github/workflows/ci.yml が使用)
-│   └── inspect_request_plan.py  # 静的な飛行リクエストプランを出力する(トランスポートを開かない)
+│   ├── inspect_request_plan.py  # 静的な飛行リクエストプランを出力する(トランスポートを開かない)
+│   ├── _doc_policy.py           # ファミリー共通のドキュメント規則 (HYDRA-UMC-SDK のコピーで、同期を維持)
+│   ├── _readme_parity.py        # 8つの README が同じ構造であることの検査 (HYDRA-UMC-SDK のコピーで、同期を維持)
+│   ├── hydra_project_tool.py    # すべてのリポジトリで共通のコマンド: validate、test、ci、version、status、bump
+│   └── extra_build_steps.py     # 共通のビルドテストに加えた、このリポジトリ固有のビルド手順 (独自のユニットテスト)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # 適用範囲、対応プラットフォーム、スクリプト、ハードウェア受け入れゲート
 ├── images/

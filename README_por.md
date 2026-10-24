@@ -105,7 +105,9 @@ HYDRA-UMC-BRIDGE-UAV/
 │       ├── heartbeat.py         # HeartbeatMonitor: falha segura real e determinista por perda de ligação
 │       ├── gcs_heartbeat.py     # HEARTBEAT próprio de estação de terra com ritmo configurável
 │       ├── mavlink_transport.py # Envia um UavDispatch já aprovado como COMMAND_LONG / COMMAND_INT real do MAVLink
-│       └── simulated_uav.py     # Tabela de estados de voo + veículo simulado: telemetria, autorização e armamento separados, sem transporte
+│       ├── simulated_uav.py     # Tabela de estados de voo + veículo simulado: telemetria, autorização e armamento separados, sem transporte
+│       ├── __main__.py          # Ponto de entrada de python -m hydra_umc_bridge_uav
+│       └── cli.py               # A linha de comandos
 ├── tests/
 │   ├── test_coordinator.py      # Testes unitários deterministas do núcleo de coordenação
 │   ├── test_observed_state.py   # A porta usa o estado da máquina que o piloto automático comunica
@@ -113,12 +115,19 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── test_simulated_uav.py    # Testes da tabela de estados e do veículo simulado
 │   ├── test_mavlink_transport.py # Testes do formato MAV_CMD real contra uma ligação MAVLink falsa
 │   ├── mavlink_emulator.py       # Emulador de piloto automático MAVLink fiel ao protocolo (dublê de teste realista)
-│   └── test_mavlink_emulator.py  # Comportamento do bridge contra o emulador de piloto automático MAVLink
+│   ├── test_mavlink_emulator.py  # Comportamento do bridge contra o emulador de piloto automático MAVLink
+│   ├── test_cli.py               # Testes da linha de comandos
+│   ├── test_edge_cases.py        # Pedidos de estado seguro, adaptador da ligação e limites do envelope
+│   └── test_gcs_heartbeat.py     # Testes do batimento próprio da estação em terra
 ├── tools/
 │   ├── build_test.py            # Executor de compilação + testes que não altera nada (build-test.bat/.sh)
 │   ├── bump_version.py          # Sincroniza pyproject.toml, o manifesto e CHANGELOG.md
 │   ├── ci_validate.py           # Base de CI sem dependências e não destrutiva (usada por .github/workflows/ci.yml)
-│   └── inspect_request_plan.py  # Mostra o plano estático de pedidos de voo (sem abrir nenhum transporte)
+│   ├── inspect_request_plan.py  # Mostra o plano estático de pedidos de voo (sem abrir nenhum transporte)
+│   ├── _doc_policy.py           # Regras de documentação partilhadas pela família (cópia da de HYDRA-UMC-SDK, mantida em sincronia)
+│   ├── _readme_parity.py        # Verificação de que os oito README partilham a mesma estrutura (cópia da de HYDRA-UMC-SDK, mantida em sincronia)
+│   ├── hydra_project_tool.py    # Os mesmos comandos em todos os repositórios: validate, test, ci, version, status, bump
+│   └── extra_build_steps.py     # Os passos de compilação próprios deste repositório além do teste de compilação partilhado (os seus testes unitários)
 ├── docs/
 │   └── BRIDGE_GUIDE.md          # Âmbito, plataformas compatíveis, scripts, porta de aceitação de hardware
 ├── images/
