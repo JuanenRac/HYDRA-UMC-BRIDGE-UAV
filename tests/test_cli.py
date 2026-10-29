@@ -154,5 +154,110 @@ class SigningOptionTests(unittest.TestCase):
         self.assertEqual(seen, {})
 
 
+class ServerConfigSigningTests(unittest.TestCase):
+    """The signing options an administrator saves from Server Admin reach the bridge through the Server's configuration file."""
+
+    def setUp(self):
+        import os
+        import tempfile
+
+        self._environment = {name: os.environ.pop(name, None) for name in (cli.SIGNING_KEY_ENVIRONMENT, cli.SIGNING_ALLOW_UNSIGNED_ENVIRONMENT, cli.SERVER_CONFIG_ENVIRONMENT)}
+        self._folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self._folder.cleanup)
+        self.key = os.path.join(self._folder.name, "uav.key")
+        with open(self.key, "w", encoding="ascii") as handle:
+            handle.write(bytes(range(32)).hex())
+        self.config = os.path.join(self._folder.name, "server-config.json")
+
+    def tearDown(self):
+        import os
+
+        for name, value in self._environment.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+
+    def _write(self, document):
+        with open(self.config, "w", encoding="utf-8") as handle:
+            handle.write(document if isinstance(document, str) else json.dumps(document))
+
+    def _opened(self, argv):
+        seen = {}
+
+        def opener(connection, heartbeat_timeout_seconds, **signing):
+            seen.update(signing)
+            return Sink()
+
+        code, _, err = run(["run", "--connection", "x", "--duration", "0.2", *argv], opener)
+        return code, seen, err
+
+    def test_the_saved_key_file_turns_signing_on_and_refuses_unsigned_by_default(self):
+        self._write({"port": 3000, "mavlink": {"signingKeyFile": self.key}})
+        code, seen, _ = self._opened(["--server-config", self.config])
+        self.assertEqual(code, 0)
+        self.assertEqual(seen, {"signing_key": bytes(range(32)), "allow_unsigned": False})
+
+    def test_the_saved_switch_for_unsigned_messages_is_used(self):
+        self._write({"mavlink": {"signingKeyFile": self.key, "signingAllowUnsigned": True}})
+        _, seen, _ = self._opened(["--server-config", self.config])
+        self.assertEqual(seen["allow_unsigned"], True)
+
+    def test_nothing_saved_means_no_signing(self):
+        for document in ({}, {"mavlink": {}}, {"mavlink": {"signingKeyFile": ""}}):
+            self._write(document)
+            code, seen, _ = self._opened(["--server-config", self.config])
+            self.assertEqual((code, seen), (0, {}))
+
+    def test_the_option_and_the_environment_win_over_the_saved_values(self):
+        import os
+
+        other = os.path.join(self._folder.name, "other.key")
+        with open(other, "w", encoding="ascii") as handle:
+            handle.write(bytes(range(1, 33)).hex())
+        self._write({"mavlink": {"signingKeyFile": self.key, "signingAllowUnsigned": True}})
+        _, seen, _ = self._opened(["--server-config", self.config, "--signing-key-file", other])
+        self.assertEqual(seen["signing_key"], bytes(range(1, 33)))
+        os.environ[cli.SIGNING_ALLOW_UNSIGNED_ENVIRONMENT] = "0"
+        _, seen, _ = self._opened(["--server-config", self.config])
+        self.assertEqual(seen["allow_unsigned"], False)
+        os.environ[cli.SIGNING_ALLOW_UNSIGNED_ENVIRONMENT] = "1"
+        self._write({"mavlink": {"signingKeyFile": self.key, "signingAllowUnsigned": False}})
+        _, seen, _ = self._opened(["--server-config", self.config])
+        self.assertEqual(seen["allow_unsigned"], True)
+
+    def test_the_configuration_can_be_named_by_the_environment(self):
+        import os
+
+        self._write({"mavlink": {"signingKeyFile": self.key}})
+        os.environ[cli.SERVER_CONFIG_ENVIRONMENT] = self.config
+        _, seen, _ = self._opened([])
+        self.assertEqual(seen["signing_key"], bytes(range(32)))
+
+    def test_a_configuration_that_cannot_be_used_is_an_error_never_no_signing(self):
+        import os
+
+        opened = []
+        for document in ("not json", "[1]", {"mavlink": "yes"}, {"mavlink": {"signingKeyFile": 5}}, {"mavlink": {"signingAllowUnsigned": "no"}}):
+            self._write(document)
+            code, _, err = run(["run", "--connection", "x", "--server-config", self.config], lambda *a, **k: opened.append(1) or Sink())
+            self.assertEqual(code, 2, document)
+            self.assertIn("server configuration", err)
+        code, _, err = run(["run", "--connection", "x", "--server-config", os.path.join(self._folder.name, "missing.json")], lambda *a, **k: opened.append(1) or Sink())
+        self.assertEqual(code, 2)
+        self.assertEqual(opened, [])
+
+    def test_a_saved_key_file_that_is_not_a_key_is_a_usage_error_without_printing_it(self):
+        import os
+
+        bad = os.path.join(self._folder.name, "bad.key")
+        with open(bad, "w", encoding="ascii") as handle:
+            handle.write("secret-looking-text")
+        self._write({"mavlink": {"signingKeyFile": bad}})
+        code, _, err = run(["run", "--connection", "x", "--server-config", self.config], lambda *a, **k: Sink())
+        self.assertEqual(code, 2)
+        self.assertNotIn("secret-looking-text", err)
+
+
 if __name__ == "__main__":
     unittest.main()

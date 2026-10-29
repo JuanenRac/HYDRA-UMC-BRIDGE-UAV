@@ -31,6 +31,36 @@ EXIT_USAGE = 2
 
 
 SIGNING_KEY_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE"
+SIGNING_ALLOW_UNSIGNED_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED"
+SERVER_CONFIG_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG"
+
+
+def read_server_signing(path: str) -> tuple[str | None, bool | None]:
+    """The MAVLink signing options an administrator saved in the Server's configuration file (`mavlink` section).
+
+    Returns (key file or None, accept-unsigned or None). The file is the Server's own `data/server-config.json`; only
+    the path of the key file is in it, never the key. A file that is named but cannot be read, or whose `mavlink` section
+    is malformed, is an error: the bridge never falls back to "no signing" because it could not read what was asked.
+    """
+    try:
+        with open(path, encoding="utf-8") as handle:
+            document = json.load(handle)
+    except (OSError, ValueError) as error:
+        raise ValueError(f"the server configuration file cannot be read: {getattr(error, 'strerror', None) or error}") from error
+    if not isinstance(document, dict):
+        raise ValueError("the server configuration file must hold a JSON object")
+    section = document.get("mavlink")
+    if section is None:
+        return None, None
+    if not isinstance(section, dict):
+        raise ValueError("the mavlink section of the server configuration must be an object")
+    key_file = section.get("signingKeyFile")
+    if key_file is not None and not isinstance(key_file, str):
+        raise ValueError("mavlink.signingKeyFile in the server configuration must be a file path")
+    allow = section.get("signingAllowUnsigned")
+    if allow is not None and not isinstance(allow, bool):
+        raise ValueError("mavlink.signingAllowUnsigned in the server configuration must be true or false")
+    return (key_file.strip() or None) if key_file is not None else None, allow
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -51,7 +81,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument(
         "--signing-allow-unsigned", action="store_true",
-        help="with a signing key, still accept messages that are not signed (a vehicle that does not sign yet); default: refuse them",
+        help=f"with a signing key, still accept messages that are not signed (a vehicle that does not sign yet); default: {SIGNING_ALLOW_UNSIGNED_ENVIRONMENT}=1, else the server configuration, else refuse them",
+    )
+    run.add_argument(
+        "--server-config", default=None,
+        help=f"the Server's data/server-config.json: its mavlink section (set from Server Admin) gives the signing key file and whether unsigned messages are accepted when neither the option nor the environment says; default: the file named by {SERVER_CONFIG_ENVIRONMENT}, else none",
     )
     return parser
 
@@ -88,13 +122,27 @@ def run(
         err.write("error: --duration and --status-every cannot be negative and --heartbeat-timeout must be positive\n")
         return EXIT_USAGE
 
+    # order: the option, the environment of the deployment, then what an administrator saved in the Server's configuration
     key_file = getattr(args, "signing_key_file", None) or os.environ.get(SIGNING_KEY_ENVIRONMENT, "").strip() or None
+    environment_unsigned = os.environ.get(SIGNING_ALLOW_UNSIGNED_ENVIRONMENT, "").strip()
+    allow_unsigned: bool | None = True if getattr(args, "signing_allow_unsigned", False) else (environment_unsigned == "1" if environment_unsigned else None)
+    server_config = getattr(args, "server_config", None) or os.environ.get(SERVER_CONFIG_ENVIRONMENT, "").strip() or None
+    if server_config is not None and (key_file is None or allow_unsigned is None):
+        try:
+            saved_key_file, saved_unsigned = read_server_signing(server_config)
+        except ValueError as error:
+            err.write(f"error: {error}\n")
+            return EXIT_USAGE
+        if key_file is None:
+            key_file = saved_key_file
+        if allow_unsigned is None:
+            allow_unsigned = saved_unsigned
     signing: dict[str, object] = {}
     if key_file is not None:
         from .mavlink_transport import load_signing_key  # lazy: nothing else here needs the transport module
 
         try:
-            signing = {"signing_key": load_signing_key(key_file), "allow_unsigned": bool(getattr(args, "signing_allow_unsigned", False))}
+            signing = {"signing_key": load_signing_key(key_file), "allow_unsigned": bool(allow_unsigned)}
         except ValueError as error:
             err.write(f"error: {error}\n")
             return EXIT_USAGE

@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-132%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-139%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.1.5` |
 | Maturity | Functional |
-| Tests | 132 (`python tools/build_test.py`) |
+| Tests | 139 (`python tools/build_test.py`) |
 | Stack | Python / MAVLink / HYDRA-UMC-SDK |
 | On real hardware | Simulated only: tested against emulators, fakes or simulators; no run on real hardware is recorded for this version |
 
@@ -52,7 +52,7 @@ Each line is one part of this repository and the light says how far it is today.
 | Area | State | What it means here |
 |---|---|---|
 | Software | 🟡 | Works for its main purpose; the honesty check above lists what is still missing |
-| Tests | 🟢 | 132 automated tests, run on every change |
+| Tests | 🟢 | 139 automated tests, run on every change |
 | Real hardware | 🟠 | Simulated only: tested against emulators, fakes or simulators; no run on real hardware is recorded for this version |
 | Documentation | 🟢 | README in eight languages, checked against the manifest on every change |
 
@@ -137,6 +137,7 @@ The command `hydra-umc-bridge-uav run` (or `python -m hydra_umc_bridge_uav run`)
 | `--heartbeat-timeout` | `10.0` | seconds to wait for the vehicle's first heartbeat |
 | `--status-every`, `--duration` | `10.0`, `0` | seconds between status lines (`0` prints none); stop after this many seconds (`0` runs until stopped) |
 | `--signing-key-file`, `--signing-allow-unsigned` | off | MAVLink 2 signing key file; accept unsigned messages from a vehicle that does not sign yet |
+| `--server-config` | off | the Server's `data/server-config.json`: its `mavlink` section (set from Server Admin) gives the key file and the unsigned switch when the option and the environment do not |
 
 ## ⚙️ Configuration
 
@@ -144,6 +145,8 @@ The command `hydra-umc-bridge-uav run` (or `python -m hydra_umc_bridge_uav run`)
 |---|---|---|
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | rate of the bridge's ground-station heartbeat, 0.1 to 10; `0` switches it off |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | unset | path of the MAVLink 2 signing key (32 bytes, raw or 64 hexadecimal characters); `--signing-key-file` wins |
+| `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | unset | `1` accepts unsigned messages with a key; `--signing-allow-unsigned` wins, else this, else the Server configuration |
+| `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | unset | path of the Server's `data/server-config.json` (`--server-config` wins) |
 
 ## 🚀 Quick start
 
@@ -164,7 +167,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Testing
 
-132 automated `unittest` cases run with `python tools/build_test.py` (it also compiles every module). The tests need no hardware, no network and no optional package: the ones that would need `paho-mqtt`, `pyserial` or a vendor library use a stand-in or are skipped when the package is missing.
+139 automated `unittest` cases run with `python tools/build_test.py` (it also compiles every module). The tests need no hardware, no network and no optional package: the ones that would need `paho-mqtt`, `pyserial` or a vendor library use a stand-in or are skipped when the package is missing.
 
 | Test file | Tests | What it covers |
 |---|---|---|
@@ -217,7 +220,7 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── gcs_heartbeat.py           the bridge's own ground-station HEARTBEAT
 │   ├── cli.py                     `hydra-umc-bridge-uav run`
 │   └── simulated_uav.py           which request is legal from which state
-├── tests/                         132 tests, with a MAVLink emulator
+├── tests/                         139 tests, with a MAVLink emulator
 ├── docs/                          bridge guide
 ├── tools/                         build and test runner, version bump, CI validator, README and picture generators and checks
 ├── images/                        banner and the pictures of the README

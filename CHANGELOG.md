@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The signing options can come from the Server configuration.** `run --server-config FILE` (or `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG`) reads the `mavlink` section that an administrator saves from Server Admin (`signingKeyFile`, `signingAllowUnsigned`); the command-line option and the environment (`HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` is new) still win, a configuration that cannot be read is a usage error rather than a start without signing, and the defaults do not change. Documented in `docs/BRIDGE_GUIDE.md`. 7 new tests.
 - **README in the universal layout:** the README and its seven translations follow the layout that the four families share (22 sections in a fixed order), with an architecture picture and a repository-structure picture drawn from `docs/architecture.json` and `docs/structure.json`; the CI validator checks both pictures and the file tree. Where the repository has a service or an MQTT transport, the README now says how to start it and which environment variables it reads.
 
 - **The layout of the README is checked in the CI:** the validator runs `tools/universal_readme_check.py` and lists, as a warning, what differs from the universal layout of the README.

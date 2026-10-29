@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-132%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-139%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | バージョン | `0.1.5` |
 | 成熟度 | 機能する |
-| テスト | 132 (`python tools/build_test.py`) |
+| テスト | 139 (`python tools/build_test.py`) |
 | 技術 | Python / MAVLink / HYDRA-UMC-SDK |
 | 実機での確認 | シミュレーションのみ：エミュレーター、模擬部品、シミュレーターで試験済み。このバージョンについて実機での動作記録はありません |
 
@@ -52,7 +52,7 @@ GPL-3.0-or-later - see LICENSE
 | 領域 | 状態 | ここでの意味 |
 |---|---|---|
 | ソフトウェア | 🟡 | 主な目的では動作します。足りない点は上の正直さの確認に書かれています |
-| テスト | 🟢 | 自動テスト 132 件。変更のたびに実行されます |
+| テスト | 🟢 | 自動テスト 139 件。変更のたびに実行されます |
 | 実機 | 🟠 | シミュレーションのみ：エミュレーター、模擬部品、シミュレーターで試験済み。このバージョンについて実機での動作記録はありません |
 | ドキュメント | 🟢 | 8 言語の README。変更のたびにマニフェストと照合されます |
 
@@ -137,6 +137,7 @@ flowchart LR
 | `--heartbeat-timeout` | `10.0` | 機体の最初のハートビートを待つ秒数 |
 | `--status-every`, `--duration` | `10.0`, `0` | 状態行の間隔の秒数（`0` なら表示しない）と、この秒数で停止（`0` は止めるまで実行） |
 | `--signing-key-file`, `--signing-allow-unsigned` | オフ | MAVLink 2 署名キーのファイルと、まだ署名しない機体からの未署名メッセージの受け入れ |
+| `--server-config` | オフ | サーバーの `data/server-config.json`。オプションも環境変数も指定しない場合、その `mavlink` セクション(Server Admin で設定)が鍵ファイルと未署名スイッチを与えます |
 
 ## ⚙️ 設定
 
@@ -144,6 +145,8 @@ flowchart LR
 |---|---|---|
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | ブリッジの地上局ハートビートの周波数（0.1〜10）。`0` で停止 |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | 未設定 | MAVLink 2 署名キーのパス（32 バイト、生または 16 進 64 文字）。`--signing-key-file` が優先されます |
+| `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | 未設定 | `1` で鍵がある場合に未署名メッセージを受け入れます。`--signing-allow-unsigned` が優先され、次にこれ、次にサーバーの設定です |
+| `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | 未設定 | サーバーの `data/server-config.json` のパス(`--server-config` が優先されます) |
 
 ## 🚀 クイックスタート
 
@@ -164,7 +167,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 テスト
 
-`python tools/build_test.py` で自動 `unittest` 132 件を実行します（各モジュールのコンパイルも行います）。テストにハードウェア、ネットワーク、オプションのパッケージは不要で、`paho-mqtt`・`pyserial`・ベンダーのライブラリが必要なものは代用品を使うか、パッケージがなければスキップされます。
+`python tools/build_test.py` で自動 `unittest` 139 件を実行します（各モジュールのコンパイルも行います）。テストにハードウェア、ネットワーク、オプションのパッケージは不要で、`paho-mqtt`・`pyserial`・ベンダーのライブラリが必要なものは代用品を使うか、パッケージがなければスキップされます。
 
 | テストファイル | テスト数 | 対象 |
 |---|---|---|
@@ -217,7 +220,7 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── gcs_heartbeat.py           ブリッジ自身の地上局 HEARTBEAT
 │   ├── cli.py                     `hydra-umc-bridge-uav run`
 │   └── simulated_uav.py           どの状態からどの要求が許されるか
-├── tests/                         132 件（MAVLink エミュレーター付き）
+├── tests/                         139 件（MAVLink エミュレーター付き）
 ├── docs/                          ブリッジガイド
 ├── tools/                         ビルド・テスト実行、バージョン引き上げ、CI 検証、README と図の生成・検査
 ├── images/                        バナーと README の図
