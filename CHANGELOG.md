@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The layout of the README is checked in the CI:** the validator runs `tools/universal_readme_check.py` and lists, as a warning, what differs from the universal layout of the README.
 - **MAVLink 2 signing.** `run --signing-key-file FILE` (or `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE`) signs what the bridge sends with a 32-byte key and refuses what is received unsigned (`--signing-allow-unsigned` keeps accepting it); without a key nothing changes. The key file is read as 32 raw bytes or 64 hexadecimal characters and is never printed. Documented in `docs/BRIDGE_GUIDE.md`. 8 new tests, against a recorder of the pymavlink calls.
 
 ## [0.1.5] - A `run` command keeps the heartbeat going and own ground-station heartbeat
