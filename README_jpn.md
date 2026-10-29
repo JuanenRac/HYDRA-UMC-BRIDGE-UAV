@@ -1,32 +1,35 @@
 <!-- =============================================================================
-HYDRA-UMC-BRIDGE-UAV - カメラ搭載ドローン双方向連携ブリッジ
-Copyright (C) 2026 JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
+HYDRA-UMC-BRIDGE-UAV - UAV coordination bridge
+Copyright (C) JuanenRac (Electro Hobby 3D) <electrohobby3d@gmail.com>
 GPL-3.0-or-later - see LICENSE
 ============================================================================= -->
 
 <p align="center">
-  <img src="images/HYDRA_UMC_BANNER.svg" alt="HYDRA-UMC-BRIDGE-UAV バナー" width="100%">
+  <img src="images/HYDRA_UMC_BANNER.svg" alt="HYDRA-UMC-BRIDGE-UAV banner" width="100%">
 </p>
 
-# 🛩️ HYDRA-UMC-BRIDGE-UAV
+# 🚁 HYDRA-UMC-BRIDGE-UAV
 
 <p align="center"><a href="README.md">🇺🇸 English</a> | <a href="README_spa.md">🇪🇸 Español</a> | <a href="README_fra.md">🇫🇷 Français</a> | <a href="README_ita.md">🇮🇹 Italiano</a> | <a href="README_deu.md">🇩🇪 Deutsch</a> | <a href="README_zho.md">🇨🇳 简体中文</a> | 🇯🇵 <b>日本語</b> | <a href="README_por.md">🇵🇹 Português</a></p>
 
 ### 🔗 HYDRA-UMCとカメラ搭載UAVとの間の依存関係なし連携境界
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Licencia-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
-  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python 3.11+">
-  <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="フェイルセーフ">
+  <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
+  <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
+  <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
+  <img src="https://img.shields.io/badge/Tests-132%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
 ---
 
-> **誠実性チェック - 今日実際に動くもの:** 依存関係のないフライトリクエストコア（`coordinator.py` の `UavCoordinator`。すべてのディスパッチは `HYDRA-UMC-SDK` 自身の本物の `evaluate_job()` を通過する）、決定論的なリンク断ハートビートウォッチドッグ（`heartbeat.py` の `HeartbeatMonitor`）、および本物の MAVLink コマンドトランスポート（`mavlink_transport.py` の `MavlinkFlightControl`）は本物であり、84件の通過するユニットテストで検証されている（`python tools/build_test.py` - `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`、および実際のものではなくプロトコルに忠実な手書きの MAVLink オートパイロットエミュレータに対してブリッジを動かす `test_mavlink_emulator.py`）。これらはいずれも、本物の `pymavlink` インストール、本物の無線・テレメトリーリンク、あるいは物理的な UAV・フライトコントローラに対しては検証されていない - `test_mavlink_transport.py` 独自の模擬 MAVLink 接続が `pymavlink` を完全に置き換えており（本物のライブラリがインストールされていなくてもこれらのテストは通過する）、実際の MAVLink・OSDK トランスポートがまだ選定・検証されていないため、実機向けの `run` コマンドもまだ存在しない。詳細は下記の「現状と次のステップ」に既に明記されており、これまでに実際に出荷された内容は `CHANGELOG.md` を参照。
-
----
+> **誠実性チェック - 今日実際に動くもの:** 依存関係のないフライトリクエストコア（`coordinator.py` の `UavCoordinator`。すべてのディスパッチは `HYDRA-UMC-SDK` 自身の本物の `evaluate_job()` を通過する）、決定論的なリンク断ハートビートウォッチドッグ（`heartbeat.py` の `HeartbeatMonitor`）、および本物の MAVLink コマンドトランスポート（`mavlink_transport.py` の `MavlinkFlightControl`）は本物であり、84件の通過するユニットテストで検証されている（`python tools/build_test.py` - `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`、および実際のものではなくプロトコルに忠実な手書きの MAVLink オートパイロットエミュレータに対してブリッジを動かす `test_mavlink_emulator.py`）。これらはいずれも、本物の `pymavlink` インストール、本物の無線・テレメトリーリンク、あるいは物理的な UAV・フライトコントローラに対しては検証されていない - `test_mavlink_transport.py` 独自の模擬 MAVLink 接続が `pymavlink` を完全に置き換えており（本物のライブラリがインストールされていなくてもこれらのテストは通過する）、実際の MAVLink・OSDK トランスポートがまだ選定・検証されていないため、実機向けの `run` コマンドもまだ存在しない。詳細は下記の「ロードマップと既知の制限」に既に明記されており、これまでに実際に出荷された内容は `CHANGELOG.md` を参照。
 
 > **安全性とセキュリティの現状:** このエコシステムは認証された安全システムではありません。ハードウェアの E-STOP 経路、ファームウェアが強制する制限やインターロック、検証済みの動作コマンドはまだありません。ファームウェアイメージは CRC32 と共有鍵の HMAC-SHA256 で検査しており、非対称署名ではありません。TLS と相互 TLS は任意で、既定では無効です。独自基板はまだ実装も試験もされていません。ここに書かれた内容を人の安全のために頼る前に、[セキュリティベースライン](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md)と[脅威モデル](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md)をお読みください。
+
+---
 
 ## 📋 ひと目で
 
@@ -34,9 +37,11 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | バージョン | `0.1.5` |
 | 成熟度 | 機能する |
-| テスト | 124 (`python tools/build_test.py`) |
+| テスト | 132 (`python tools/build_test.py`) |
 | 技術 | Python / MAVLink / HYDRA-UMC-SDK |
 | 実機での確認 | シミュレーションのみ：エミュレーター、模擬部品、シミュレーターで試験済み。このバージョンについて実機での動作記録はありません |
+
+**移動：** [概要](#-概要) · [アーキテクチャ](#-アーキテクチャ) · [機能](#-機能) · [セキュリティと安全](#-セキュリティと安全) · [インターフェース](#-インターフェース) · [設定](#-設定) · [クイックスタート](#-クイックスタート) · [テスト](#-テスト) · [トラブルシューティング](#-トラブルシューティング) · [リポジトリの構成](#-リポジトリの構成) · [関連プロジェクト](#-関連プロジェクト)
 
 ## 🚦 プロジェクトの状況
 
@@ -47,32 +52,30 @@ GPL-3.0-or-later - see LICENSE
 | 領域 | 状態 | ここでの意味 |
 |---|---|---|
 | ソフトウェア | 🟡 | 主な目的では動作します。足りない点は上の正直さの確認に書かれています |
-| テスト | 🟢 | 自動テスト 124 件。変更のたびに実行されます |
+| テスト | 🟢 | 自動テスト 132 件。変更のたびに実行されます |
 | 実機 | 🟠 | シミュレーションのみ：エミュレーター、模擬部品、シミュレーターで試験済み。このバージョンについて実機での動作記録はありません |
 | ドキュメント | 🟢 | 8 言語の README。変更のたびにマニフェストと照合されます |
 
-## 1. 🛠️ 技術概要
+## 🎯 概要
 
 **HYDRA-UMC-BRIDGE-UAV** は、HYDRA-UMCとカメラ搭載ドローン(UAV)との間の高レベルの連携境界であり、Wi-Fi、無線リンク、またはセルラー(4G/5G)テレメトリ接続経由で到達可能である。小規模で命名された高レベルの飛行リクエストの語彙(`ARM`、`TAKEOFF`、`GOTO_WAYPOINT`、`HOVER_AND_CAPTURE`、`RETURN_TO_LAUNCH`)を検証・転送し、それとは別に実在する必須のリンク喪失ハートビート・ウォッチドッグを実行する。飛行制御や姿勢安定化を計算することは一切なく、HYDRA-UMC-SERVER、MCUの限界、ウォッチドッグ、E-STOPを迂回することはできない。 現時点で機体からの戻り経路はコマンドの確認応答(`COMMAND_ACK`)のみで、テレメトリは読み取らない。
 
 `HYDRA-UMC-BRIDGE-DROIDS` および `HYDRA-UMC-BRIDGE-AMR` とともに **Mobile & Autonomous Bridges** ファミリーに属し、静的な **External Automation Bridges**(CNC、LASER、OPENPNP、PRINTER3D、ROS2)と同じ `HYDRA-UMC-SDK` のジョブ・安全契約を共有している。
 
-### 主な機能:
-* ✅ **実在する依存関係なしの飛行リクエストコア:** `coordinator.py` の `UavCoordinator` はMAVLinkやベンダーSDKのインポートが一切ない —— 意図的に純粋なPythonであり、実際のUAVが接続されていないどのホストでもテスト可能である。*(実装済み、`tests/test_coordinator.py` でテスト済み)*
-* ✅ **実在する命名済み飛行リクエスト語彙:** `ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`, `LAND` - 生の姿勢/スロットルコマンドは決して使いません。通常のミッション `COMPLETE` と緊急の `ABORT` は、どちらも同じ実在の `RETURN_TO_LAUNCH` リクエストに解決されます。`LAND` は実在し、明確に別物です - MAVLink 自身の `MAV_CMD_NAV_LAND` 対 `MAV_CMD_NAV_RETURN_TO_LAUNCH`([公式 MAVLink common メッセージセット](https://mavlink.io/en/messages/common.html)で確認済み)- RTL だけでは対応できない実際のケース、つまり先に帰還せずすぐ降下する場合(例: バッテリー残量が少なすぎる、または帰路が安全でない)のためです。`emergency_land_request()` は単独のリクエストとして提供され、`JobPhase` 駆動の `dispatch()` フローの外に意図的に置かれています - `HeartbeatMonitor` の独立したシグナルと同じ考え方です。*(実装済み)*
-* ✅ **実在する必須のリンク喪失ハートビート・ウォッチドッグ:** `HeartbeatMonitor` は、明示的な `now` によって駆動される決定論的なフェイルセーフ状態機械である —— 実際の時計を読み取ることは一切なく、一度も観測されなければ最初のチェックから `LOST` を報告し、タイムアウトちょうどの瞬間はまだ `OK` として扱う(真に超過した場合のみ、設定された `RETURN_TO_LAUNCH`/`LAND` のフェイルセーフが発動する)。*(実装済み、`tests/test_heartbeat.py` で決定論的な境界値の完全なスイートによりテスト済み)*
-* ✅ **ブリッジ自身の地上局ハートビート:** `gcs_heartbeat.py` の `GcsHeartbeat` が、バックグラウンドスレッドで `MAV_TYPE_GCS` タイプの MAVLink `HEARTBEAT` を送信します(既定 1 Hz、`HYDRA_UAV_GCS_HEARTBEAT_HZ` で 0.1〜10、`0` で無効)。ブリッジが停止すると、オートパイロット自身の地上局喪失フェイルセーフが働きます。送信できなかった拍はカウントされ報告されますが、例外として投げられることはありません。*(実装済み、`tests/test_gcs_heartbeat.py` で模擬リンクを使ってテスト済み。実機のオートパイロットでは未検証)* `hydra-umc-bridge-uav run --connection <URL>`(または `python -m hydra_umc_bridge_uav run ...`)は MAVLink リンクを開いてこのハートビートを送り続け、数秒ごとに状態行を出力し、Ctrl-C、SIGTERM、`--duration` できれいに停止します。機体にはそれ以外を送りません。リンクの記録用スタブでテスト済みで、実際のオートパイロットや SITL では実行していません。
-* ✅ **実在する共有安全ゲート:** `UavCoordinator.dispatch()` を通じて送信されるすべてのジョブは、`HYDRA-UMC-SDK` の `bridge_contract` にある `evaluate_job()` によって評価される。これは他のすべての兄弟ブリッジとHYDRA-UMC-SERVERが使うのと同じゲートである。生産フェーズには外部機械が `IDLE` であり、HYDRA-UMCセルが `READY` であることが必要だが、`ABORT` は故障中でも要求可能なままである。*(実装済み)*
-* ✅ **フェイルクローズのフェーズルーティングと静的エビデンス:** 未知の将来SDKフェーズは拒否される。`inspect_request_plan.py` は、独立した `LAND` リクエストを今や含む静的スキーマ `1.1` の飛行リクエストプランを、トランスポートを一切開かずに出力する。*(実装・テスト済み)*
-* ✅ **実在するMAVLinkコマンドトランスポート:** `mavlink_transport.py` の `MavlinkFlightControl` は、既にゲートを通過したディスパッチを実際の `COMMAND_LONG` として送信し、実際の番号付き `MAV_CMD`(`MAV_CMD_NAV_TAKEOFF`/`MAV_CMD_DO_REPOSITION`/`MAV_CMD_NAV_LOITER_UNLIM`/`MAV_CMD_IMAGE_START_CAPTURE`/`MAV_CMD_NAV_RETURN_TO_LAUNCH`/`MAV_CMD_NAV_LAND`/`MAV_CMD_COMPONENT_ARM_DISARM`)にマッピングする —— 拒否されたディスパッチはネットワークに到達しない。*(実装済み、`tests/test_mavlink_transport.py` でテスト済み)*
-* ✅ **明示的な高度基準、飛行エンベロープ、安全状態への要求:** `GOTO_WAYPOINT` は `COMMAND_INT`(位置は度 × 1e7、機首方位は維持)として送られ、`altitude_frame` を明示します - `"relative"`(離陸地点からのメートル、既定)または `"amsl"`。任意の `FlightEnvelope`(導入先が決める上限高度と原点からの半径)は範囲外を拒否します。`RETURN_TO_LAUNCH`、`LAND`、単独の `DISARM`(強制はしない)はゲートが拒否した場合でも送信され、`COMPLETE` による通常の帰還はセルや機械の状態に関わらず受け入れられます。`COMMAND_ACK` の待機は他のコマンドや他のシステムの応答を読み飛ばし、`IN_PROGRESS` は未完了として扱います。*(実装済み、テスト済み。ワイヤ形式はエミュレーターに対してのみ確認しており、PX4/ArduPilot の SITL や実際のオートパイロットでは未確認です。`TAKEOFF` の高度は `COMMAND_LONG` が基準を持たないため、引き続きオートパイロット自身の基準です)*
-* ✅ **非破壊的なビルド/テスト:** `build-test.bat`/`.sh` はソースをコンパイルし、バージョンやCHANGELOGを変更せずに決定論的なユニットテストを実行する。*(実装済み、下記「ビルドと実行」を参照)*
-* 🔜 **DJI OSDKトランスポートアダプター**(非MAVLinkプラットフォーム向け)—— そのSDKが選定・テストされた後にのみ導入される。*(計画中)*
-* ✅ **観測した機器の状態:** `UavCoordinator.dispatch()` はオートパイロットが報告した状態を受け取り、共有ゲートはジョブに書かれた `machine_state`（ブローカー上の誰でも発行できるメッセージ）の代わりにそれを使います。報告がない場合は従来どおり申告値を使います。*（実装済み、`tests/test_observed_state.py` でテスト済み）*
+## 🧩 HYDRA-UMC での役割
 
----
+**HYDRA-UMC-BRIDGE-UAV** は カメラ搭載の UAV（MAVLink） とロボットセルの間に位置します。相手側の報告を伝え、補助作業の前に共通ゲートへ問い合わせ、協調する機械の権限を決して引き継ぎません。
 
-## 2. 🔄 UAV連携フロー
+すべてのブリッジと同じ `HYDRA-UMC-SDK` の安全契約に従います。ジョブは共通の `evaluate_job()` ゲートが許可したときだけ受け付けられ、ゲートは安全側に倒れます。このブリッジに MQTT トランスポートはなく、コマンド `hydra-umc-bridge-uav run` として動きます。
+
+## 🏛️ アーキテクチャ
+
+<p align="center">
+  <img src="images/architecture.svg" alt="HYDRA-UMC-BRIDGE-UAV architecture" width="100%">
+</p>
+
+<details>
+<summary>図のテキスト版（Mermaid）</summary>
 
 ```mermaid
 flowchart LR
@@ -84,9 +87,9 @@ flowchart LR
     SDK -- GateDecision --> BRIDGE
 ```
 
----
+</details>
 
-## 3. 🧱 アーキテクチャと設計判断
+**この作りにした理由**
 
 * **なぜハートビート・ウォッチドッグは、コーディネーターに組み込まず独自のモジュールなのか。** リンク喪失は「このジョブは今許可されているか」とは異なる実在する独立した故障モードである —— `HeartbeatMonitor` は、個々のジョブとは独立して「このUAVから最後に聞いたことを、まだ信頼できるか」に答えるため、ジョブがたまたま送信されたときだけでなく、継続的に(たとえば毎回のテレメトリティックごとに)チェックできる。
 * **なぜ `HeartbeatMonitor` は実際の時計を読み取るのではなく、明示的な `now` を受け取るのか。** 本プロジェクトが出発点とした貼り付けられたアーキテクチャノートは、UAVブリッジがこのウォッチドッグを必須とすることを明示している —— タイムアウト境界での正確な挙動(単に「いずれタイムアウトする」ではなく)を証明する唯一の方法は、不安定で低速な実スリープベースのテストスイートに頼らず、時間を明示的でテスト可能な入力にすることである。
@@ -95,59 +98,83 @@ flowchart LR
 * **なぜDJI OSDKトランスポートアダプターがまだこのリポジトリにないのか。**(MAVLinkトランスポートは上記のとおり存在する。) 特定のフライトコントローラーの実際のコマンド/テレメトリプロトコルに、それが選定・テストされる前にコミットすることは、この依存関係のないローカルコアが検証できない前提を組み込むリスクを伴う。
 * **エコシステムの他部分とどう関係するか。** BRIDGE-UAVは実際のUAVと `HYDRA-UMC-SDK` → `HYDRA-UMC-SERVER` → MCU安全との間に位置する —— 連携境界であり、飛行制御ノードでは決してなく、HYDRA-UMC-SERVER、MCUの限界、ウォッチドッグ、E-STOPを迂回することはできない。
 
----
+## ✨ 機能
 
-## 📂 ディレクトリ構成
+* ✅ **実在する依存関係なしの飛行リクエストコア:** `coordinator.py` の `UavCoordinator` はMAVLinkやベンダーSDKのインポートが一切ない —— 意図的に純粋なPythonであり、実際のUAVが接続されていないどのホストでもテスト可能である。*(実装済み、`tests/test_coordinator.py` でテスト済み)*
+* ✅ **実在する命名済み飛行リクエスト語彙:** `ARM`, `TAKEOFF`, `GOTO_WAYPOINT`, `HOVER_AND_CAPTURE`, `RETURN_TO_LAUNCH`, `LAND` - 生の姿勢/スロットルコマンドは決して使いません。通常のミッション `COMPLETE` と緊急の `ABORT` は、どちらも同じ実在の `RETURN_TO_LAUNCH` リクエストに解決されます。`LAND` は実在し、明確に別物です - MAVLink 自身の `MAV_CMD_NAV_LAND` 対 `MAV_CMD_NAV_RETURN_TO_LAUNCH`([公式 MAVLink common メッセージセット](https://mavlink.io/en/messages/common.html)で確認済み)- RTL だけでは対応できない実際のケース、つまり先に帰還せずすぐ降下する場合(例: バッテリー残量が少なすぎる、または帰路が安全でない)のためです。`emergency_land_request()` は単独のリクエストとして提供され、`JobPhase` 駆動の `dispatch()` フローの外に意図的に置かれています - `HeartbeatMonitor` の独立したシグナルと同じ考え方です。*(実装済み)*
+* ✅ **実在する必須のリンク喪失ハートビート・ウォッチドッグ:** `HeartbeatMonitor` は、明示的な `now` によって駆動される決定論的なフェイルセーフ状態機械である —— 実際の時計を読み取ることは一切なく、一度も観測されなければ最初のチェックから `LOST` を報告し、タイムアウトちょうどの瞬間はまだ `OK` として扱う(真に超過した場合のみ、設定された `RETURN_TO_LAUNCH`/`LAND` のフェイルセーフが発動する)。*(実装済み、`tests/test_heartbeat.py` で決定論的な境界値の完全なスイートによりテスト済み)*
+* ✅ **ブリッジ自身の地上局ハートビート:** `gcs_heartbeat.py` の `GcsHeartbeat` が、バックグラウンドスレッドで `MAV_TYPE_GCS` タイプの MAVLink `HEARTBEAT` を送信します(既定 1 Hz、`HYDRA_UAV_GCS_HEARTBEAT_HZ` で 0.1〜10、`0` で無効)。ブリッジが停止すると、オートパイロット自身の地上局喪失フェイルセーフが働きます。送信できなかった拍はカウントされ報告されますが、例外として投げられることはありません。*(実装済み、`tests/test_gcs_heartbeat.py` で模擬リンクを使ってテスト済み。実機のオートパイロットでは未検証)* `hydra-umc-bridge-uav run --connection <URL>`(または `python -m hydra_umc_bridge_uav run ...`)は MAVLink リンクを開いてこのハートビートを送り続け、数秒ごとに状態行を出力し、Ctrl-C、SIGTERM、`--duration` できれいに停止します。機体にはそれ以外を送りません。リンクの記録用スタブでテスト済みで、実際のオートパイロットや SITL では実行していません。
+* ✅ **実在する共有安全ゲート:** `UavCoordinator.dispatch()` を通じて送信されるすべてのジョブは、`HYDRA-UMC-SDK` の `bridge_contract` にある `evaluate_job()` によって評価される。これは他のすべての兄弟ブリッジとHYDRA-UMC-SERVERが使うのと同じゲートである。生産フェーズには外部機械が `IDLE` であり、HYDRA-UMCセルが `READY` であることが必要だが、`ABORT` は故障中でも要求可能なままである。*(実装済み)*
+* ✅ **フェイルクローズのフェーズルーティングと静的エビデンス:** 未知の将来SDKフェーズは拒否される。`inspect_request_plan.py` は、独立した `LAND` リクエストを今や含む静的スキーマ `1.1` の飛行リクエストプランを、トランスポートを一切開かずに出力する。*(実装・テスト済み)*
+* ✅ **実在するMAVLinkコマンドトランスポート:** `mavlink_transport.py` の `MavlinkFlightControl` は、既にゲートを通過したディスパッチを実際の `COMMAND_LONG` として送信し、実際の番号付き `MAV_CMD`(`MAV_CMD_NAV_TAKEOFF`/`MAV_CMD_DO_REPOSITION`/`MAV_CMD_NAV_LOITER_UNLIM`/`MAV_CMD_IMAGE_START_CAPTURE`/`MAV_CMD_NAV_RETURN_TO_LAUNCH`/`MAV_CMD_NAV_LAND`/`MAV_CMD_COMPONENT_ARM_DISARM`)にマッピングする —— 拒否されたディスパッチはネットワークに到達しない。*(実装済み、`tests/test_mavlink_transport.py` でテスト済み)*
+* ✅ **明示的な高度基準、飛行エンベロープ、安全状態への要求:** `GOTO_WAYPOINT` は `COMMAND_INT`(位置は度 × 1e7、機首方位は維持)として送られ、`altitude_frame` を明示します - `"relative"`(離陸地点からのメートル、既定)または `"amsl"`。任意の `FlightEnvelope`(導入先が決める上限高度と原点からの半径)は範囲外を拒否します。`RETURN_TO_LAUNCH`、`LAND`、単独の `DISARM`(強制はしない)はゲートが拒否した場合でも送信され、`COMPLETE` による通常の帰還はセルや機械の状態に関わらず受け入れられます。`COMMAND_ACK` の待機は他のコマンドや他のシステムの応答を読み飛ばし、`IN_PROGRESS` は未完了として扱います。*(実装済み、テスト済み。ワイヤ形式はエミュレーターに対してのみ確認しており、PX4/ArduPilot の SITL や実際のオートパイロットでは未確認です。`TAKEOFF` の高度は `COMMAND_LONG` が基準を持たないため、引き続きオートパイロット自身の基準です)*
+* ✅ **非破壊的なビルド/テスト:** `build-test.bat`/`.sh` はソースをコンパイルし、バージョンやCHANGELOGを変更せずに決定論的なユニットテストを実行する。*(実装済み、下記「ビルドとリリース」を参照)*
+* 🔜 **DJI OSDKトランスポートアダプター**(非MAVLinkプラットフォーム向け)—— そのSDKが選定・テストされた後にのみ導入される。*(計画中)*
+* ✅ **観測した機器の状態:** `UavCoordinator.dispatch()` はオートパイロットが報告した状態を受け取り、共有ゲートはジョブに書かれた `machine_state`（ブローカー上の誰でも発行できるメッセージ）の代わりにそれを使います。報告がない場合は従来どおり申告値を使います。*（実装済み、`tests/test_observed_state.py` でテスト済み）*
 
-```text
-HYDRA-UMC-BRIDGE-UAV/
-├── src/
-│   └── hydra_umc_bridge_uav/
-│       ├── __init__.py
-│       ├── coordinator.py       # UavCoordinator: 依存関係なしの飛行リクエストゲート
-│       ├── heartbeat.py         # HeartbeatMonitor: 実在する決定論的なリンク喪失フェイルセーフ
-│       ├── gcs_heartbeat.py     # 設定可能な周期の自前地上局 HEARTBEAT
-│       ├── mavlink_transport.py # 検証済みのUavDispatchを実際のMAVLink COMMAND_LONG / COMMAND_INTとして送信
-│       ├── simulated_uav.py     # 飛行状態テーブル + シミュレート機体:テレメトリ・認可・アーム状態を分離、トランスポートなし
-│       ├── __main__.py          # python -m hydra_umc_bridge_uav のエントリポイント
-│       └── cli.py               # コマンドライン
-├── tests/
-│   ├── test_coordinator.py      # 連携コアの決定論的ユニットテスト
-│   ├── test_observed_state.py   # ゲートはオートパイロットが報告した機器の状態を使う
-│   ├── test_heartbeat.py        # ウォッチドッグの境界値に対する決定論的テスト
-│   ├── test_simulated_uav.py    # 状態テーブルとシミュレート機体のテスト
-│   ├── test_mavlink_transport.py # 疑似MAVLink接続に対する実MAV_CMD形状テスト
-│   ├── mavlink_emulator.py       # プロトコル忠実な MAVLink autopilot エミュレータ（現実的なテストダブル）
-│   ├── test_mavlink_emulator.py  # MAVLink autopilot エミュレータに対する bridge の振る舞い
-│   ├── test_cli.py               # コマンドラインのテスト
-│   ├── test_edge_cases.py        # 安全状態の要求、リンクアダプター、エンベロープの境界
-│   └── test_gcs_heartbeat.py     # 自前の地上局ハートビートのテスト
-├── tools/
-│   ├── build_test.py            # 非破壊的なコンパイル+テストランナー (build-test.bat/.sh)
-│   ├── bump_version.py          # pyproject.toml、マニフェスト、CHANGELOG.md を同期
-│   ├── ci_validate.py           # 依存関係なし・非破壊のCIベースライン (.github/workflows/ci.yml が使用)
-│   ├── inspect_request_plan.py  # 静的な飛行リクエストプランを出力する(トランスポートを開かない)
-│   ├── _doc_policy.py           # ファミリー共通のドキュメント規則 (HYDRA-UMC-SDK のコピーで、同期を維持)
-│   ├── _readme_parity.py        # 8つの README が同じ構造であることの検査 (HYDRA-UMC-SDK のコピーで、同期を維持)
-│   ├── hydra_project_tool.py    # すべてのリポジトリで共通のコマンド: validate、test、ci、version、status、bump
-│   └── extra_build_steps.py     # 共通のビルドテストに加えた、このリポジトリ固有のビルド手順 (独自のユニットテスト)
-├── docs/
-│   └── BRIDGE_GUIDE.md          # 適用範囲、対応プラットフォーム、スクリプト、ハードウェア受け入れゲート
-├── images/
-│   └── HYDRA_UMC_BANNER.svg     # README バナー
-├── build-test.bat / build-test.sh  # 検証のみ、リポジトリを一切変更しない
-├── build.bat / build.sh            # 検証後、成功時のみバージョン + CHANGELOG を更新
-├── pyproject.toml               # パッケージメタデータ。HYDRA-UMC-SDK に依存 (git)
-├── hydra-umc.project.json       # エコシステムマニフェスト(バージョン、成熟度、ファミリー)
-├── CHANGELOG.md
-├── CODE_OF_CONDUCT.md / CONTRIBUTING.md / SECURITY.md / SUPPORT.md
-├── LICENSE / LICENSE.md
-└── README.md / README_*.md      # 本ファイルおよびその6言語訳
+## 🔒 セキュリティと安全
+
+| 脅威 | 防御 | 場所 |
+|---|---|---|
+| 安全でない状態のセルや機械へのジョブ | すべてのジョブは SDK の共通 `evaluate_job()` ゲートを通り、ゲートは安全側に倒れます。ブリッジ自身に受理・拒否のロジックはありません | SDK `bridge_contract` |
+| 過大なジョブデータ | パラメーターは最大 32 個、キーは 64 文字、値は 1024 文字、識別子は 128 文字まで（`MAX_PARAMETERS`、`MAX_PARAMETER_KEY_CHARS`、`MAX_PARAMETER_VALUE_CHARS`、`MAX_IDENTIFIER_CHARS`） | SDK `bridge_contract` |
+| 繰り返された、または再送された命令 | `IdempotencyStore` は各キーを 24 時間、最大 10 000 件まで記憶し、再送には再評価せず最初の応答を返します | SDK `job_intake` |
+| 機体とのリンクの喪失 | `HeartbeatMonitor` は決定論的な状態機械で、フェイルセーフは `RETURN_TO_LAUNCH` または `LAND` です。ブリッジは自分の地上局 HEARTBEAT を既定 1 Hz で送ります（0.1〜10 Hz、`HYDRA_UAV_GCS_HEARTBEAT_HZ`） | `heartbeat.py`, `gcs_heartbeat.py` |
+| 誰も承認していない命令 | `ARM`・`TAKEOFF`・`GOTO_WAYPOINT`・`HOVER_AND_CAPTURE` には承認が必要で、`DISARM` を除く安全状態の要求は常に受け付けられます | `simulated_uav.py` |
+| 偽造された MAVLink メッセージ | 32 バイトのキー（生ファイルまたは 16 進 64 文字）による MAVLink 2 署名。`--signing-key-file` または `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` で指定します。未署名のメッセージは、まだ署名しない機体向けに `--signing-allow-unsigned` を付けない限り拒否されます | `mavlink_transport.py`, `cli.py` |
+| 取り違えた高度の基準 | 高度の基準は明示です：`relative`（`GLOBAL_RELATIVE_ALT_INT`）または `amsl`（`GLOBAL_INT`） | `mavlink_transport.py` |
+
+**絶対にしないこと：** ゲートが承認した高レベルの飛行要求だけを実際の MAVLink コマンド（ARM/DISARM、TAKEOFF、DO_REPOSITION、LOITER_UNLIM、RTL、LAND、IMAGE_START_CAPTURE）に変換し、生の動作は送りません。
+
+## 🔌 インターフェース
+
+コマンド `hydra-umc-bridge-uav run`（または `python -m hydra_umc_bridge_uav run`）は MAVLink リンクを開き、地上局のハートビートを維持します。終了コード：`0` 正常終了、`1` リンクを開けない／ハートビートを送れない、`2` オプション誤り。
+
+| 変数 | 既定値 | 設定する内容 |
+|---|---|---|
+| `--connection` | 必須 | pymavlink の URL。例：`udpin:0.0.0.0:14550`、`/dev/ttyUSB0` |
+| `--heartbeat-hz` | `1.0` | 0.1〜10。既定値は `HYDRA_UAV_GCS_HEARTBEAT_HZ` から |
+| `--heartbeat-timeout` | `10.0` | 機体の最初のハートビートを待つ秒数 |
+| `--status-every`, `--duration` | `10.0`, `0` | 状態行の間隔の秒数（`0` なら表示しない）と、この秒数で停止（`0` は止めるまで実行） |
+| `--signing-key-file`, `--signing-allow-unsigned` | オフ | MAVLink 2 署名キーのファイルと、まだ署名しない機体からの未署名メッセージの受け入れ |
+
+## ⚙️ 設定
+
+| 変数 | 既定値 | 設定する内容 |
+|---|---|---|
+| `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | ブリッジの地上局ハートビートの周波数（0.1〜10）。`0` で停止 |
+| `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | 未設定 | MAVLink 2 署名キーのパス（32 バイト、生または 16 進 64 文字）。`--signing-key-file` が優先されます |
+
+## 🚀 クイックスタート
+
+Python 3.11 以上が必要です。テストとビルドスクリプトは、このリポジトリの隣にある `HYDRA-UMC-SDK`（`../HYDRA-UMC-SDK`）、または `HYDRA_UMC_SDK_ROOT` で指定した場所を前提にします。
+
+ハードウェアなしで試す（エミュレーターと模擬部品でブリッジ全体を確認します）：
+
+```bash
+py -3 tools/build_test.py          # Windows
+python3 tools/build_test.py         # Linux, macOS
 ```
 
----
+ブリッジを実行します（追加パッケージ `mavlink` が必要：`pip install ".[mavlink]"`）：
 
-## 4. ⚙️ ビルドと実行
+```bash
+hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/uav-signing.key
+```
+
+## 🧪 テスト
+
+`python tools/build_test.py` で自動 `unittest` 132 件を実行します（各モジュールのコンパイルも行います）。テストにハードウェア、ネットワーク、オプションのパッケージは不要で、`paho-mqtt`・`pyserial`・ベンダーのライブラリが必要なものは代用品を使うか、パッケージがなければスキップされます。
+
+| テストファイル | テスト数 | 対象 |
+|---|---|---|
+| `test_coordinator.py`, `test_observed_state.py`, `test_simulated_uav.py` | - | ジョブから飛行要求への変換、観測された機体状態、どの状態からどの要求が許されるか |
+| `test_mavlink_transport.py`, `test_mavlink_emulator.py`, `mavlink_emulator.py` | - | ダミーとエミュレーターに対する実際の MAVLink コマンド、高度の基準、署名 |
+| `test_heartbeat.py`, `test_gcs_heartbeat.py`, `test_cli.py`, `test_edge_cases.py` | - | リンク喪失のフェイルセーフ、地上局ハートビート、コマンドラインと終了コード、境界ケース |
+
+CI は `HYDRA_UMC_CI=1 python tools/ci_validate.py` を実行し、マニフェスト、文書、8 つの README、図を検査し、SDK のチェックアウトを使ってテストを実行します。
+
+## 🏗️ ビルドとリリース
 
 Python 3.11以上が必要。`tools/build_test.py` は `HYDRA-UMC-SDK` が兄弟ディレクトリ(`../HYDRA-UMC-SDK`)としてチェックアウトされているか、環境変数 `HYDRA_UMC_SDK_ROOT` で指定されていることを期待する。
 
@@ -163,9 +190,52 @@ bash build.sh
 
 `build-test` は `src/` 配下の各モジュールを `py_compile` でコンパイルし、`unittest` の全スイート(`tests/` 配下のすべての `test_*.py`)を実行する —— 実際のUAV接続もネットワークもなく決定論的に動作し、バージョンやCHANGELOGを変更しない。`build` はまず同じ検証を実行し、成功した場合のみ `tools/bump_version.py` を呼び出して `pyproject.toml`、`hydra-umc.project.json`、`CHANGELOG.md` の間でバージョンを同期する。実際のハードウェア向け `run` コマンドはまだ存在しない —— それには検証済みのMAVLink/OSDKトランスポートアダプターと実際のUAVが必要である。
 
----
+## 🩺 トラブルシューティング
 
-## ✅ 現状と次のステップ
+| 表示 | 原因 | 対処 |
+|---|---|---|
+| `ModuleNotFoundError: hydra_umc_sdk` | SDK がインストールされておらず、このリポジトリの隣にもありません | `HYDRA-UMC-SDK` をこのリポジトリの隣に置くか、`HYDRA_UMC_SDK_ROOT` を設定します |
+| exit code `1` | MAVLink リンクを開けない、またはハートビートを送れませんでした | `--connection`（URL またはシリアルデバイス）と `pymavlink` のインストール（`.[mavlink]`）を確認します |
+| exit code `2` | 不正なオプション（0.1〜10 の範囲外の周波数や読めない署名キーなど） | オプションを直します。キーファイルは正確に 32 バイト（生または 16 進 64 文字）である必要があります |
+| `"allowed": false` + `reason` | 共通ゲートまたはガードが命令を拒否しました | `reason` を読んで原因を直します。やみくもに再試行しないでください |
+
+## 📂 リポジトリの構成
+
+<p align="center">
+  <img src="images/repository-structure.svg" alt="Repository structure of HYDRA-UMC-BRIDGE-UAV" width="100%">
+</p>
+
+<details>
+<summary>ツリーのテキスト版</summary>
+
+```text
+HYDRA-UMC-BRIDGE-UAV/
+├── src/hydra_umc_bridge_uav/
+│   ├── coordinator.py             ジョブを名前付きの飛行要求へ
+│   ├── mavlink_transport.py       承認済みの要求を実際の MAVLink コマンドに
+│   ├── heartbeat.py               リンク喪失フェイルセーフの状態機械
+│   ├── gcs_heartbeat.py           ブリッジ自身の地上局 HEARTBEAT
+│   ├── cli.py                     `hydra-umc-bridge-uav run`
+│   └── simulated_uav.py           どの状態からどの要求が許されるか
+├── tests/                         132 件（MAVLink エミュレーター付き）
+├── docs/                          ブリッジガイド
+├── tools/                         ビルド・テスト実行、バージョン引き上げ、CI 検証、README と図の生成・検査
+├── images/                        バナーと README の図
+├── .github/                       CI ワークフローと Issue テンプレート
+├── pyproject.toml                 パッケージのメタデータと依存関係
+├── hydra-umc.project.json         マニフェスト：バージョン・成熟度・ファミリー
+├── CHANGELOG.md                   各バージョンの変更点
+├── build.sh build.bat             ビルドスクリプト（バージョンは変えません）
+├── build-test.sh build-test.bat   ビルドスクリプト（バージョンは変えません）
+├── test.sh test.bat               テストを実行
+└── SECURITY.md SUPPORT.md CONTRIBUTING.md CODE_OF_CONDUCT.md LICENSE LICENSE.md
+```
+
+</details>
+
+## 🗺️ ロードマップと既知の制限
+
+**現時点の既知の制限**
 
 **現時点で実在するもの:** バージョン `0.1.5`。依存関係なしの連携コア(`UavCoordinator`)に加えて、境界値が完全にテストされた実在するリンク喪失ハートビート・ウォッチドッグ(`HeartbeatMonitor`)、フェイルクローズのフェーズルーティング、静的な `plan-only` 飛行リクエストスキーマ、各リクエストを実際の番号付き `MAV_CMD` にマッピングする実在するMAVLinkコマンドトランスポート(`MavlinkFlightControl`)——武装化には今やリテラルなブール値 `confirm_arm is True` が必須となり(文字列 `'false'` のような単に真値であるだけの値は決して許可されない)、あらゆる数値の飛行パラメーターは有限性/範囲チェックの前に真の非ブール数値であることが確認されるようになり、送信されたコマンドは実在する `COMMAND_ACK`(`MAV_RESULT_ACCEPTED`)が返ってきて初めて確認済みとして報告されるようになった——SDKチェックアウトを伴いCIに組み込まれた非破壊的なbuild-testスクリプトを備えて機能している。
 
@@ -173,7 +243,9 @@ bash build.sh
 
 **今後の課題:** 実際のMAVLink(Pixhawk/PX4)もDJI OSDKトランスポートも、物理的なUAVもまだ一切検証されていない —— 実際のアダプターは、具体的なフライトコントローラー/SDKが選定・テストされた後にのみ導入される。
 
----
+## 🌍 言語
+
+この README とリポジトリの文書は、英語・スペイン語・ドイツ語・フランス語・イタリア語・日本語・中国語・ポルトガル語（ポルトガル）の 8 言語で提供されています。8 つのファイルは同時に書かれ、同じ節と同じリンクを持つことを CI が確認します。 このリポジトリには独自の画面もメッセージカタログもないため、翻訳すべきインターフェース文字列はありません。
 
 ## 🔗 関連プロジェクト
 
@@ -268,20 +340,27 @@ bash build.sh
 - **[HYDRA-UMC-OPS-AGENT](https://github.com/JuanenRac/HYDRA-UMC-OPS-AGENT)** — 保守インシデントコーディネーター: 低権限のエッジ役割がサニタイズされたインベントリ/ヘルスのスナップショットを収集し、コントロールプレーン役割がそれを読み取り専用でレンダリングして AI プロバイダーに診断の提案を依頼します - パッチを適用することも、何かをデプロイすることも決してありません。
 - **[HYDRA-UMC-DEV-SERVER](https://github.com/JuanenRac/HYDRA-UMC-DEV-SERVER)** — 再現可能な開発ホスト（Raspberry Pi 5 / CM5）。エコシステムのソースコードを保管し、永続キューのもとで境界の明確なビルド/テストタスクを実行する。運用中の CM5 とは明確に異なる、開発専用の役割。
 
----
+## 📚 ドキュメント
 
-## 📚 ドキュメント & コミュニティ
+さらに読むには：
 
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** —— プルリクエストのための技術スタックとコーディング指針。
-- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** —— このコミュニティで期待される行動規範。
-- **[SECURITY.md](SECURITY.md)** —— 脆弱性の報告方法と、このプロジェクトの実際のセキュリティ重点領域。
-- **[SUPPORT.md](SUPPORT.md)** —— 質問の投稿先とバグの報告先。
-- **[LICENSE.md](LICENSE.md)** —— このプロジェクト自身のライセンス。
+* [docs/BRIDGE_GUIDE.md](docs/BRIDGE_GUIDE.md) - 範囲、飛行要求、MAVLink、署名、フェイルセーフ、スクリプト
+* [エコシステムのセキュリティ基準](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md)
+* [エコシステムの脅威モデル](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md)
+* [このリポジトリの変更履歴](CHANGELOG.md)
+* [このリポジトリのライセンス](LICENSE.md)
+
+## 🤝 コントリビュートとコミュニティ
+
+* プルリクエストの前に `HYDRA_UMC_CI=1 py -3 tools/ci_validate.py`（または `HYDRA_UMC_CI=1 python3 tools/ci_validate.py`）を実行してください。`CI_VALIDATION=PASS` と表示される必要があります。この確認に `build.sh` や `build.bat` は使わないでください。ビルドは検査ではありません。
+* 8 つの README は HYDRA-UMC-DOCS の 1 つのソースから書かれます。手で編集しないでください。ソースを変更し、`tools/make_readmes.py` で書き直します。
+* 実行していないことを README に書かないでください。事実であれば「シミュレーションのみ」「実機では未確認」と書きます。
+* [CONTRIBUTING.md](CONTRIBUTING.md)、[行動規範](CODE_OF_CONDUCT.md)、[SECURITY.md](SECURITY.md)、[SUPPORT.md](SUPPORT.md) を参照してください。
 
 ## 👤 作者
-**JuanenRac** (Electro Hobby 3D)
-📧 electrohobby3d@gmail.com
-📺 [youtube.com/@electrohobby3d](https://youtube.com/@electrohobby3d)
+
+**JuanenRac (Electro Hobby 3D)** · electrohobby3d@gmail.com
 
 ## 📜 ライセンス
-GPL-3.0-or-later - 詳細はLICENSEを参照。
+
+GPL-3.0-or-later - [LICENSE](LICENSE).

@@ -1,0 +1,115 @@
+{
+  "repo": "HYDRA-UMC-BRIDGE-UAV",
+  "ecosystem": "hydra",
+  "tagline": "A cell job becomes a high-level flight request, signed MAVLink, and a failsafe if the link is lost.",
+  "description": "HYDRA-UMC-BRIDGE-UAV maps a correlated cell job onto a named high-level flight request, asks the shared evaluate_job gate of HYDRA-UMC-SDK and sends the approved request to a camera-equipped UAV as a real MAVLink command, signed when a key is given. A link-loss state machine and the bridge's own ground-station heartbeat decide return-to-launch or land when the vehicle goes silent.",
+  "columns": [
+    "WHO USES IT",
+    "THIS REPOSITORY",
+    "WHAT IT DEPENDS ON"
+  ],
+  "nodes": [
+    {
+      "id": "sdk",
+      "column": 0,
+      "level": "contract",
+      "title": "HYDRA-UMC-SDK",
+      "lines": [
+        "evaluate_job(): the gate",
+        "every bridge shares"
+      ]
+    },
+    {
+      "id": "cell",
+      "column": 0,
+      "level": "external",
+      "title": "Robot cell job",
+      "lines": [
+        "BridgeJob with a",
+        "correlation id"
+      ]
+    },
+    {
+      "id": "coord",
+      "column": 1,
+      "level": "contract",
+      "title": "coordinator.py",
+      "lines": [
+        "UavCoordinator: job to a named",
+        "flight request"
+      ],
+      "code": [
+        "src/hydra_umc_bridge_uav/coordinator.py::class UavCoordinator"
+      ]
+    },
+    {
+      "id": "mav",
+      "column": 1,
+      "level": "tested",
+      "title": "mavlink_transport.py",
+      "lines": [
+        "real MAV_CMD numbers, altitude",
+        "frames, MAVLink 2 signing"
+      ],
+      "code": [
+        "src/hydra_umc_bridge_uav/mavlink_transport.py::ALTITUDE_FRAMES"
+      ]
+    },
+    {
+      "id": "hb",
+      "column": 1,
+      "level": "tested",
+      "title": "heartbeat.py",
+      "lines": [
+        "link-loss failsafe: return to",
+        "launch or land"
+      ],
+      "code": [
+        "src/hydra_umc_bridge_uav/heartbeat.py::FAILSAFE_ACTIONS",
+        "src/hydra_umc_bridge_uav/gcs_heartbeat.py"
+      ]
+    },
+    {
+      "id": "uav",
+      "column": 2,
+      "level": "untested",
+      "title": "Camera-equipped UAV",
+      "lines": [
+        "MAVLink over Wi-Fi, radio or",
+        "4G/5G; no real vehicle yet"
+      ],
+      "title_size": 12
+    }
+  ],
+  "edges": [
+    {
+      "from": "sdk",
+      "to": "coord",
+      "label": "gate",
+      "level": "contract"
+    },
+    {
+      "from": "cell",
+      "to": "coord",
+      "label": "job",
+      "level": "tested"
+    },
+    {
+      "from": "coord",
+      "to": "mav",
+      "level": "tested"
+    },
+    {
+      "from": "mav",
+      "to": "hb",
+      "level": "tested"
+    },
+    {
+      "from": "hb",
+      "to": "uav",
+      "label": "MAVLink",
+      "level": "untested"
+    }
+  ],
+  "footer": "Tested against a MAVLink emulator only; no real vehicle has flown."
+}

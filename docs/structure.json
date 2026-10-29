@@ -1,0 +1,309 @@
+{
+  "repo": "HYDRA-UMC-BRIDGE-UAV",
+  "ecosystem": "hydra",
+  "svg": "en",
+  "cards": [
+    {
+      "name": "src/hydra_umc_bridge_uav/",
+      "span": 3,
+      "accent": "a",
+      "sub": {
+        "en": "the bridge, in Python",
+        "es": "el bridge, en Python",
+        "de": "der Bridge in Python",
+        "fr": "le bridge, en Python",
+        "it": "il bridge, in Python",
+        "ja": "Python のブリッジ",
+        "zh": "用 Python 编写的桥接",
+        "pt": "o bridge, em Python"
+      },
+      "rows": [
+        {
+          "name": "coordinator.py",
+          "desc": {
+            "en": "job to a named flight request",
+            "es": "trabajo a una petición de vuelo con nombre",
+            "de": "Auftrag zu einer benannten Flugaufforderung",
+            "fr": "travail vers une demande de vol nommée",
+            "it": "lavoro verso una richiesta di volo con nome",
+            "ja": "ジョブを名前付きの飛行要求へ",
+            "zh": "任务到具名飞行请求",
+            "pt": "trabalho para um pedido de voo com nome"
+          }
+        },
+        {
+          "name": "mavlink_transport.py",
+          "desc": {
+            "en": "approved requests as real MAVLink commands",
+            "es": "peticiones aprobadas como órdenes MAVLink reales",
+            "de": "freigegebene Anforderungen als echte MAVLink-Befehle",
+            "fr": "demandes approuvées en vraies commandes MAVLink",
+            "it": "richieste approvate come veri comandi MAVLink",
+            "ja": "承認済みの要求を実際の MAVLink コマンドに",
+            "zh": "已批准的请求转为真实 MAVLink 命令",
+            "pt": "pedidos aprovados como comandos MAVLink reais"
+          }
+        },
+        {
+          "name": "heartbeat.py",
+          "desc": {
+            "en": "link-loss failsafe state machine",
+            "es": "máquina de estados de fallo de enlace",
+            "de": "Zustandsautomat für Verbindungsverlust",
+            "fr": "machine d'états de perte de liaison",
+            "it": "macchina a stati per la perdita del collegamento",
+            "ja": "リンク喪失フェイルセーフの状態機械",
+            "zh": "链路丢失故障保护状态机",
+            "pt": "máquina de estados de perda de ligação"
+          }
+        },
+        {
+          "name": "gcs_heartbeat.py",
+          "desc": {
+            "en": "the bridge's own ground-station HEARTBEAT",
+            "es": "el HEARTBEAT propio de estación de tierra",
+            "de": "der eigene Bodenstation-HEARTBEAT",
+            "fr": "le HEARTBEAT de station sol du bridge",
+            "it": "l'HEARTBEAT di stazione a terra del bridge",
+            "ja": "ブリッジ自身の地上局 HEARTBEAT",
+            "zh": "桥接自己的地面站 HEARTBEAT",
+            "pt": "o HEARTBEAT de estação de terra do bridge"
+          }
+        },
+        {
+          "name": "cli.py",
+          "desc": {
+            "en": "`hydra-umc-bridge-uav run`",
+            "es": "`hydra-umc-bridge-uav run`",
+            "de": "`hydra-umc-bridge-uav run`",
+            "fr": "`hydra-umc-bridge-uav run`",
+            "it": "`hydra-umc-bridge-uav run`",
+            "ja": "`hydra-umc-bridge-uav run`",
+            "zh": "`hydra-umc-bridge-uav run`",
+            "pt": "`hydra-umc-bridge-uav run`"
+          }
+        },
+        {
+          "name": "simulated_uav.py",
+          "desc": {
+            "en": "which request is legal from which state",
+            "es": "qué petición es legal desde qué estado",
+            "de": "welche Anforderung aus welchem Zustand erlaubt ist",
+            "fr": "quelle demande est légale depuis quel état",
+            "it": "quale richiesta è legale da quale stato",
+            "ja": "どの状態からどの要求が許されるか",
+            "zh": "各状态下允许哪些请求",
+            "pt": "que pedido é legal a partir de que estado"
+          }
+        }
+      ]
+    },
+    {
+      "name": {
+        "en": "tests, docs and tools",
+        "es": "pruebas, docs y herramientas",
+        "de": "Tests, Doku und Werkzeuge",
+        "fr": "tests, docs et outils",
+        "it": "test, documenti e strumenti",
+        "ja": "テスト・文書・ツール",
+        "zh": "测试、文档和工具",
+        "pt": "testes, docs e ferramentas"
+      },
+      "kind": "group",
+      "span": 3,
+      "accent": "b",
+      "columns": 2,
+      "rows": [
+        {
+          "name": "tests/",
+          "desc": {
+            "en": "132 tests, with a MAVLink emulator",
+            "es": "132 pruebas, con un emulador MAVLink",
+            "de": "132 Tests, mit einem MAVLink-Emulator",
+            "fr": "132 tests, avec un émulateur MAVLink",
+            "it": "132 test, con un emulatore MAVLink",
+            "ja": "132 件（MAVLink エミュレーター付き）",
+            "zh": "132 项测试（含 MAVLink 模拟器）",
+            "pt": "132 testes, com um emulador MAVLink"
+          }
+        },
+        {
+          "name": "docs/",
+          "desc": {
+            "en": "bridge guide",
+            "es": "guía del bridge",
+            "de": "Bridge-Leitfaden",
+            "fr": "guide du bridge",
+            "it": "guida del bridge",
+            "ja": "ブリッジガイド",
+            "zh": "桥接指南",
+            "pt": "guia do bridge"
+          }
+        },
+        {
+          "name": "tools/",
+          "desc": {
+            "en": "project tools, CI checks, version bump",
+            "es": "herramientas del proyecto, comprobaciones de CI, subida de versión",
+            "de": "Projektwerkzeuge, CI-Prüfungen, Versionserhöhung",
+            "fr": "outils du projet, vérifications CI, montée de version",
+            "it": "strumenti del progetto, controlli CI, aumento di versione",
+            "ja": "プロジェクトのツール、CI の検査、バージョンの引き上げ",
+            "zh": "项目工具、CI 检查、版本提升",
+            "pt": "ferramentas do projeto, verificações de CI, subida de versão"
+          },
+          "tree_desc": {
+            "en": "build and test runner, version bump, CI validator, README and picture generators and checks",
+            "es": "ejecutor de compilación y pruebas, subida de versión, validador de CI, generadores y comprobaciones de README e imágenes",
+            "de": "Build- und Testläufer, Versionserhöhung, CI-Prüfer, README- und Bildgeneratoren samt Prüfungen",
+            "fr": "exécuteur de build et de tests, montée de version, validateur CI, générateurs et vérifications des README et des images",
+            "it": "esecutore di build e test, aumento di versione, validatore CI, generatori e controlli di README e immagini",
+            "ja": "ビルド・テスト実行、バージョン引き上げ、CI 検証、README と図の生成・検査",
+            "zh": "构建与测试运行器、版本提升、CI 校验、README 与图片的生成和检查",
+            "pt": "executor de compilação e testes, subida de versão, validador de CI, geradores e verificações de README e imagens"
+          }
+        },
+        {
+          "name": "images/",
+          "desc": {
+            "en": "banner and the pictures of the README",
+            "es": "banner y las imágenes del README",
+            "de": "Banner und die Bilder der README",
+            "fr": "bannière et images du README",
+            "it": "banner e immagini del README",
+            "ja": "バナーと README の図",
+            "zh": "横幅图与 README 的图片",
+            "pt": "faixa e imagens do README"
+          }
+        },
+        {
+          "name": ".github/",
+          "desc": {
+            "en": "CI workflow and issue templates",
+            "es": "flujo de CI y plantillas de incidencias",
+            "de": "CI-Workflow und Issue-Vorlagen",
+            "fr": "workflow CI et modèles de tickets",
+            "it": "workflow CI e modelli di segnalazione",
+            "ja": "CI ワークフローと Issue テンプレート",
+            "zh": "CI 工作流和 Issue 模板",
+            "pt": "fluxo de CI e modelos de questões"
+          }
+        }
+      ]
+    },
+    {
+      "name": {
+        "en": "project files",
+        "es": "ficheros del proyecto",
+        "de": "Projektdateien",
+        "fr": "fichiers du projet",
+        "it": "file del progetto",
+        "ja": "プロジェクトのファイル",
+        "zh": "项目文件",
+        "pt": "ficheiros do projeto"
+      },
+      "kind": "group",
+      "span": 3,
+      "accent": "c",
+      "columns": 2,
+      "rows": [
+        {
+          "name": "pyproject.toml",
+          "desc": {
+            "en": "package metadata and dependencies",
+            "es": "metadatos del paquete y dependencias",
+            "de": "Paketmetadaten und Abhängigkeiten",
+            "fr": "métadonnées du paquet et dépendances",
+            "it": "metadati del pacchetto e dipendenze",
+            "ja": "パッケージのメタデータと依存関係",
+            "zh": "包元数据与依赖",
+            "pt": "metadados do pacote e dependências"
+          }
+        },
+        {
+          "name": "hydra-umc.project.json",
+          "desc": {
+            "en": "manifest: version, maturity, family",
+            "es": "manifiesto: versión, madurez, familia",
+            "de": "Manifest: Version, Reifegrad, Familie",
+            "fr": "manifeste : version, maturité, famille",
+            "it": "manifesto: versione, maturità, famiglia",
+            "ja": "マニフェスト：バージョン・成熟度・ファミリー",
+            "zh": "清单：版本、成熟度、系列",
+            "pt": "manifesto: versão, maturidade, família"
+          }
+        },
+        {
+          "name": "CHANGELOG.md",
+          "desc": {
+            "en": "what changed in each version",
+            "es": "qué cambió en cada versión",
+            "de": "was sich in jeder Version geändert hat",
+            "fr": "ce qui a changé à chaque version",
+            "it": "cosa è cambiato in ogni versione",
+            "ja": "各バージョンの変更点",
+            "zh": "每个版本的变化",
+            "pt": "o que mudou em cada versão"
+          }
+        },
+        {
+          "name": "build.sh  build.bat",
+          "tree_name": "build.sh build.bat",
+          "desc": {
+            "en": "build scripts (they never change the version)",
+            "es": "scripts de compilación (nunca cambian la versión)",
+            "de": "Build-Skripte (ändern die Version nie)",
+            "fr": "scripts de build (ils ne changent jamais la version)",
+            "it": "script di build (non cambiano mai la versione)",
+            "ja": "ビルドスクリプト（バージョンは変えません）",
+            "zh": "构建脚本（从不改变版本）",
+            "pt": "scripts de compilação (nunca mudam a versão)"
+          }
+        },
+        {
+          "name": "build-test.sh  build-test.bat",
+          "tree_name": "build-test.sh build-test.bat",
+          "desc": {
+            "en": "build scripts (they never change the version)",
+            "es": "scripts de compilación (nunca cambian la versión)",
+            "de": "Build-Skripte (ändern die Version nie)",
+            "fr": "scripts de build (ils ne changent jamais la version)",
+            "it": "script di build (non cambiano mai la versione)",
+            "ja": "ビルドスクリプト（バージョンは変えません）",
+            "zh": "构建脚本（从不改变版本）",
+            "pt": "scripts de compilação (nunca mudam a versão)"
+          }
+        },
+        {
+          "name": "test.sh  test.bat",
+          "tree_name": "test.sh test.bat",
+          "desc": {
+            "en": "run the tests",
+            "es": "ejecutan las pruebas",
+            "de": "führen die Tests aus",
+            "fr": "lancent les tests",
+            "it": "eseguono i test",
+            "ja": "テストを実行",
+            "zh": "运行测试",
+            "pt": "executam os testes"
+          }
+        },
+        {
+          "name": "SECURITY  SUPPORT  CONTRIBUTING  LICENSE",
+          "tree_name": "SECURITY.md SUPPORT.md CONTRIBUTING.md CODE_OF_CONDUCT.md LICENSE LICENSE.md",
+          "desc": {
+            "en": "community and licence files",
+            "es": "comunidad y licencia",
+            "de": "Community und Lizenz",
+            "fr": "communauté et licence",
+            "it": "comunità e licenza",
+            "ja": "コミュニティとライセンス",
+            "zh": "社区与许可证",
+            "pt": "comunidade e licença"
+          },
+          "tree_desc": ""
+        }
+      ]
+    }
+  ]
+}
