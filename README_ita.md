@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-132%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-139%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Versione | `0.1.5` |
 | Maturità | Funzionale |
-| Test | 132 (`python tools/build_test.py`) |
+| Test | 139 (`python tools/build_test.py`) |
 | Tecnologia | Python / MAVLink / HYDRA-UMC-SDK |
 | Su hardware reale | Solo simulato: provato con emulatori, test double o simulatori; per questa versione non risulta alcuna esecuzione su hardware reale |
 
@@ -52,7 +52,7 @@ Ogni riga è una parte di questo repository e il semaforo dice a che punto è og
 | Area | Stato | Cosa significa qui |
 |---|---|---|
 | Software | 🟡 | Funziona per il suo scopo principale; la verifica di onestà qui sopra elenca ciò che manca ancora |
-| Test | 🟢 | 132 test automatici, eseguiti a ogni modifica |
+| Test | 🟢 | 139 test automatici, eseguiti a ogni modifica |
 | Hardware reale | 🟠 | Solo simulato: provato con emulatori, test double o simulatori; per questa versione non risulta alcuna esecuzione su hardware reale |
 | Documentazione | 🟢 | README in otto lingue, verificato rispetto al manifesto a ogni modifica |
 
@@ -137,6 +137,7 @@ Il comando `hydra-umc-bridge-uav run` (o `python -m hydra_umc_bridge_uav run`) a
 | `--heartbeat-timeout` | `10.0` | secondi di attesa del primo battito del veicolo |
 | `--status-every`, `--duration` | `10.0`, `0` | secondi tra le righe di stato (`0` non ne stampa); fermarsi dopo questi secondi (`0` gira fino all'arresto) |
 | `--signing-key-file`, `--signing-allow-unsigned` | disattivato | file della chiave di firma MAVLink 2; accetta messaggi non firmati da un veicolo che non firma ancora |
+| `--server-config` | disattivato | il `data/server-config.json` del Server: la sua sezione `mavlink` (impostata da Server Admin) dà il file della chiave e l'interruttore dei messaggi non firmati quando non li indicano né l'opzione né l'ambiente |
 
 ## ⚙️ Configurazione
 
@@ -144,6 +145,8 @@ Il comando `hydra-umc-bridge-uav run` (o `python -m hydra_umc_bridge_uav run`) a
 |---|---|---|
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | frequenza del battito di stazione a terra del bridge, da 0,1 a 10; `0` lo spegne |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | non impostato | percorso della chiave di firma MAVLink 2 (32 byte, grezza o 64 caratteri esadecimali); prevale `--signing-key-file` |
+| `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | non impostato | `1` accetta messaggi non firmati con una chiave; prevale `--signing-allow-unsigned`, poi questo, poi la configurazione del Server |
+| `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | non impostato | percorso del `data/server-config.json` del Server (prevale `--server-config`) |
 
 ## 🚀 Avvio rapido
 
@@ -164,7 +167,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Test
 
-132 casi `unittest` automatici si eseguono con `python tools/build_test.py` (che compila anche ogni modulo). I test non richiedono hardware, rete né pacchetti opzionali: quelli che richiederebbero `paho-mqtt`, `pyserial` o una libreria del produttore usano un sostituto o vengono saltati se il pacchetto manca.
+139 casi `unittest` automatici si eseguono con `python tools/build_test.py` (che compila anche ogni modulo). I test non richiedono hardware, rete né pacchetti opzionali: quelli che richiederebbero `paho-mqtt`, `pyserial` o una libreria del produttore usano un sostituto o vengono saltati se il pacchetto manca.
 
 | File di test | Test | Cosa copre |
 |---|---|---|

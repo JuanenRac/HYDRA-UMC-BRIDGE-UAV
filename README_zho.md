@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-132%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-139%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | 版本 | `0.1.5` |
 | 成熟度 | 可用 |
-| 测试 | 132 (`python tools/build_test.py`) |
+| 测试 | 139 (`python tools/build_test.py`) |
 | 技术栈 | Python / MAVLink / HYDRA-UMC-SDK |
 | 真实硬件 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 
@@ -52,7 +52,7 @@ GPL-3.0-or-later - see LICENSE
 | 领域 | 状态 | 在这里的含义 |
 |---|---|---|
 | 软件 | 🟡 | 主要用途可用；上面的诚实性检查列出了仍然缺少的内容 |
-| 测试 | 🟢 | 132 项自动测试，每次变更都会运行 |
+| 测试 | 🟢 | 139 项自动测试，每次变更都会运行 |
 | 真实硬件 | 🟠 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 | 文档 | 🟢 | 八种语言的 README，每次变更都会与清单核对 |
 
@@ -137,6 +137,7 @@ flowchart LR
 | `--heartbeat-timeout` | `10.0` | 等待飞行器首个心跳的秒数 |
 | `--status-every`, `--duration` | `10.0`, `0` | 状态行的间隔秒数（`0` 表示不打印）；运行这么多秒后停止（`0` 表示一直运行） |
 | `--signing-key-file`, `--signing-allow-unsigned` | 关闭 | MAVLink 2 签名密钥文件；接受尚不签名的飞行器发来的未签名消息 |
+| `--server-config` | 关闭 | 服务器的 `data/server-config.json`:当选项和环境变量都未指定时,其 `mavlink` 部分(在 Server Admin 中设置)提供密钥文件和未签名开关 |
 
 ## ⚙️ 配置
 
@@ -144,6 +145,8 @@ flowchart LR
 |---|---|---|
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | 桥接地面站心跳的频率，0.1 到 10；`0` 关闭 |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | 未设置 | MAVLink 2 签名密钥的路径（32 字节，原始或 64 个十六进制字符）；`--signing-key-file` 优先 |
+| `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | 未设置 | `1` 表示有密钥时接受未签名的消息;`--signing-allow-unsigned` 优先,其次是它,再其次是服务器配置 |
+| `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | 未设置 | 服务器 `data/server-config.json` 的路径(`--server-config` 优先) |
 
 ## 🚀 快速开始
 
@@ -164,7 +167,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 测试
 
-运行 `python tools/build_test.py` 会执行 132 个自动 `unittest` 用例（同时编译每个模块）。测试不需要硬件、网络或可选软件包：需要 `paho-mqtt`、`pyserial` 或厂商库的用例使用替身，缺少软件包时则跳过。
+运行 `python tools/build_test.py` 会执行 139 个自动 `unittest` 用例（同时编译每个模块）。测试不需要硬件、网络或可选软件包：需要 `paho-mqtt`、`pyserial` 或厂商库的用例使用替身，缺少软件包时则跳过。
 
 | 测试文件 | 测试数 | 覆盖内容 |
 |---|---|---|
