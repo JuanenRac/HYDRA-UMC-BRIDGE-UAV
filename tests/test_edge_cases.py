@@ -6,13 +6,15 @@
 """What reaches a vehicle: the commands that bring it to a safe state always go out, everything else is held to the envelope, and the link adapter does not hide a missing vehicle."""
 
 import math
+import os
 import sys
+import tempfile
 import types
 import unittest
 from unittest import mock
 
 from hydra_umc_bridge_uav import MavlinkFlightControl, UavCoordinator, UavDispatch, open_mavlink_connection
-from hydra_umc_bridge_uav.mavlink_transport import ALTITUDE_FRAMES, FlightEnvelope, _distance_m
+from hydra_umc_bridge_uav.mavlink_transport import ALTITUDE_FRAMES, FlightEnvelope, _distance_m, load_signing_key
 
 
 class Ack:
@@ -244,6 +246,65 @@ class BusyLinkTests(unittest.TestCase):
         worker.join(5)
         self.assertFalse(worker.is_alive(), "the wait for an acknowledgement never ended")
         self.assertFalse(outcome["result"].sent)
+
+
+class SigningTests(unittest.TestCase):
+    def fake_pymavlink(self, heartbeat):
+        connection = mock.MagicMock()
+        connection.target_system = 7
+        connection.target_component = 3
+        connection.wait_heartbeat.return_value = heartbeat
+        module = types.ModuleType("pymavlink")
+        module.mavutil = types.SimpleNamespace(mavlink_connection=mock.MagicMock(return_value=connection))
+        return module, connection
+
+    def test_a_key_makes_the_link_sign_and_refuse_unsigned_messages_by_default(self):
+        module, connection = self.fake_pymavlink(object())
+        key = bytes(range(32))
+        with mock.patch.dict(sys.modules, {"pymavlink": module}):
+            open_mavlink_connection("udp:127.0.0.1:14550", signing_key=key)
+        args, kwargs = connection.setup_signing.call_args
+        self.assertEqual(args[0], key)
+        self.assertTrue(kwargs["sign_outgoing"])
+        self.assertFalse(kwargs["allow_unsigned_callback"](object()))
+
+    def test_allow_unsigned_accepts_a_vehicle_that_does_not_sign_yet(self):
+        module, connection = self.fake_pymavlink(object())
+        with mock.patch.dict(sys.modules, {"pymavlink": module}):
+            open_mavlink_connection("udp:127.0.0.1:14550", signing_key=bytes(32), allow_unsigned=True)
+        self.assertTrue(connection.setup_signing.call_args.kwargs["allow_unsigned_callback"](object()))
+
+    def test_without_a_key_nothing_is_signed(self):
+        module, connection = self.fake_pymavlink(object())
+        with mock.patch.dict(sys.modules, {"pymavlink": module}):
+            open_mavlink_connection("udp:127.0.0.1:14550")
+        connection.setup_signing.assert_not_called()
+
+    def test_a_key_of_the_wrong_length_is_refused_before_a_link_is_opened(self):
+        module, connection = self.fake_pymavlink(object())
+        with mock.patch.dict(sys.modules, {"pymavlink": module}):
+            with self.assertRaises(ValueError):
+                open_mavlink_connection("udp:127.0.0.1:14550", signing_key=b"short")
+        module.mavutil.mavlink_connection.assert_not_called()
+
+    def test_the_key_file_holds_raw_bytes_or_hexadecimal_and_nothing_else(self):
+        with tempfile.TemporaryDirectory() as folder:
+            raw = os.path.join(folder, "raw.key")
+            with open(raw, "wb") as handle:
+                handle.write(bytes(range(32)))
+            hexa = os.path.join(folder, "hex.key")
+            with open(hexa, "w", encoding="ascii") as handle:
+                handle.write(bytes(range(32)).hex() + chr(10))
+            bad = os.path.join(folder, "bad.key")
+            with open(bad, "w", encoding="ascii") as handle:
+                handle.write("not a key at all")
+            self.assertEqual(load_signing_key(raw), bytes(range(32)))
+            self.assertEqual(load_signing_key(hexa), bytes(range(32)))
+            with self.assertRaises(ValueError) as context:
+                load_signing_key(bad)
+            self.assertNotIn("not a key", str(context.exception))
+            with self.assertRaises(ValueError):
+                load_signing_key(os.path.join(folder, "missing.key"))
 
 
 if __name__ == "__main__":

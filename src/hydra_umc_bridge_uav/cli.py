@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import signal
 import sys
 import threading
@@ -27,6 +28,9 @@ from .gcs_heartbeat import ENVIRONMENT_VARIABLE, GcsHeartbeat, parse_rate_hz, ra
 EXIT_OK = 0
 EXIT_LINK = 1
 EXIT_USAGE = 2
+
+
+SIGNING_KEY_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -41,6 +45,14 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--heartbeat-timeout", type=float, default=10.0, help="seconds to wait for the vehicle's first heartbeat (default 10)")
     run.add_argument("--status-every", type=float, default=10.0, help="seconds between status lines; 0 prints none (default 10)")
     run.add_argument("--duration", type=float, default=0.0, help="stop after this many seconds; 0 runs until stopped (default 0)")
+    run.add_argument(
+        "--signing-key-file", default=None,
+        help=f"MAVLink 2 signing: a file with the 32-byte key (raw or 64 hexadecimal characters); default: the file named by {SIGNING_KEY_ENVIRONMENT}, else no signing",
+    )
+    run.add_argument(
+        "--signing-allow-unsigned", action="store_true",
+        help="with a signing key, still accept messages that are not signed (a vehicle that does not sign yet); default: refuse them",
+    )
     return parser
 
 
@@ -76,6 +88,17 @@ def run(
         err.write("error: --duration and --status-every cannot be negative and --heartbeat-timeout must be positive\n")
         return EXIT_USAGE
 
+    key_file = getattr(args, "signing_key_file", None) or os.environ.get(SIGNING_KEY_ENVIRONMENT, "").strip() or None
+    signing: dict[str, object] = {}
+    if key_file is not None:
+        from .mavlink_transport import load_signing_key  # lazy: nothing else here needs the transport module
+
+        try:
+            signing = {"signing_key": load_signing_key(key_file), "allow_unsigned": bool(getattr(args, "signing_allow_unsigned", False))}
+        except ValueError as error:
+            err.write(f"error: {error}\n")
+            return EXIT_USAGE
+
     if opener is None:
         from .mavlink_transport import open_mavlink_connection as opener  # lazy: pymavlink is optional
 
@@ -86,7 +109,7 @@ def run(
                 signal.signal(getattr(signal, name), lambda *_a: stop.set())
 
     try:
-        sink = opener(args.connection, heartbeat_timeout_seconds=args.heartbeat_timeout)
+        sink = opener(args.connection, heartbeat_timeout_seconds=args.heartbeat_timeout, **signing)
     except Exception as error:  # noqa: BLE001 - any failure to open the link is reported, not a traceback
         err.write(f"error: the MAVLink link could not be opened: {error}\n")
         return EXIT_LINK

@@ -115,5 +115,44 @@ class RunTests(unittest.TestCase):
         self.assertNotEqual(cli.main(["run"]), 0)
 
 
+class SigningOptionTests(unittest.TestCase):
+    def test_a_key_file_reaches_the_opener_and_a_bad_one_is_a_usage_error(self):
+        import os
+        import tempfile
+
+        seen = {}
+
+        def opener(connection, heartbeat_timeout_seconds, **signing):
+            seen.update(signing)
+            return Sink()
+
+        with tempfile.TemporaryDirectory() as folder:
+            key = os.path.join(folder, "uav.key")
+            with open(key, "w", encoding="ascii") as handle:
+                handle.write(bytes(range(32)).hex())
+            code, _, _ = run(["run", "--connection", "x", "--duration", "0.2", "--signing-key-file", key, "--signing-allow-unsigned"], opener)
+            self.assertEqual(code, 0)
+            self.assertEqual(seen, {"signing_key": bytes(range(32)), "allow_unsigned": True})
+            seen.clear()
+            code, _, _ = run(["run", "--connection", "x", "--duration", "0.2", "--signing-key-file", key], opener)
+            self.assertEqual(seen["allow_unsigned"], False)
+            bad = os.path.join(folder, "bad.key")
+            with open(bad, "w", encoding="ascii") as handle:
+                handle.write("nope")
+            code, _, err = run(["run", "--connection", "x", "--signing-key-file", bad], opener)
+            self.assertEqual(code, 2)
+            self.assertNotIn("nope", err)
+
+    def test_without_a_key_the_opener_gets_no_signing_arguments(self):
+        seen = {}
+
+        def opener(connection, heartbeat_timeout_seconds, **signing):
+            seen.update(signing)
+            return Sink()
+
+        run(["run", "--connection", "x", "--duration", "0.2"], opener)
+        self.assertEqual(seen, {})
+
+
 if __name__ == "__main__":
     unittest.main()

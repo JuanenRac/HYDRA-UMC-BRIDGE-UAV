@@ -187,8 +187,35 @@ class _PymavlinkConnectionSink:
         return self._connection.mav.heartbeat_send(type, autopilot, base_mode, custom_mode, system_status)
 
 
+SIGNING_KEY_BYTES = 32
+
+
+def load_signing_key(path: str) -> bytes:
+    """Read a MAVLink 2 signing key from a file: 32 raw bytes, or 64 hexadecimal characters (optionally followed by a line end).
+
+    The key is a secret: it is never printed, and the error for a bad file does not repeat any of its content."""
+    try:
+        with open(path, "rb") as handle:
+            data = handle.read(256)
+    except OSError as error:
+        raise ValueError(f"the MAVLink signing key file cannot be read: {error.strerror or error}") from error
+    text = data.strip()
+    if len(text) == SIGNING_KEY_BYTES * 2:
+        try:
+            return bytes.fromhex(text.decode("ascii"))
+        except (ValueError, UnicodeDecodeError):
+            pass
+    if len(data) == SIGNING_KEY_BYTES:
+        return data
+    raise ValueError(f"the MAVLink signing key file must hold {SIGNING_KEY_BYTES} bytes or {SIGNING_KEY_BYTES * 2} hexadecimal characters")
+
+
 def open_mavlink_connection(
-    connection_string: str, *, heartbeat_timeout_seconds: float = _DEFAULT_HEARTBEAT_TIMEOUT_SECONDS
+    connection_string: str,
+    *,
+    heartbeat_timeout_seconds: float = _DEFAULT_HEARTBEAT_TIMEOUT_SECONDS,
+    signing_key: bytes | None = None,
+    allow_unsigned: bool = False,
 ) -> MavlinkCommandSink:
     """Open a real MAVLink link. The only place this module imports pymavlink.
 
@@ -200,7 +227,14 @@ def open_mavlink_connection(
     letting an ImportError surface from deep inside this module or waiting
     for ever. The returned object carries the `target_system` /
     `target_component` the heartbeat came from.
+
+    With a `signing_key` (32 bytes, see `load_signing_key`) every message the bridge sends is signed with MAVLink 2
+    signing, and the messages received are accepted only when they are signed too, unless `allow_unsigned` is True
+    (a vehicle that does not sign yet). A vehicle that does not sign is then refused with the "no MAVLink HEARTBEAT"
+    error rather than accepted unsigned. Signing authenticates the link; it does not encrypt it.
     """
+    if signing_key is not None and len(signing_key) != SIGNING_KEY_BYTES:
+        raise ValueError(f"a MAVLink signing key must be {SIGNING_KEY_BYTES} bytes")
 
     try:
         from pymavlink import mavutil  # type: ignore[import-untyped]
@@ -210,6 +244,8 @@ def open_mavlink_connection(
             "(this module's command-building/gating logic works and is tested without it)"
         ) from error
     connection = mavutil.mavlink_connection(connection_string)
+    if signing_key is not None:
+        connection.setup_signing(signing_key, sign_outgoing=True, allow_unsigned_callback=(lambda *_args: True) if allow_unsigned else (lambda *_args: False))
     heartbeat = connection.wait_heartbeat(timeout=heartbeat_timeout_seconds)
     if heartbeat is None:
         close = getattr(connection, "close", None)
