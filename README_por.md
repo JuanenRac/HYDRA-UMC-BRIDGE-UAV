@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-139%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-146%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -36,7 +36,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Versão | `0.1.5` |
 | Maturidade | Funcional |
-| Testes | 139 (`python tools/build_test.py`) |
+| Testes | 146 (`python tools/build_test.py`) |
 | Tecnologia | Python / MAVLink / HYDRA-UMC-SDK |
 | Em hardware real | Só simulado: testado com emuladores, dublês de teste ou simuladores; não há registo de execução em hardware real para esta versão |
 
@@ -51,7 +51,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 | Área | Estado | O que significa aqui |
 |---|---|---|
 | Software | 🟡 | Funciona para o seu propósito principal; a verificação de honestidade acima lista o que ainda falta |
-| Testes | 🟢 | 139 testes automáticos, executados a cada alteração |
+| Testes | 🟢 | 146 testes automáticos, executados a cada alteração |
 | Hardware real | 🟠 | Só simulado: testado com emuladores, dublês de teste ou simuladores; não há registo de execução em hardware real para esta versão |
 | Documentação | 🟢 | README em oito idiomas, verificado contra o manifesto a cada alteração |
 
@@ -166,7 +166,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Testes
 
-139 casos `unittest` automáticos correm com `python tools/build_test.py` (que também compila cada módulo). Os testes não precisam de hardware, rede nem pacotes opcionais: os que precisariam de `paho-mqtt`, `pyserial` ou de uma biblioteca do fabricante usam um substituto ou são saltados se o pacote faltar.
+146 casos `unittest` automáticos correm com `python tools/build_test.py` (que também compila cada módulo). Os testes não precisam de hardware, rede nem pacotes opcionais: os que precisariam de `paho-mqtt`, `pyserial` ou de uma biblioteca do fabricante usam um substituto ou são saltados se o pacote faltar.
 
 | Ficheiro de testes | Testes | O que cobre |
 |---|---|---|
@@ -219,7 +219,7 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── gcs_heartbeat.py           o HEARTBEAT de estação de terra do bridge
 │   ├── cli.py                     `hydra-umc-bridge-uav run`
 │   └── simulated_uav.py           que pedido é legal a partir de que estado
-├── tests/                         139 testes, com um emulador MAVLink
+├── tests/                         146 testes, com um emulador MAVLink
 ├── docs/                          guia do bridge
 ├── tools/                         executor de compilação e testes, subida de versão, validador de CI, geradores e verificações de README e imagens
 ├── images/                        faixa e imagens do README

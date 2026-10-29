@@ -18,8 +18,10 @@ concern, not a replacement for it.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Mapping
 
 from hydra_umc_sdk.bridge_contract import BridgeJob, CellState, JobPhase, MachineState
+from hydra_umc_sdk.job_intake import IdempotencyStore, JobIntake
 from hydra_umc_sdk.phase_coordinator import PhaseCoordinator
 
 
@@ -102,7 +104,11 @@ class UavCoordinator:
         JobPhase.ABORT: RETURN_TO_LAUNCH,
     }
 
-    def __init__(self) -> None:
+    def __init__(self, store: IdempotencyStore | None = None) -> None:
+        # what arrives as a message (handle_message) goes through the shared intake: retained and malformed messages stop there and a repeated idempotency key is not run twice.
+        # Without a file-backed store the keys live in memory and are lost at a restart; pass an IdempotencyStore(path) to keep them.
+        self._store = store if store is not None else IdempotencyStore()
+        self._intake = JobIntake(self._store)
         # the table of phases, the gate and the requests that are always forwarded are the shared coordinator of the SDK
         self._phases = PhaseCoordinator(self._phase_requests, safe_actions=self.SAFE_STATE_REQUESTS, extra_actions=(self.LAND, self.DISARM))
 
@@ -118,6 +124,29 @@ class UavCoordinator:
         # `observed_machine_state` is what the autopilot reported about the vehicle; the claim written in the job is not a reading, so without it the SDK gate refuses every flight phase (fail-closed). Coming home (SAFE_STATE_REQUESTS) is forwarded regardless: the gate is for starting work, never for coming back
         decision = self._phases.decide(job, cell_state, observed_machine_state)
         return UavDispatch(decision.accepted, request, decision.reason)
+
+    def handle_message(self, payload: Mapping[str, object], cell_state: CellState, observed_machine_state: MachineState | None = None, *, retained: bool = False) -> UavDispatch:
+        """The entry point for a job that arrived as a message: retained and malformed ones are refused, a repeat of an idempotency key is not run a second time.
+
+        A request that only brings the vehicle to a safe state (return to launch, land, disarm) is the exception: it is forwarded again, because repeating it is
+        harmless and a first attempt that died half way must not leave the vehicle without it. The answer given for a key is stored with it.
+        """
+
+        intake = self._intake.accept(payload, retained=retained)
+        if intake.job is None:
+            return UavDispatch(False, "none", intake.reason)
+        job = intake.job
+        if not intake.accepted:
+            request = self._phases.action_for(job.phase)
+            if request in self.SAFE_STATE_REQUESTS:
+                return self.dispatch(job, cell_state, observed_machine_state)
+            return UavDispatch(False, "none", intake.reason)
+        result = self.dispatch(job, cell_state, observed_machine_state)
+        self._intake_remember(job.idempotency_key, result)
+        return result
+
+    def _intake_remember(self, key: str, result: UavDispatch) -> None:
+        self._store.remember(key, f"{'accepted' if result.accepted else 'refused'}: {result.request}: {result.reason}")
 
     def emergency_land_request(self) -> UavDispatch:
         """Real, standalone LAND request - see the LAND constant's own
