@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-139%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-132%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.1.5` |
 | Maturité | Fonctionnel |
-| Tests | 139 (`python tools/build_test.py`) |
+| Tests | 132 (`python tools/build_test.py`) |
 | Technologie | Python / MAVLink / HYDRA-UMC-SDK |
 | Sur matériel réel | Simulé seulement : testé avec des émulateurs, des doubles de test ou des simulateurs ; aucune exécution sur du matériel réel n'est consignée pour cette version |
 
@@ -52,7 +52,7 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 | Domaine | État | Ce que cela veut dire ici |
 |---|---|---|
 | Logiciel | 🟡 | Fonctionne pour son usage principal ; la vérification d'honnêteté ci-dessus liste ce qui manque encore |
-| Tests | 🟢 | 139 tests automatiques, exécutés à chaque modification |
+| Tests | 🟢 | 132 tests automatiques, exécutés à chaque modification |
 | Matériel réel | 🟠 | Simulé seulement : testé avec des émulateurs, des doubles de test ou des simulateurs ; aucune exécution sur du matériel réel n'est consignée pour cette version |
 | Documentation | 🟢 | README en huit langues, vérifié par rapport au manifeste à chaque modification |
 
@@ -137,7 +137,6 @@ La commande `hydra-umc-bridge-uav run` (ou `python -m hydra_umc_bridge_uav run`)
 | `--heartbeat-timeout` | `10.0` | secondes d'attente du premier battement du véhicule |
 | `--status-every`, `--duration` | `10.0`, `0` | secondes entre les lignes d'état (`0` n'en affiche aucune) ; arrêt après ce nombre de secondes (`0` tourne jusqu'à l'arrêt) |
 | `--signing-key-file`, `--signing-allow-unsigned` | désactivé | fichier de clé de signature MAVLink 2 ; accepter les messages non signés d'un véhicule qui ne signe pas encore |
-| `--server-config` | désactivé | le `data/server-config.json` du Server : sa section `mavlink` (réglée depuis Server Admin) donne le fichier de clé et l'interrupteur des messages non signés quand ni l'option ni l'environnement ne le disent |
 
 ## ⚙️ Configuration
 
@@ -145,8 +144,6 @@ La commande `hydra-umc-bridge-uav run` (ou `python -m hydra_umc_bridge_uav run`)
 |---|---|---|
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | fréquence du battement de station sol du bridge, de 0,1 à 10 ; `0` le coupe |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | non défini | chemin de la clé de signature MAVLink 2 (32 octets, brute ou 64 caractères hexadécimaux) ; `--signing-key-file` l'emporte |
-| `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | non défini | `1` accepte les messages non signés avec une clé ; `--signing-allow-unsigned` l'emporte, puis ceci, puis la configuration du Server |
-| `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | non défini | chemin du `data/server-config.json` du Server (`--server-config` l'emporte) |
 
 ## 🚀 Démarrage rapide
 
@@ -167,7 +164,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Tests
 
-139 cas `unittest` automatiques s'exécutent avec `python tools/build_test.py` (qui compile aussi chaque module). Les tests n'ont besoin ni de matériel, ni de réseau, ni de paquet optionnel : ceux qui exigeraient `paho-mqtt`, `pyserial` ou une bibliothèque de fabricant utilisent un substitut ou sont ignorés si le paquet manque.
+132 cas `unittest` automatiques s'exécutent avec `python tools/build_test.py` (qui compile aussi chaque module). Les tests n'ont besoin ni de matériel, ni de réseau, ni de paquet optionnel : ceux qui exigeraient `paho-mqtt`, `pyserial` ou une bibliothèque de fabricant utilisent un substitut ou sont ignorés si le paquet manque.
 
 | Fichier de tests | Tests | Ce qu'il couvre |
 |---|---|---|

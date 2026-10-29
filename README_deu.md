@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-139%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-132%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.1.5` |
 | Reifegrad | Funktionsfähig |
-| Tests | 139 (`python tools/build_test.py`) |
+| Tests | 132 (`python tools/build_test.py`) |
 | Technik | Python / MAVLink / HYDRA-UMC-SDK |
 | Auf echter Hardware | Nur simuliert: gegen Emulatoren, Attrappen oder Simulatoren getestet; für diese Version ist kein Lauf auf echter Hardware vermerkt |
 
@@ -52,7 +52,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 | Bereich | Stand | Was das hier bedeutet |
 |---|---|---|
 | Software | 🟡 | Funktioniert für seinen Hauptzweck; die Ehrlichkeitsprüfung oben nennt, was noch fehlt |
-| Tests | 🟢 | 139 automatische Tests, bei jeder Änderung ausgeführt |
+| Tests | 🟢 | 132 automatische Tests, bei jeder Änderung ausgeführt |
 | Echte Hardware | 🟠 | Nur simuliert: gegen Emulatoren, Attrappen oder Simulatoren getestet; für diese Version ist kein Lauf auf echter Hardware vermerkt |
 | Dokumentation | 🟢 | README in acht Sprachen, bei jeder Änderung gegen das Manifest geprüft |
 
@@ -137,7 +137,6 @@ Der Befehl `hydra-umc-bridge-uav run` (oder `python -m hydra_umc_bridge_uav run`
 | `--heartbeat-timeout` | `10.0` | Sekunden Wartezeit auf den ersten Heartbeat des Fahrzeugs |
 | `--status-every`, `--duration` | `10.0`, `0` | Sekunden zwischen Statuszeilen (`0` gibt keine aus); nach so vielen Sekunden beenden (`0` läuft bis zum Stopp) |
 | `--signing-key-file`, `--signing-allow-unsigned` | aus | Schlüsseldatei für die MAVLink-2-Signierung; unsignierte Nachrichten eines noch nicht signierenden Fahrzeugs annehmen |
-| `--server-config` | aus | die `data/server-config.json` des Servers: ihr Abschnitt `mavlink` (in Server Admin gesetzt) liefert die Schlüsseldatei und den Schalter für unsignierte Nachrichten, wenn Option und Umgebung sie nicht vorgeben |
 
 ## ⚙️ Konfiguration
 
@@ -145,8 +144,6 @@ Der Befehl `hydra-umc-bridge-uav run` (oder `python -m hydra_umc_bridge_uav run`
 |---|---|---|
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | Rate des Bodenstation-Heartbeats des Bridge, 0,1 bis 10; `0` schaltet ihn ab |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | nicht gesetzt | Pfad des MAVLink-2-Signierschlüssels (32 Byte, roh oder 64 Hexzeichen); `--signing-key-file` hat Vorrang |
-| `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | nicht gesetzt | `1` nimmt mit Schlüssel unsignierte Nachrichten an; `--signing-allow-unsigned` hat Vorrang, dann dies, dann die Server-Konfiguration |
-| `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | nicht gesetzt | Pfad der `data/server-config.json` des Servers (`--server-config` hat Vorrang) |
 
 ## 🚀 Schnellstart
 
@@ -167,7 +164,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Tests
 
-139 automatische `unittest`-Fälle laufen mit `python tools/build_test.py` (das kompiliert auch jedes Modul). Die Tests brauchen weder Hardware noch Netz noch optionale Pakete: Die, die `paho-mqtt`, `pyserial` oder eine Herstellerbibliothek bräuchten, nutzen einen Ersatz oder werden übersprungen, wenn das Paket fehlt.
+132 automatische `unittest`-Fälle laufen mit `python tools/build_test.py` (das kompiliert auch jedes Modul). Die Tests brauchen weder Hardware noch Netz noch optionale Pakete: Die, die `paho-mqtt`, `pyserial` oder eine Herstellerbibliothek bräuchten, nutzen einen Ersatz oder werden übersprungen, wenn das Paket fehlt.
 
 | Testdatei | Tests | Was sie abdeckt |
 |---|---|---|

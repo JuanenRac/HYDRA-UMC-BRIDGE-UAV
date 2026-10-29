@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-139%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-132%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -36,7 +36,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Versão | `0.1.5` |
 | Maturidade | Funcional |
-| Testes | 139 (`python tools/build_test.py`) |
+| Testes | 132 (`python tools/build_test.py`) |
 | Tecnologia | Python / MAVLink / HYDRA-UMC-SDK |
 | Em hardware real | Só simulado: testado com emuladores, dublês de teste ou simuladores; não há registo de execução em hardware real para esta versão |
 
@@ -51,7 +51,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 | Área | Estado | O que significa aqui |
 |---|---|---|
 | Software | 🟡 | Funciona para o seu propósito principal; a verificação de honestidade acima lista o que ainda falta |
-| Testes | 🟢 | 139 testes automáticos, executados a cada alteração |
+| Testes | 🟢 | 132 testes automáticos, executados a cada alteração |
 | Hardware real | 🟠 | Só simulado: testado com emuladores, dublês de teste ou simuladores; não há registo de execução em hardware real para esta versão |
 | Documentação | 🟢 | README em oito idiomas, verificado contra o manifesto a cada alteração |
 
@@ -136,7 +136,6 @@ O comando `hydra-umc-bridge-uav run` (ou `python -m hydra_umc_bridge_uav run`) a
 | `--heartbeat-timeout` | `10.0` | segundos de espera do primeiro batimento do veículo |
 | `--status-every`, `--duration` | `10.0`, `0` | segundos entre linhas de estado (`0` não imprime nenhuma); parar após estes segundos (`0` corre até ser parado) |
 | `--signing-key-file`, `--signing-allow-unsigned` | desativado | ficheiro da chave de assinatura MAVLink 2; aceitar mensagens sem assinatura de um veículo que ainda não assina |
-| `--server-config` | desativado | o `data/server-config.json` do Server: a sua secção `mavlink` (definida no Server Admin) dá o ficheiro da chave e o interruptor das mensagens sem assinatura quando nem a opção nem o ambiente o indicam |
 
 ## ⚙️ Configuração
 
@@ -144,8 +143,6 @@ O comando `hydra-umc-bridge-uav run` (ou `python -m hydra_umc_bridge_uav run`) a
 |---|---|---|
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | frequência do batimento de estação de terra do bridge, de 0,1 a 10; `0` desliga-o |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | por definir | caminho da chave de assinatura MAVLink 2 (32 bytes, em bruto ou 64 carateres hexadecimais); `--signing-key-file` prevalece |
-| `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | por definir | `1` aceita mensagens sem assinatura com uma chave; `--signing-allow-unsigned` prevalece, depois isto, depois a configuração do Server |
-| `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | por definir | caminho do `data/server-config.json` do Server (`--server-config` prevalece) |
 
 ## 🚀 Início rápido
 
@@ -166,7 +163,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Testes
 
-139 casos `unittest` automáticos correm com `python tools/build_test.py` (que também compila cada módulo). Os testes não precisam de hardware, rede nem pacotes opcionais: os que precisariam de `paho-mqtt`, `pyserial` ou de uma biblioteca do fabricante usam um substituto ou são saltados se o pacote faltar.
+132 casos `unittest` automáticos correm com `python tools/build_test.py` (que também compila cada módulo). Os testes não precisam de hardware, rede nem pacotes opcionais: os que precisariam de `paho-mqtt`, `pyserial` ou de uma biblioteca do fabricante usam um substituto ou são saltados se o pacote faltar.
 
 | Ficheiro de testes | Testes | O que cobre |
 |---|---|---|
