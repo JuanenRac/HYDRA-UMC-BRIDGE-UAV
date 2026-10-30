@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **One receiver thread for a MAVLink connection (`MavlinkLink`):** a single reader takes every message from the connection, refreshes the link watchdog on each vehicle heartbeat (a ground-station heartbeat does not count), and keeps the other messages by type for `recv_match()`, so the watchdog and the wait for an acknowledgement no longer take each other's messages. If the connection fails the thread stops and the link goes LOST. It is opt-in: the existing transport is unchanged.
+
 ## [0.1.6] - A shared job intake, MAVLink 2 signing and the signing options from the Server configuration
 
 - **A message entry point with the shared intake:** `UavCoordinator.handle_message()` takes a job as it arrives from a transport and applies the SDK's `JobIntake`: a retained message is ignored, a malformed one is refused (no exception) and a repeated idempotency key is not run a second time; the answer given is stored with the key (`UavCoordinator(IdempotencyStore(path))` keeps the keys across a restart, the default keeps them in memory). A repeated return-to-launch, land or disarm is still forwarded, since repeating a request that only brings the vehicle to a safe state is harmless. 7 tests.

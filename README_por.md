@@ -18,14 +18,14 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-146%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-154%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.6-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
 ---
 
-> **Verificação de honestidade - o que realmente corre hoje:** o núcleo de pedidos de voo sem dependências (o `UavCoordinator` de `coordinator.py`, que encaminha cada despacho pelo `evaluate_job()` do próprio `HYDRA-UMC-SDK`), o vigilante determinista de batimentos por perda de ligação (o `HeartbeatMonitor` de `heartbeat.py`) e o transporte real de comandos MAVLink (o `MavlinkFlightControl` de `mavlink_transport.py`) são reais e estão cobertos por 84 testes unitários que passam (`python tools/build_test.py` - `test_coordinator.py`, `test_heartbeat.py`, `test_mavlink_transport.py`, mais `test_mavlink_emulator.py`, que executa o bridge contra um emulador de piloto automático MAVLink escrito à mão e fiel ao protocolo, não contra um real). Nada disto foi exercitado contra uma instalação real do `pymavlink`, uma ligação real de rádio/telemetria ou um UAV/controlador de voo físico: a ligação MAVLink falsa de `test_mavlink_transport.py` substitui por completo o `pymavlink` (nem sequer é preciso ter a biblioteca real instalada para estes testes passarem), e ainda não há comando `run` vivo porque não se escolheu nem validou nenhum transporte real MAVLink/OSDK. Ver «Roteiro e limites conhecidos» abaixo, que já o diz com clareza, e `CHANGELOG.md` para saber exatamente o que foi entregue até agora.
+> **Verificação de honestidade - o que realmente corre hoje:** o núcleo de pedidos de voo sem dependências (o `UavCoordinator` de `coordinator.py`, que encaminha cada despacho pelo `evaluate_job()` do próprio `HYDRA-UMC-SDK`), o vigilante determinista de batimentos por perda de ligação (o `HeartbeatMonitor` de `heartbeat.py`) e o transporte real de comandos MAVLink (o `MavlinkFlightControl` de `mavlink_transport.py`) são reais e estão cobertos por 154 testes unitários que passam (`python tools/build_test.py` - `test_coordinator.py`, `test_heartbeat.py`, `test_mavlink_transport.py`, mais `test_mavlink_emulator.py`, que executa o bridge contra um emulador de piloto automático MAVLink escrito à mão e fiel ao protocolo, não contra um real). Nada disto foi exercitado contra uma instalação real do `pymavlink`, uma ligação real de rádio/telemetria ou um UAV/controlador de voo físico: a ligação MAVLink falsa de `test_mavlink_transport.py` substitui por completo o `pymavlink` (nem sequer é preciso ter a biblioteca real instalada para estes testes passarem), e ainda não há comando `run` vivo porque não se escolheu nem validou nenhum transporte real MAVLink/OSDK. Ver «Roteiro e limites conhecidos» abaixo, que já o diz com clareza, e `CHANGELOG.md` para saber exatamente o que foi entregue até agora.
 > **Estado de segurança (safety e security):** este ecossistema não é um sistema de segurança certificado. Ainda não existe um caminho de E-STOP por hardware, nem limites ou interlocks impostos pelo firmware, nem um comando de movimento verificado; as imagens de firmware são verificadas com CRC-32 e uma assinatura Ed25519, e uma compilação de versão recusa as chaves de desenvolvimento publicadas (as cabeças de ferramenta e as placas de expansão atrás do relé ainda usam os bootloaders do URTC, que aceitam um HMAC-SHA256 de chave partilhada em vez de uma assinatura); TLS e TLS mútuo são opcionais e estão desativados por defeito; nenhuma placa própria foi ainda montada ou testada. Leia a [base de segurança](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md) e o [modelo de ameaças](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md) antes de confiar em qualquer afirmação aqui para a segurança de uma pessoa.
 
 ---
@@ -36,7 +36,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Versão | `0.1.6` |
 | Maturidade | Funcional |
-| Testes | 146 (`python tools/build_test.py`) |
+| Testes | 154 (`python tools/build_test.py`) |
 | Tecnologia | Python / MAVLink / HYDRA-UMC-SDK |
 | Em hardware real | Só simulado: testado com emuladores, dublês de teste ou simuladores; não há registo de execução em hardware real para esta versão |
 
@@ -51,7 +51,7 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 | Área | Estado | O que significa aqui |
 |---|---|---|
 | Software | 🟡 | Funciona para o seu propósito principal; a verificação de honestidade acima lista o que ainda falta |
-| Testes | 🟢 | 146 testes automáticos, executados a cada alteração |
+| Testes | 🟢 | 154 testes automáticos, executados a cada alteração |
 | Hardware real | 🟠 | Só simulado: testado com emuladores, dublês de teste ou simuladores; não há registo de execução em hardware real para esta versão |
 | Documentação | 🟢 | README em oito idiomas, verificado contra o manifesto a cada alteração |
 
@@ -166,7 +166,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Testes
 
-146 casos `unittest` automáticos correm com `python tools/build_test.py` (que também compila cada módulo). Os testes não precisam de hardware, rede nem pacotes opcionais: os que precisariam de `paho-mqtt`, `pyserial` ou de uma biblioteca do fabricante usam um substituto ou são saltados se o pacote faltar.
+154 casos `unittest` automáticos correm com `python tools/build_test.py` (que também compila cada módulo). Os testes não precisam de hardware, rede nem pacotes opcionais: os que precisariam de `paho-mqtt`, `pyserial` ou de uma biblioteca do fabricante usam um substituto ou são saltados se o pacote faltar.
 
 | Ficheiro de testes | Testes | O que cobre |
 |---|---|---|
@@ -217,9 +217,10 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── mavlink_transport.py       pedidos aprovados como comandos MAVLink reais
 │   ├── heartbeat.py               máquina de estados de perda de ligação
 │   ├── gcs_heartbeat.py           o HEARTBEAT de estação de terra do bridge
+│   ├── mavlink_link.py            um thread de leitura: alimenta a vigilância e encaminha mensagens
 │   ├── cli.py                     `hydra-umc-bridge-uav run`
 │   └── simulated_uav.py           que pedido é legal a partir de que estado
-├── tests/                         146 testes, com um emulador MAVLink
+├── tests/                         154 testes, com um emulador MAVLink
 ├── docs/                          guia do bridge
 ├── tools/                         executor de compilação e testes, subida de versão, validador de CI, geradores e verificações de README e imagens
 ├── images/                        faixa e imagens do README

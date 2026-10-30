@@ -71,6 +71,19 @@
           }
         },
         {
+          "name": "mavlink_link.py",
+          "desc": {
+            "en": "one reader thread: watchdog feed and message routing",
+            "es": "un hilo lector: alimenta el vigilante y reparte mensajes",
+            "de": "ein Lese-Thread: speist die Überwachung und verteilt Meldungen",
+            "fr": "un fil de lecture : alimente la surveillance et route les messages",
+            "it": "un thread di lettura: alimenta il controllo e smista i messaggi",
+            "ja": "1 本の受信スレッド: 監視の更新とメッセージの振り分け",
+            "zh": "单一接收线程:喂看门狗并分发消息",
+            "pt": "um thread de leitura: alimenta a vigilância e encaminha mensagens"
+          }
+        },
+        {
           "name": "cli.py",
           "desc": {
             "en": "`hydra-umc-bridge-uav run`",
@@ -117,14 +130,14 @@
         {
           "name": "tests/",
           "desc": {
-            "en": "146 tests, with a MAVLink emulator",
-            "es": "146 pruebas, con un emulador MAVLink",
-            "de": "146 Tests, mit einem MAVLink-Emulator",
-            "fr": "146 tests, avec un émulateur MAVLink",
-            "it": "146 test, con un emulatore MAVLink",
-            "ja": "146 件（MAVLink エミュレーター付き）",
-            "zh": "146 项测试（含 MAVLink 模拟器）",
-            "pt": "146 testes, com um emulador MAVLink"
+            "en": "154 tests, with a MAVLink emulator",
+            "es": "154 pruebas, con un emulador MAVLink",
+            "de": "154 Tests, mit einem MAVLink-Emulator",
+            "fr": "154 tests, avec un émulateur MAVLink",
+            "it": "154 test, con un emulatore MAVLink",
+            "ja": "154 件（MAVLink エミュレーター付き）",
+            "zh": "154 项测试（含 MAVLink 模拟器）",
+            "pt": "154 testes, com um emulador MAVLink"
           }
         },
         {

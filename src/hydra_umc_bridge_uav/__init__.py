@@ -11,6 +11,7 @@ from hydra_umc_sdk.bridge_contract import BridgeJob, CellState, JobPhase, Machin
 from .coordinator import UavCoordinator, UavDispatch, UavRequestPlan
 from .gcs_heartbeat import GcsHeartbeat, HeartbeatStatus, rate_from_environment
 from .heartbeat import HeartbeatMonitor, HeartbeatState, LinkStatus
+from .mavlink_link import MavlinkLink
 from .mavlink_transport import MavlinkFlightControl, MavlinkSendResult, open_mavlink_connection
 
 __all__ = [
@@ -28,6 +29,7 @@ __all__ = [
     "HeartbeatState",
     "LinkStatus",
     "MavlinkFlightControl",
+    "MavlinkLink",
     "MavlinkSendResult",
     "open_mavlink_connection",
 ]
