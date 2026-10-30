@@ -19,7 +19,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
   <img src="https://img.shields.io/badge/Tests-146%20passing-2ea44f.svg" alt="Tests">
-  <img src="https://img.shields.io/badge/Version-0.1.5-0f6cbd.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-0.1.6-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
@@ -35,7 +35,7 @@ GPL-3.0-or-later - see LICENSE
 
 | | |
 |---|---|
-| Versión | `0.1.5` |
+| Versión | `0.1.6` |
 | Madurez | Funcional |
 | Tests | 146 (`python tools/build_test.py`) |
 | Tecnología | Python / MAVLink / HYDRA-UMC-SDK |
@@ -240,7 +240,7 @@ HYDRA-UMC-BRIDGE-UAV/
 
 **Límites conocidos hoy**
 
-**Real hoy:** versión `0.1.5`, funcional como núcleo de coordinación sin dependencias (`UavCoordinator`) más un watchdog real de pérdida de enlace totalmente probado en sus casos límite (`HeartbeatMonitor`), enrutado de fase con fallo cerrado, un esquema de peticiones de vuelo estático `plan-only`, un transporte real de comandos MAVLink (`MavlinkFlightControl`) que mapea cada petición a su `MAV_CMD` real y numerado - armar ahora exige el booleano literal `confirm_arm is True` (nunca un valor meramente verdadero como la cadena `'false'`), todo parámetro numérico de vuelo se comprueba como número real no booleano antes de cualquier comprobación de finitud/rango, y un comando enviado solo se reporta como confirmado una vez llega su `COMMAND_ACK` real con `MAV_RESULT_ACCEPTED` -, y scripts de build-test sin mutación integrados en CI con un checkout del SDK.
+**Real hoy:** versión `0.1.6`, funcional como núcleo de coordinación sin dependencias (`UavCoordinator`) más un watchdog real de pérdida de enlace totalmente probado en sus casos límite (`HeartbeatMonitor`), enrutado de fase con fallo cerrado, un esquema de peticiones de vuelo estático `plan-only`, un transporte real de comandos MAVLink (`MavlinkFlightControl`) que mapea cada petición a su `MAV_CMD` real y numerado - armar ahora exige el booleano literal `confirm_arm is True` (nunca un valor meramente verdadero como la cadena `'false'`), todo parámetro numérico de vuelo se comprueba como número real no booleano antes de cualquier comprobación de finitud/rango, y un comando enviado solo se reporta como confirmado una vez llega su `COMMAND_ACK` real con `MAV_RESULT_ACCEPTED` -, y scripts de build-test sin mutación integrados en CI con un checkout del SDK.
 
 **Frontera de integración:** este bridge es solo una frontera de coordinación - no es un nodo de control de vuelo, y no puede saltarse HYDRA-UMC-SERVER, los límites del MCU, los watchdogs ni el E-STOP; cada trabajo despachado sigue pasando por la misma puerta compartida que usan todos los bridges hermanos. La señal de failsafe propia de `HeartbeatMonitor` es un asunto de la capa de coordinación, nunca un sustituto del failsafe independiente del propio controlador de vuelo.
 
