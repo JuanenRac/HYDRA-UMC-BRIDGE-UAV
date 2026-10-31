@@ -98,7 +98,7 @@ class SimulatedUavTests(unittest.TestCase):
     def test_telemetry_is_a_snapshot_that_cannot_change_the_vehicle(self):
         uav = SimulatedUav()
         snapshot = uav.telemetry()
-        with self.assertRaises(Exception):
+        with self.assertRaises(Exception):  # noqa: B017
             snapshot.state = UavState.AIRBORNE  # frozen dataclass
         self.assertEqual(uav.telemetry().state, UavState.GROUNDED)
 

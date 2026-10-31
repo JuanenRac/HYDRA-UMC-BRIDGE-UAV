@@ -157,12 +157,12 @@ def run(
                 signal.signal(getattr(signal, name), lambda *_a: stop.set())
 
     try:
-        sink = opener(args.connection, heartbeat_timeout_seconds=args.heartbeat_timeout, **signing)
+        sink = opener(args.connection, heartbeat_timeout_seconds=args.heartbeat_timeout, **signing)  # type: ignore[misc]
     except Exception as error:  # noqa: BLE001 - any failure to open the link is reported, not a traceback
         err.write(f"error: the MAVLink link could not be opened: {error}\n")
         return EXIT_LINK
 
-    heartbeat = GcsHeartbeat(sink, rate)
+    heartbeat = GcsHeartbeat(sink, rate)  # type: ignore[arg-type]
     heartbeat.start()
     out.write(f"HEARTBEAT_RUNNING connection={args.connection} rate_hz={rate:g}\n")
     out.flush()

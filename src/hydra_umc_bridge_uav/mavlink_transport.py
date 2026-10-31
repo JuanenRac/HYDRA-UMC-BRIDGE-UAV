@@ -62,7 +62,7 @@ from __future__ import annotations
 import math
 import time
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
 from .coordinator import UavCoordinator, UavDispatch
 
@@ -162,7 +162,7 @@ class _PymavlinkConnectionSink:
     Protocol expects, and the system/component the vehicle's heartbeat came
     from (`target_system` / `target_component`)."""
 
-    def __init__(self, connection: object) -> None:
+    def __init__(self, connection: Any) -> None:
         self._connection = connection
 
     @property
@@ -274,7 +274,7 @@ def _is_real_number(value: object) -> bool:
 
 
 def _positive_finite(value: object) -> bool:
-    return _is_real_number(value) and math.isfinite(value) and value > 0
+    return _is_real_number(value) and math.isfinite(value) and value > 0  # type: ignore[arg-type,operator]
 
 
 def _distance_m(lat_a: float, lon_a: float, lat_b: float, lon_b: float) -> float:
