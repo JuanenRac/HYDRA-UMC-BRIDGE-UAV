@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.1.7] - One receiver thread for a MAVLink connection
+
 - **One receiver thread for a MAVLink connection (`MavlinkLink`):** a single reader takes every message from the connection, refreshes the link watchdog on each vehicle heartbeat (a ground-station heartbeat does not count), and keeps the other messages by type for `recv_match()`, so the watchdog and the wait for an acknowledgement no longer take each other's messages. If the connection fails the thread stops and the link goes LOST. It is opt-in: the existing transport is unchanged.
 
 ## [0.1.6] - A shared job intake, MAVLink 2 signing and the signing options from the Server configuration
