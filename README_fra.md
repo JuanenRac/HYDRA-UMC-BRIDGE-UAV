@@ -54,6 +54,10 @@ Chaque ligne est une partie de ce dépôt et le feu dit où elle en est aujourd'
 | Logiciel | 🟡 | Fonctionne pour son usage principal ; la vérification d'honnêteté ci-dessus liste ce qui manque encore |
 | Tests | 🟢 | 154 tests automatiques, exécutés à chaque modification |
 | Matériel réel | 🟠 | Simulé seulement : testé avec des émulateurs, des doubles de test ou des simulateurs ; aucune exécution sur du matériel réel n'est consignée pour cette version |
+| Intégration | 🟠 | Ses messages et ses routes sont vérifiés par rapport aux contrats partagés du SDK ; il n'a pas fonctionné avec l'équipement réel |
+| Déploiement | 🟠 | Publié comme release ; l'installation sur une machine propre est documentée mais non consignée |
+| Arrêt et sécurité | 🟠 | Le chemin d'arrêt et ses limites sont implémentés et testés avec des simulateurs ; ils n'ont jamais fonctionné sur une vraie machine, et ce n'est pas un système de sécurité certifié |
+| Protocole de l'équipement | 🟠 | Parle le protocole de son équipement ; vérifié seulement avec des doublures et des simulateurs, jamais avec la vraie machine |
 | Documentation | 🟢 | README en huit langues, vérifié par rapport au manifeste à chaque modification |
 
 ## 🎯 Présentation

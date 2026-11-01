@@ -53,6 +53,10 @@ Cada linha é uma parte deste repositório e a luz diz até onde chega hoje. É 
 | Software | 🟡 | Funciona para o seu propósito principal; a verificação de honestidade acima lista o que ainda falta |
 | Testes | 🟢 | 154 testes automáticos, executados a cada alteração |
 | Hardware real | 🟠 | Só simulado: testado com emuladores, dublês de teste ou simuladores; não há registo de execução em hardware real para esta versão |
+| Integração | 🟠 | As suas mensagens e rotas são verificadas contra os contratos partilhados do SDK; ainda não funcionou em conjunto com o equipamento real |
+| Implantação | 🟠 | Publicado como release; instalá-lo numa máquina limpa está documentado mas não registado |
+| Paragem e segurança | 🟠 | O caminho de paragem e os seus limites estão implementados e testados com simuladores; nunca funcionaram numa máquina real, e isto não é um sistema de segurança certificado |
+| Protocolo do equipamento | 🟠 | Fala o protocolo do seu equipamento; verificado só com simuladores e dobles de teste, nunca com a máquina real |
 | Documentação | 🟢 | README em oito idiomas, verificado contra o manifesto a cada alteração |
 
 ## 🎯 Visão geral

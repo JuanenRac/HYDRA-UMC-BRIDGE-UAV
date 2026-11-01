@@ -54,6 +54,10 @@ Cada línea es una parte de este repositorio y la luz dice hasta dónde llega ho
 | Software | 🟡 | Funciona para su propósito principal; la comprobación de honestidad de arriba lista lo que aún falta |
 | Pruebas | 🟢 | 154 pruebas automáticas, ejecutadas en cada cambio |
 | Hardware real | 🟠 | Solo simulado: probado con emuladores, dobles de prueba o simuladores; no consta ninguna ejecución en hardware real para esta versión |
+| Integración | 🟠 | Sus mensajes y rutas se comprueban contra los contratos compartidos del SDK; no ha funcionado junto con el equipo real |
+| Despliegue | 🟠 | Publicado como release; instalarlo en un equipo limpio está documentado pero no consta |
+| Parada y seguridad | 🟠 | El camino de parada y sus límites están implementados y probados con simuladores; nunca han funcionado en una máquina real, y esto no es un sistema de seguridad certificado |
+| Protocolo del equipo | 🟠 | Habla el protocolo de su equipo; comprobado solo con dobles de prueba y simuladores, nunca con la máquina real |
 | Documentación | 🟢 | README en ocho idiomas, comprobado contra el manifiesto en cada cambio |
 
 ## 🎯 Resumen
