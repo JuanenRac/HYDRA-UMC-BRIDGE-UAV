@@ -128,5 +128,65 @@ class MavlinkLinkTests(unittest.TestCase):
             MavlinkLink(self.conn, self.monitor, poll_s=0)
 
 
+class RecordingSink(FakeConnection):
+    """A sink that can send as well as receive, and records what it was asked to send."""
+
+    target_system = 1
+
+    def __init__(self):
+        super().__init__()
+        self.sent = []
+        self.closed = False
+
+    def command_long_send(self, *args, **kwargs):
+        self.sent.append(("long", args))
+
+    def close(self):
+        self.closed = True
+
+
+class LinkedSinkTests(unittest.TestCase):
+    def setUp(self):
+        from hydra_umc_bridge_uav import LinkedSink
+
+        self.sink = RecordingSink()
+        self.clock = Clock()
+        self.linked = LinkedSink(self.sink, HeartbeatMonitor(timeout_s=3.0), clock=self.clock, poll_s=0.01)
+        self.addCleanup(self.linked.close)
+
+    def test_sending_goes_to_the_sink_and_receiving_to_the_one_reader(self):
+        self.linked.start()
+        self.linked.command_long_send(1, 2, 3)
+        self.assertEqual(self.sink.sent, [("long", (1, 2, 3))])
+        self.assertEqual(self.linked.target_system, 1)
+        ack = Msg("COMMAND_ACK", command=22)
+        self.sink.inbox.put(ack)
+        self.assertIs(self.linked.recv_match("COMMAND_ACK", True, 1.0), ack)
+
+    def test_a_wait_for_an_ack_does_not_steal_the_heartbeat(self):
+        self.linked.start()
+        self.sink.inbox.put(Msg("HEARTBEAT", type=2))
+        self.sink.inbox.put(Msg("COMMAND_ACK", command=22))
+        self.assertIsNotNone(self.linked.recv_match("COMMAND_ACK", True, 1.0))
+        self.assertTrue(wait_until(lambda: self.linked.link_state()["status"] == "OK"))
+
+    def test_the_state_is_lost_before_any_heartbeat_and_after_silence(self):
+        state = self.linked.link_state()
+        self.assertEqual((state["status"], state["seconds_since_heartbeat"], state["failsafe_action"]), ("LOST", None, "RETURN_TO_LAUNCH"))
+        self.linked.start()
+        self.sink.inbox.put(Msg("HEARTBEAT", type=2))
+        self.assertTrue(wait_until(lambda: self.linked.link_state()["status"] == "OK"))
+        self.clock.now += 10.0
+        self.assertEqual(self.linked.link_state()["status"], "LOST")
+
+    def test_a_failed_reader_is_reported_and_close_closes_the_sink(self):
+        self.linked.start()
+        self.sink.inbox.put(OSError("radio unplugged"))
+        self.assertTrue(wait_until(lambda: self.linked.link_state()["reader_running"] is False))
+        self.assertIn("radio unplugged", self.linked.link_state()["reader_error"])
+        self.linked.close()
+        self.assertTrue(self.sink.closed)
+
+
 if __name__ == "__main__":
     unittest.main()

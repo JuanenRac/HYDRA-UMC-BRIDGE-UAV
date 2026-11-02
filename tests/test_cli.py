@@ -259,5 +259,57 @@ class ServerConfigSigningTests(unittest.TestCase):
         self.assertNotIn("secret-looking-text", err)
 
 
+class LinkMonitorTests(unittest.TestCase):
+    class Radio(Sink):
+        """A sink that also receives: it hears the vehicle's heartbeat once."""
+
+        def __init__(self):
+            super().__init__()
+            self.heard = False
+
+        def recv_match(self, type, blocking, timeout):
+            if not self.heard:
+                self.heard = True
+
+                class Beat:
+                    type = 2
+
+                    def get_type(self):
+                        return "HEARTBEAT"
+
+                return Beat()
+            threading.Event().wait(min(timeout, 0.01))
+            return None
+
+    def test_it_is_off_unless_asked_for(self):
+        code, out, _ = run(["run", "--connection", "x", "--heartbeat-hz", "10", "--duration", "0.25", "--status-every", "0.1"], lambda *a, **k: self.Radio())
+        self.assertEqual(code, 0)
+        self.assertNotIn('"link"', out)
+
+    def test_with_the_option_the_status_line_carries_the_link(self):
+        sink = self.Radio()
+        code, out, _ = run(
+            ["run", "--connection", "x", "--heartbeat-hz", "10", "--duration", "0.4", "--status-every", "0.1", "--link-monitor"], lambda *a, **k: sink
+        )
+        self.assertEqual(code, 0)
+        links = [json.loads(line)["link"] for line in out.splitlines() if line.startswith("{")]
+        self.assertTrue(links)
+        self.assertIn("OK", {link["status"] for link in links})
+        self.assertTrue(sink.closed)
+
+    def test_the_environment_switches_it_on_and_a_bad_timeout_is_refused(self):
+        import os
+
+        os.environ[cli.LINK_MONITOR_ENVIRONMENT] = "1"
+        self.addCleanup(os.environ.pop, cli.LINK_MONITOR_ENVIRONMENT, None)
+        code, out, _ = run(["run", "--connection", "x", "--heartbeat-hz", "10", "--duration", "0.25", "--status-every", "0.1"], lambda *a, **k: self.Radio())
+        self.assertEqual(code, 0)
+        self.assertIn('"link"', out)
+        for timeout in ("0", "-2", "nan"):
+            code, _, err = run(["run", "--connection", "x", "--link-timeout", timeout], lambda *a, **k: self.Radio())
+            self.assertEqual(code, 2, timeout)
+            self.assertIn("--link-timeout", err)
+
+
 if __name__ == "__main__":
     unittest.main()

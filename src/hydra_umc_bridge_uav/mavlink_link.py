@@ -113,3 +113,47 @@ class MavlinkLink:
                 if remaining <= 0:
                     return None
                 self._cond.wait(remaining)
+
+
+class LinkedSink:
+    """A command sink whose receiving goes through a `MavlinkLink`.
+
+    Sending (``command_long_send``, ``command_int_send``, ``heartbeat_send``, ``target_system``, ...) is passed to the
+    underlying sink; ``recv_match`` is answered by the link's one reader, so a wait for a ``COMMAND_ACK`` and the heartbeat
+    watchdog no longer take messages from each other. ``start()`` starts the reader, ``close()`` stops it and closes the sink.
+    """
+
+    def __init__(self, sink: object, monitor: HeartbeatMonitor, clock: Callable[[], float] = time.monotonic, poll_s: float = 0.1) -> None:
+        self._sink = sink
+        self.monitor = monitor
+        self.link = MavlinkLink(sink, monitor, clock=clock, poll_s=poll_s)  # type: ignore[arg-type]
+        self._clock = clock
+
+    def start(self) -> "LinkedSink":
+        self.link.start()
+        return self
+
+    def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None:
+        return self.link.recv_match(type, blocking, timeout)
+
+    def link_state(self) -> dict[str, object]:
+        """What the watchdog says now, as plain data for a status line: the status, the silence in seconds and the failsafe it would ask for."""
+        state = self.monitor.state(self._clock())
+        seconds = state.seconds_since_last_heartbeat
+        return {
+            "status": state.status.value,
+            "seconds_since_heartbeat": None if seconds == float("inf") else round(seconds, 2),
+            "failsafe_action": state.failsafe_action,
+            "reader_running": self.link.running,
+            "reader_error": None if self.link.error is None else str(self.link.error),
+        }
+
+    def close(self) -> None:
+        self.link.stop()
+        close = getattr(self._sink, "close", None)
+        if callable(close):
+            close()
+
+    def __getattr__(self, name: str) -> object:
+        # everything that is not receiving is the underlying sink's (only called for names not found on this object)
+        return getattr(self._sink, name)

@@ -52,3 +52,9 @@ Keep a new script in the repository root only when it is an operator entry point
 ## Hardware acceptance gate
 
 Before deploying an adapter: select the real flight controller/SDK and its authentication, document every flight request's real MAVLink message or OSDK call, bind authenticated UAV identity, verify the transport adapter genuinely calls `HeartbeatMonitor.observe()` on every real telemetry packet (not a fixed timer), independently confirm the flight controller's own RTL/Hover failsafe actually fires on a real link cut, and perform a tethered/geofenced bench test before any free flight. The flight controller's own firmware remains responsible for real-time stabilization and its own independent failsafe.
+
+## The link monitor and the simulator check
+
+`hydra-umc-bridge-uav run --connection URL --link-monitor` wraps the link in a `LinkedSink`: one thread (`MavlinkLink`) reads every message, the vehicle's `HEARTBEAT` refreshes the `HeartbeatMonitor` and the rest is kept by type for `recv_match`, which is what `MavlinkFlightControl` waits on for a `COMMAND_ACK`. Sending is passed to the underlying sink. Each status line then has a `link` object (`status` `OK` or `LOST`, `seconds_since_heartbeat`, `failsafe_action`, `reader_running`, `reader_error`). A link that cannot be read ends the thread and the monitor stops being refreshed, so it goes `LOST`; it never reports a link it can no longer read. This is the bridge's own signal and does not replace the failsafe of the autopilot.
+
+`tools/sitl_smoke.py --connection udpin:0.0.0.0:14550` runs that against a simulator that is already up and passes when its heartbeat was heard and the bridge sent its own. `.github/workflows/sitl.yml` (Actions, Run workflow) starts a PX4 SITL container and runs it; it pulls a large image, so it is never part of the normal checks, and it has not been run yet.

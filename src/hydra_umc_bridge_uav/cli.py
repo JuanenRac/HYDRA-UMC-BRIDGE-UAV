@@ -24,6 +24,8 @@ import threading
 from typing import Callable, Sequence, TextIO
 
 from .gcs_heartbeat import ENVIRONMENT_VARIABLE, GcsHeartbeat, parse_rate_hz, rate_from_environment
+from .heartbeat import HeartbeatMonitor
+from .mavlink_link import LinkedSink
 
 EXIT_OK = 0
 EXIT_LINK = 1
@@ -33,6 +35,9 @@ EXIT_USAGE = 2
 SIGNING_KEY_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE"
 SIGNING_ALLOW_UNSIGNED_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED"
 SERVER_CONFIG_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG"
+LINK_MONITOR_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_LINK_MONITOR"
+LINK_TIMEOUT_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_LINK_TIMEOUT_SECONDS"
+DEFAULT_LINK_TIMEOUT_S = 5.0
 
 
 def read_server_signing(path: str) -> tuple[str | None, bool | None]:
@@ -87,14 +92,25 @@ def build_parser() -> argparse.ArgumentParser:
         "--server-config", default=None,
         help=f"the Server's data/server-config.json: its mavlink section (set from Server Admin) gives the signing key file and whether unsigned messages are accepted when neither the option nor the environment says; default: the file named by {SERVER_CONFIG_ENVIRONMENT}, else none",
     )
+    run.add_argument(
+        "--link-monitor", action="store_true",
+        help=f"also read the link on one thread and watch the vehicle's own heartbeat (a LOST link shows in the status lines); default: {LINK_MONITOR_ENVIRONMENT}=1, else off",
+    )
+    run.add_argument(
+        "--link-timeout", type=float, default=None,
+        help=f"seconds of silence after which the link is LOST (default: {LINK_TIMEOUT_ENVIRONMENT}, else {DEFAULT_LINK_TIMEOUT_S:g})",
+    )
     return parser
 
 
-def _status_line(heartbeat: GcsHeartbeat, out: TextIO) -> None:
+def _status_line(heartbeat: GcsHeartbeat, out: TextIO, linked: LinkedSink | None = None) -> None:
     status = heartbeat.status()
-    out.write(json.dumps({
+    line: dict[str, object] = {
         "heartbeat": {"running": status.running, "rate_hz": status.rate_hz, "sent": status.sent, "failed": status.failed, "last_error": status.last_error},
-    }) + "\n")
+    }
+    if linked is not None:
+        line["link"] = linked.link_state()
+    out.write(json.dumps(line) + "\n")
     out.flush()
 
 
@@ -121,6 +137,24 @@ def run(
     if args.duration < 0 or args.status_every < 0 or args.heartbeat_timeout <= 0:
         err.write("error: --duration and --status-every cannot be negative and --heartbeat-timeout must be positive\n")
         return EXIT_USAGE
+
+    link_monitor = bool(getattr(args, "link_monitor", False)) or os.environ.get(LINK_MONITOR_ENVIRONMENT, "").strip() == "1"
+    link_timeout = DEFAULT_LINK_TIMEOUT_S
+    if link_monitor:
+        raw_timeout = getattr(args, "link_timeout", None)
+        if raw_timeout is None and os.environ.get(LINK_TIMEOUT_ENVIRONMENT, "").strip():
+            try:
+                raw_timeout = float(os.environ[LINK_TIMEOUT_ENVIRONMENT])
+            except ValueError:
+                err.write(f"error: {LINK_TIMEOUT_ENVIRONMENT} must be a number of seconds\n")
+                return EXIT_USAGE
+        if raw_timeout is not None:
+            link_timeout = raw_timeout
+        try:
+            HeartbeatMonitor(link_timeout)  # refuses a timeout that is not a positive finite number
+        except ValueError as error:
+            err.write(f"error: --link-timeout: {error}\n")
+            return EXIT_USAGE
 
     # order: the option, the environment of the deployment, then what an administrator saved in the Server's configuration
     key_file = getattr(args, "signing_key_file", None) or os.environ.get(SIGNING_KEY_ENVIRONMENT, "").strip() or None
@@ -162,6 +196,10 @@ def run(
         err.write(f"error: the MAVLink link could not be opened: {error}\n")
         return EXIT_LINK
 
+    linked: LinkedSink | None = None
+    if link_monitor:
+        linked = LinkedSink(sink, HeartbeatMonitor(link_timeout)).start()
+        sink = linked
     heartbeat = GcsHeartbeat(sink, rate)  # type: ignore[arg-type]
     heartbeat.start()
     out.write(f"HEARTBEAT_RUNNING connection={args.connection} rate_hz={rate:g}\n")
@@ -176,7 +214,7 @@ def run(
             waited += step
             since_status += step
             if args.status_every > 0 and since_status >= args.status_every:
-                _status_line(heartbeat, out)
+                _status_line(heartbeat, out, linked)
                 since_status = 0.0
             if args.duration > 0 and waited >= args.duration:
                 break
@@ -185,7 +223,7 @@ def run(
         close = getattr(sink, "close", None)
         if callable(close):
             close()
-    _status_line(heartbeat, out)
+    _status_line(heartbeat, out, linked)
     final = heartbeat.status()
     out.write("HEARTBEAT_STOPPED\n")
     out.flush()
