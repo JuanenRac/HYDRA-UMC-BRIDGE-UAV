@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.1.8] - The link of the vehicle can be monitored with a sink on the one reading thread, an optional simulator check is available by hand and the bench test script lists what needs a vehicle
+
 - **Bench test script:** `docs/BENCH_TESTS.md` lists the checks that need a simulator or a vehicle (link monitor, job intake, failsafe, signing), all marked not executed.
 
 - **`run --link-monitor` (off by default):** the link is read on the one `MavlinkLink` thread through a `LinkedSink` (sending goes to the sink, receiving to the link), so a wait for a `COMMAND_ACK` and the heartbeat watchdog no longer take messages from each other, and every status line carries `link`: `OK` or `LOST`, the seconds of silence, the failsafe it would ask for and whether the reader is running. `--link-timeout` or `HYDRA_UMC_BRIDGE_UAV_LINK_TIMEOUT_SECONDS` (5 s by default); `HYDRA_UMC_BRIDGE_UAV_LINK_MONITOR=1` switches it on from the environment.
