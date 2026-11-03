@@ -21,16 +21,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with: {python-version: "3.12"}
-      - uses: actions/checkout@v5
-        with: {repository: JuanenRac/HYDRA-UMC-SDK, path: .hydra-umc-sdk-contract, ref: v0.4.7}
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with: {repository: JuanenRac/HYDRA-UMC-SDK, path: .hydra-umc-sdk-contract, ref: v0.4.7, persist-credentials: false}
       - name: Install the bridge and pymavlink
         run: python -m pip install ./.hydra-umc-sdk-contract/clients/python . pymavlink
       - name: Start the simulator
+        env:
+          IMAGE: ${{ inputs.image }}
         run: |
-          docker run -d --name px4 --network host "${{ inputs.image }}"
+          docker run -d --name px4 --network host "$IMAGE"
           sleep 45
           docker logs --tail 20 px4
       - name: Run the smoke test
