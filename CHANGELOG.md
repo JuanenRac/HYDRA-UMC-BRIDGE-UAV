@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Bench test script:** `docs/BENCH_TESTS.md` lists the checks that need a simulator or a vehicle (link monitor, job intake, failsafe, signing), all marked not executed.
+
 - **`run --link-monitor` (off by default):** the link is read on the one `MavlinkLink` thread through a `LinkedSink` (sending goes to the sink, receiving to the link), so a wait for a `COMMAND_ACK` and the heartbeat watchdog no longer take messages from each other, and every status line carries `link`: `OK` or `LOST`, the seconds of silence, the failsafe it would ask for and whether the reader is running. `--link-timeout` or `HYDRA_UMC_BRIDGE_UAV_LINK_TIMEOUT_SECONDS` (5 s by default); `HYDRA_UMC_BRIDGE_UAV_LINK_MONITOR=1` switches it on from the environment.
 - **An optional simulator check:** `.github/workflows/sitl.yml` (started by hand only) starts a PX4 SITL container and runs `tools/sitl_smoke.py`, which passes when the simulator's heartbeat was heard and the bridge sent its own. It has never been run.
 
