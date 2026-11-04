@@ -179,6 +179,12 @@ class _PymavlinkConnectionSink:
     def command_int_send(self, *args: float | int, **kwargs: float | int) -> object:
         return self._connection.mav.command_int_send(*args, **kwargs)
 
+    def mission_count_send(self, *args: float | int, **kwargs: float | int) -> object:
+        return self._connection.mav.mission_count_send(*args, **kwargs)
+
+    def mission_item_int_send(self, *args: float | int, **kwargs: float | int) -> object:
+        return self._connection.mav.mission_item_int_send(*args, **kwargs)
+
     def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None:
         return self._connection.recv_match(type=type, blocking=blocking, timeout=timeout)
 

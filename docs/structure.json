@@ -45,6 +45,58 @@
           }
         },
         {
+          "name": "mavlink_mission.py",
+          "desc": {
+            "en": "mission upload checked against the flight envelope",
+            "es": "subida de misión comprobada contra el entorno de vuelo",
+            "de": "Missions-Upload, gegen den Flugbereich geprüft",
+            "fr": "envoi de mission vérifié contre l'enveloppe de vol",
+            "it": "invio della missione verificato sull'inviluppo di volo",
+            "ja": "飛行範囲で検証するミッションのアップロード",
+            "zh": "按飞行包线检查的任务上传",
+            "pt": "envio de missão verificado contra o envelope de voo"
+          }
+        },
+        {
+          "name": "camera_capture.py",
+          "desc": {
+            "en": "geotagged picture event and data-lake sample",
+            "es": "evento de foto con posición y muestra para el lago de datos",
+            "de": "Bildereignis mit Position und Data-Lake-Probe",
+            "fr": "événement photo géolocalisé et échantillon pour le lac de données",
+            "it": "evento foto con posizione e campione per il data lake",
+            "ja": "位置付き撮影イベントとデータレイク用サンプル",
+            "zh": "带位置的拍照事件与数据湖样本",
+            "pt": "evento de foto com posição e amostra para o data lake"
+          }
+        },
+        {
+          "name": "twin_telemetry.py",
+          "desc": {
+            "en": "position and attitude as a twin state",
+            "es": "posición y actitud como estado del gemelo",
+            "de": "Position und Lage als Zwillingszustand",
+            "fr": "position et attitude comme état du jumeau",
+            "it": "posizione e assetto come stato del gemello",
+            "ja": "位置と姿勢をツインの状態として",
+            "zh": "位置与姿态转为孪生状态",
+            "pt": "posição e atitude como estado do gémeo"
+          }
+        },
+        {
+          "name": "settings.py",
+          "desc": {
+            "en": "reads config/uav.json",
+            "es": "lee config/uav.json",
+            "de": "liest config/uav.json",
+            "fr": "lit config/uav.json",
+            "it": "legge config/uav.json",
+            "ja": "config/uav.json を読む",
+            "zh": "读取 config/uav.json",
+            "pt": "lê config/uav.json"
+          }
+        },
+        {
           "name": "heartbeat.py",
           "desc": {
             "en": "link-loss failsafe state machine",
@@ -130,14 +182,14 @@
         {
           "name": "tests/",
           "desc": {
-            "en": "165 tests, with a MAVLink emulator",
-            "es": "165 pruebas, con un emulador MAVLink",
-            "de": "165 Tests, mit einem MAVLink-Emulator",
-            "fr": "165 tests, avec un émulateur MAVLink",
-            "it": "165 test, con un emulatore MAVLink",
-            "ja": "165 件（MAVLink エミュレーター付き）",
-            "zh": "165 项测试（含 MAVLink 模拟器）",
-            "pt": "165 testes, com um emulador MAVLink"
+            "en": "195 tests, with a MAVLink emulator",
+            "es": "195 pruebas, con un emulador MAVLink",
+            "de": "195 Tests, mit einem MAVLink-Emulator",
+            "fr": "195 tests, avec un émulateur MAVLink",
+            "it": "195 test, con un emulatore MAVLink",
+            "ja": "195 件（MAVLink エミュレーター付き）",
+            "zh": "195 项测试（含 MAVLink 模拟器）",
+            "pt": "195 testes, com um emulador MAVLink"
           }
         },
         {
@@ -151,6 +203,19 @@
             "ja": "ブリッジガイド",
             "zh": "桥接指南",
             "pt": "guia do bridge"
+          }
+        },
+        {
+          "name": "config/",
+          "desc": {
+            "en": "mission, camera and twin values",
+            "es": "valores de misión, cámara y gemelo",
+            "de": "Werte für Mission, Kamera und Zwilling",
+            "fr": "valeurs de mission, caméra et jumeau",
+            "it": "valori di missione, camera e gemello",
+            "ja": "ミッション・カメラ・ツインの設定値",
+            "zh": "任务、相机和孪生参数",
+            "pt": "valores da missão, da câmara e do gémeo"
           }
         },
         {

@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **A whole mission can be uploaded, after a geofence check:** `mavlink_mission.py` runs the MAVLink mission protocol (count, one item per request, acknowledgement) for takeoff, waypoint, landing and return-to-launch items. Nothing leaves the bridge unless the upload is switched on (`mission.upload_enabled` in the new `config/uav.json`, off by default), a flight envelope is given, the item count is within `mission.max_items` and every waypoint, takeoff and landing point is inside the envelope; one item outside stops the whole mission before the first message. A refusal, a silent vehicle and a closed link come back as a reason, and the mission is never started by the upload.
+- **A picture comes back with its place:** `camera_capture.py` turns the camera's image-captured message into an event (position, altitude, attitude, image index, file URL, success flag) and into a numbers-only sample for the data lake. A failed capture or an unreadable position is never reported as a good picture.
+- **Position and attitude for the digital twin:** `twin_telemetry.py` builds a state of the twin contract of the shared SDK from the position and attitude of the vehicle (metres east, north and up of home, unit quaternion), marked real or simulated as the configuration says, checked with the SDK's own validator and limited to one state per `twin.min_interval_s`. The values of all three live in `config/uav.json`.
+- The emulator in the tests now answers the mission protocol and the image capture; 30 more tests.
+
 ## [0.1.8] - The link of the vehicle can be monitored with a sink on the one reading thread, an optional simulator check is available by hand and the bench test script lists what needs a vehicle
 
 - **Bench test script:** `docs/BENCH_TESTS.md` lists the checks that need a simulator or a vehicle (link monitor, job intake, failsafe, signing), all marked not executed.

@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-165%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-195%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.1.8-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | 版本 | `0.1.8` |
 | 成熟度 | 可用 |
-| 测试 | 165 (`python tools/build_test.py`) |
+| 测试 | 195 (`python tools/build_test.py`) |
 | 技术栈 | Python / MAVLink / HYDRA-UMC-SDK |
 | 真实硬件 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 
@@ -52,7 +52,7 @@ GPL-3.0-or-later - see LICENSE
 | 领域 | 状态 | 在这里的含义 |
 |---|---|---|
 | 软件 | 🟡 | 主要用途可用；上面的诚实性检查列出了仍然缺少的内容 |
-| 测试 | 🟢 | 165 项自动测试，每次变更都会运行 |
+| 测试 | 🟢 | 195 项自动测试，每次变更都会运行 |
 | 真实硬件 | 🟠 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 | 集成 | 🟠 | 其消息和路由已对照 SDK 的共享契约检查；尚未与真实设备一起运行 |
 | 部署 | 🟠 | 已作为发布版本公开；在干净机器上安装有文档，但没有记录 |
@@ -172,7 +172,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 测试
 
-运行 `python tools/build_test.py` 会执行 165 个自动 `unittest` 用例（同时编译每个模块）。测试不需要硬件、网络或可选软件包：需要 `paho-mqtt`、`pyserial` 或厂商库的用例使用替身，缺少软件包时则跳过。
+运行 `python tools/build_test.py` 会执行 195 个自动 `unittest` 用例（同时编译每个模块）。测试不需要硬件、网络或可选软件包：需要 `paho-mqtt`、`pyserial` 或厂商库的用例使用替身，缺少软件包时则跳过。
 
 | 测试文件 | 测试数 | 覆盖内容 |
 |---|---|---|
@@ -221,13 +221,18 @@ HYDRA-UMC-BRIDGE-UAV/
 ├── src/hydra_umc_bridge_uav/
 │   ├── coordinator.py             任务到具名飞行请求
 │   ├── mavlink_transport.py       已批准的请求转为真实 MAVLink 命令
+│   ├── mavlink_mission.py         按飞行包线检查的任务上传
+│   ├── camera_capture.py          带位置的拍照事件与数据湖样本
+│   ├── twin_telemetry.py          位置与姿态转为孪生状态
+│   ├── settings.py                读取 config/uav.json
 │   ├── heartbeat.py               链路丢失故障保护状态机
 │   ├── gcs_heartbeat.py           桥接自己的地面站 HEARTBEAT
 │   ├── mavlink_link.py            单一接收线程:喂看门狗并分发消息
 │   ├── cli.py                     `hydra-umc-bridge-uav run`
 │   └── simulated_uav.py           各状态下允许哪些请求
-├── tests/                         165 项测试（含 MAVLink 模拟器）
+├── tests/                         195 项测试（含 MAVLink 模拟器）
 ├── docs/                          桥接指南
+├── config/                        任务、相机和孪生参数
 ├── tools/                         构建与测试运行器、版本提升、CI 校验、README 与图片的生成和检查
 ├── images/                        横幅图与 README 的图片
 ├── .github/                       CI 工作流和 Issue 模板

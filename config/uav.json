@@ -1,0 +1,17 @@
+{
+  "mission": {
+    "upload_enabled": false,
+    "max_items": 100,
+    "request_timeout_s": 2.0,
+    "total_timeout_s": 60.0
+  },
+  "camera": {
+    "wait_for_image_s": 5.0,
+    "datalake_source_id": "uav"
+  },
+  "twin": {
+    "robot_id": "uav-1",
+    "source": "real",
+    "min_interval_s": 0.2
+  }
+}

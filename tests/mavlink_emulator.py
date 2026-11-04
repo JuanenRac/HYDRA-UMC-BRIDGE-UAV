@@ -81,6 +81,17 @@ class _Ack:
         self.result = result
 
 
+class _Msg:
+    """A pymavlink-shaped message: attributes plus get_type()."""
+
+    def __init__(self, kind: str, **fields: object) -> None:
+        self._kind = kind
+        self.__dict__.update(fields)
+
+    def get_type(self) -> str:
+        return self._kind
+
+
 class MavlinkFlightControllerEmulator:
     """A ``MavlinkCommandSink`` PX4-shaped autopilot. Single link, single
     vehicle - not thread-safe, exactly like a real serial/UDP MAVLink link."""
@@ -100,6 +111,22 @@ class MavlinkFlightControllerEmulator:
         self.acks: list[dict] = []
         self.commands: list[tuple[int, tuple[float, ...]]] = []
         self._pending_acks: list["_Ack"] = []
+        # mission microservice (MISSION_COUNT / MISSION_REQUEST_INT / MISSION_ITEM_INT / MISSION_ACK)
+        self.mission: list[dict] = []
+        self.mission_ack_result = 0  # what the vehicle answers when the upload is complete (MAV_MISSION_RESULT)
+        self.mission_max_items = 700
+        self.mission_stall_after: int | None = None  # stop asking after this many items (a silent vehicle)
+        self._mission_expected = 0
+        self._mission_received: dict[int, dict] = {}
+        self._mission_queue: list[_Msg] = []
+        # camera and telemetry
+        self.home_lat_e7 = 0
+        self.home_lon_e7 = 0
+        self.image_count = 0
+        self.camera_result = 1  # CAMERA_CAPTURE_RESULT success
+        self.camera_silent = False
+        self._camera_queue: list[_Msg] = []
+        self.roll = self.pitch = self.yaw = 0.0
 
     # ---- physical-side drivers ----------------------------------------
     def fail_prearm(self, ok: bool = False) -> None:
@@ -178,6 +205,60 @@ class MavlinkFlightControllerEmulator:
         self._pending_acks.append(_Ack(command, result))
         return ack
 
+    # ---- mission microservice ------------------------------------------
+    def mission_count_send(self, target_system: int, target_component: int, count: int, mission_type: int = 0) -> object:
+        self._mission_received = {}
+        self._mission_queue = []
+        if count > self.mission_max_items:
+            self._mission_queue.append(_Msg("MISSION_ACK", type=4))  # MAV_MISSION_NO_SPACE
+        elif count == 0:
+            self._mission_queue.append(_Msg("MISSION_ACK", type=0))
+        else:
+            self._mission_expected = count
+            self._mission_queue.append(_Msg("MISSION_REQUEST_INT", seq=0))
+        return None
+
+    def mission_item_int_send(
+        self,
+        target_system: int,
+        target_component: int,
+        seq: int,
+        frame: int,
+        command: int,
+        current: int,
+        autocontinue: int,
+        param1: float,
+        param2: float,
+        param3: float,
+        param4: float,
+        x: int,
+        y: int,
+        z: float,
+        mission_type: int = 0,
+    ) -> object:
+        if frame not in (2, 3, 5, 6, 10):  # MISSION, GLOBAL_RELATIVE_ALT, GLOBAL, ... : frames this emulator knows
+            self._mission_queue.append(_Msg("MISSION_ACK", type=2))
+            return None
+        if command not in (16, 20, 21, 22):
+            self._mission_queue.append(_Msg("MISSION_ACK", type=3))
+            return None
+        self._mission_received[seq] = {"seq": seq, "frame": frame, "command": command, "param1": param1, "x": x, "y": y, "z": z}
+        if len(self._mission_received) == self._mission_expected:
+            self.mission = [self._mission_received[i] for i in sorted(self._mission_received)]
+            self._mission_queue.append(_Msg("MISSION_ACK", type=self.mission_ack_result))
+        elif self.mission_stall_after is not None and len(self._mission_received) >= self.mission_stall_after:
+            pass  # silent: no further request
+        else:
+            self._mission_queue.append(_Msg("MISSION_REQUEST_INT", seq=seq + 1))
+        return None
+
+    # ---- telemetry -----------------------------------------------------
+    def emit_position(self, lat_e7: int, lon_e7: int, relative_alt_m: float) -> "_Msg":
+        return _Msg("GLOBAL_POSITION_INT", lat=lat_e7, lon=lon_e7, alt=int((relative_alt_m + 100) * 1000), relative_alt=int(relative_alt_m * 1000))
+
+    def emit_attitude(self) -> "_Msg":
+        return _Msg("ATTITUDE", roll=self.roll, pitch=self.pitch, yaw=self.yaw)
+
     def _process_int(self, command: int, params: tuple[float, ...]) -> int:
         if command == _CMD_DO_REPOSITION:
             if self.flight_phase not in ("FLYING", "HOVERING"):
@@ -201,6 +282,13 @@ class MavlinkFlightControllerEmulator:
         interface-parity with pymavlink but ignored - `command_long_send()`
         above only ever queues COMMAND_ACK, the one type this bridge waits
         for."""
+        if type == "MISSION_REQUEST_INT" or type == "MISSION_ACK":
+            for index, message in enumerate(self._mission_queue):
+                if message.get_type() == type:
+                    return self._mission_queue.pop(index)
+            return None
+        if type == "CAMERA_IMAGE_CAPTURED":
+            return self._camera_queue.pop(0) if self._camera_queue else None
         if not self._pending_acks:
             return None
         return self._pending_acks.pop(0)
@@ -241,6 +329,24 @@ class MavlinkFlightControllerEmulator:
             return RESULT_ACCEPTED
 
         if command == _CMD_IMAGE_START_CAPTURE:
+            if not self.camera_silent:
+                position = self.last_position_int or {"x": self.home_lat_e7, "y": self.home_lon_e7, "z": self.altitude_m}
+                self._camera_queue.append(
+                    _Msg(
+                        "CAMERA_IMAGE_CAPTURED",
+                        time_utc=1_800_000_000_000_000 + self.image_count,
+                        camera_id=1,
+                        lat=int(position["x"]),
+                        lon=int(position["y"]),
+                        alt=int((self.altitude_m + 100.0) * 1000),
+                        relative_alt=int(self.altitude_m * 1000),
+                        q=[1.0, 0.0, 0.0, 0.0],
+                        image_index=self.image_count,
+                        capture_result=self.camera_result,
+                        file_url=f"file:///DCIM/IMG_{self.image_count:04d}.JPG",
+                    )
+                )
+                self.image_count += 1
             return RESULT_ACCEPTED
 
         if command == _CMD_NAV_RETURN_TO_LAUNCH:
