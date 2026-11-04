@@ -182,14 +182,14 @@
         {
           "name": "tests/",
           "desc": {
-            "en": "195 tests, with a MAVLink emulator",
-            "es": "195 pruebas, con un emulador MAVLink",
-            "de": "195 Tests, mit einem MAVLink-Emulator",
-            "fr": "195 tests, avec un émulateur MAVLink",
-            "it": "195 test, con un emulatore MAVLink",
-            "ja": "195 件（MAVLink エミュレーター付き）",
-            "zh": "195 项测试（含 MAVLink 模拟器）",
-            "pt": "195 testes, com um emulador MAVLink"
+            "en": "201 tests, with a MAVLink emulator",
+            "es": "201 pruebas, con un emulador MAVLink",
+            "de": "201 Tests, mit einem MAVLink-Emulator",
+            "fr": "201 tests, avec un émulateur MAVLink",
+            "it": "201 test, con un emulatore MAVLink",
+            "ja": "201 件（MAVLink エミュレーター付き）",
+            "zh": "201 项测试（含 MAVLink 模拟器）",
+            "pt": "201 testes, com um emulador MAVLink"
           }
         },
         {

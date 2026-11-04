@@ -11,10 +11,13 @@ error, never a silent default, because these are safety values.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import math
+import os
 from dataclasses import dataclass, field, fields
 from pathlib import Path
+from typing import Mapping
 
 
 def _number(value: object) -> bool:
@@ -107,3 +110,50 @@ def load_settings(path: str | Path | None) -> UavSettings:
     if problems:
         raise ValueError("; ".join(problems))
     return settings
+
+
+REMOTE_ENVIRONMENT = "HYDRA_UMC_BRIDGE_UAV_REMOTE_SETTINGS"
+_TRUE = {"1", "true", "yes", "on"}
+
+
+def remote_settings_allowed(environ: Mapping[str, str] | None = None) -> bool:
+    """True only when the host of the bridge switched remote settings on (`HYDRA_UMC_BRIDGE_UAV_REMOTE_SETTINGS=1`, off by default)."""
+    source = os.environ if environ is None else environ
+    return source.get(REMOTE_ENVIRONMENT, "").strip().lower() in _TRUE
+
+
+def read_server_mission_upload(path: str) -> bool | None:
+    """`bridges.uav.missionUploadEnabled` of the Server's `data/server-config.json` (set in Server Admin); None when the file does not carry it.
+
+    This bridge has no broker connection, so the switch reaches it through the same file that already gives it its MAVLink signing options. A file that cannot
+    be read, or a value that is not true or false, is a ValueError.
+    """
+    try:
+        document = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ValueError(f"the server configuration file cannot be read: {getattr(error, 'strerror', None) or error}") from error
+    section = document.get("bridges") if isinstance(document, dict) else None
+    uav = section.get("uav") if isinstance(section, dict) else None
+    if not isinstance(uav, dict) or "missionUploadEnabled" not in uav:
+        return None
+    value = uav["missionUploadEnabled"]
+    if not isinstance(value, bool):
+        raise ValueError("bridges.uav.missionUploadEnabled in the server configuration must be true or false")
+    return value
+
+
+def with_server_switches(settings: UavSettings, server_config: str | None, environ: Mapping[str, str] | None = None) -> UavSettings:
+    """The settings with the mission upload switch of Server Admin, when the host allows remote settings and names the server configuration file.
+
+    Without the host switch or the file name, `settings` come back unchanged. When both are given and the file cannot be read or its value is damaged, the
+    mission upload is switched OFF: a bridge told to follow the server that cannot hear it does not keep a switch that was on.
+    """
+    if not server_config or not remote_settings_allowed(environ):
+        return settings
+    try:
+        value = read_server_mission_upload(server_config)
+    except ValueError:
+        value = False
+    if value is None:
+        return settings
+    return dataclasses.replace(settings, mission=dataclasses.replace(settings.mission, upload_enabled=value))
