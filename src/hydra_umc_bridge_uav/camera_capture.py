@@ -87,10 +87,10 @@ def datalake_sample(event: Mapping[str, object], source_id: str, now_ms: int, se
             fields[key] = float(value)  # type: ignore[arg-type]
     quaternion = event.get("attitude_q")
     if isinstance(quaternion, list):
-        for name, value in zip(("qw", "qx", "qy", "qz"), quaternion):
+        for name, value in zip(("qw", "qx", "qy", "qz"), quaternion, strict=False):
             fields[name] = float(value)
     stamp = event.get("time_utc_us")
-    timestamp = int(stamp) // 1000 if _is_real_number(stamp) and stamp else now_ms  # type: ignore[arg-type]
+    timestamp = int(stamp) // 1000 if isinstance(stamp, int) and not isinstance(stamp, bool) and stamp else now_ms
     sample: dict[str, object] = {"sourceId": source_id, "kind": DATALAKE_KIND, "timestamp": timestamp, "fields": fields}
     if sequence is not None:
         sample["sequence"] = sequence
