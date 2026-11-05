@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.1.9] - The build test of the repository compiles only on CI or when allowed: for the stacks that compile (rust, go, android, flutter, firmware-c), tools/buildtest.py prints BUILDTEST=SKIPPED with exit status 2 on a plain PC, never a... (and 5 more changes)
+
 - **The build test of the repository compiles only on CI or when allowed:** for the stacks that compile (`rust`, `go`, `android`, `flutter`, `firmware-c`), `tools/build_test.py` prints `BUILD_TEST=SKIPPED` with exit status 2 on a plain PC, never a pass; `ALLOW_LOCAL_BUILD=1` allows it and a CI runner always may. The `python` and `node` stacks are not locked.
 
 - **The mission upload switch can follow Server Admin:** when the host of the bridge allows it (`HYDRA_UMC_BRIDGE_UAV_REMOTE_SETTINGS=1`, off by default) and names the server configuration file it already reads for the signing options (`HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG`), `with_server_switches()` takes `mission.upload_enabled` from `bridges.uav.missionUploadEnabled` of that file, in either direction. Without the host switch or the file name the settings stay as `config/uav.json` says; a file that cannot be read or holds a damaged value switches the upload off. 6 more tests.
