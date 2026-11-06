@@ -84,6 +84,19 @@
           }
         },
         {
+          "name": "twin_sender.py",
+          "desc": {
+            "en": "hands the twin state to HYDRA-UMC-TWIN",
+            "es": "entrega el estado del gemelo a HYDRA-UMC-TWIN",
+            "de": "übergibt den Zwillingszustand an HYDRA-UMC-TWIN",
+            "fr": "remet l'état du jumeau à HYDRA-UMC-TWIN",
+            "it": "consegna lo stato del gemello a HYDRA-UMC-TWIN",
+            "ja": "ツインの状態を HYDRA-UMC-TWIN に渡す",
+            "zh": "把孪生状态交给 HYDRA-UMC-TWIN",
+            "pt": "entrega o estado do gémeo ao HYDRA-UMC-TWIN"
+          }
+        },
+        {
           "name": "settings.py",
           "desc": {
             "en": "reads config/uav.json",
@@ -182,14 +195,14 @@
         {
           "name": "tests/",
           "desc": {
-            "en": "201 tests, with a MAVLink emulator",
-            "es": "201 pruebas, con un emulador MAVLink",
-            "de": "201 Tests, mit einem MAVLink-Emulator",
-            "fr": "201 tests, avec un émulateur MAVLink",
-            "it": "201 test, con un emulatore MAVLink",
-            "ja": "201 件（MAVLink エミュレーター付き）",
-            "zh": "201 项测试（含 MAVLink 模拟器）",
-            "pt": "201 testes, com um emulador MAVLink"
+            "en": "212 tests, with a MAVLink emulator",
+            "es": "212 pruebas, con un emulador MAVLink",
+            "de": "212 Tests, mit einem MAVLink-Emulator",
+            "fr": "212 tests, avec un émulateur MAVLink",
+            "it": "212 test, con un emulatore MAVLink",
+            "ja": "212 件（MAVLink エミュレーター付き）",
+            "zh": "212 项测试（含 MAVLink 模拟器）",
+            "pt": "212 testes, com um emulador MAVLink"
           }
         },
         {

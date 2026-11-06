@@ -63,6 +63,13 @@ class TwinSettings:
     robot_id: str = "uav-1"
     source: str = "real"
     min_interval_s: float = 0.2
+    # The hand-over to HYDRA-UMC-TWIN (`serve --uav-input` there), off by default: where to post, the file with the token of its interlock routes, how long to wait.
+    send_enabled: bool = False
+    url: str = ""
+    token_file: str = ""
+    timeout_s: float = 2.0
+    # With false (the default) an http:// address must be a loopback one: the token would travel in clear text.
+    allow_remote: bool = False
 
     def problems(self) -> list[str]:
         found = []
@@ -72,6 +79,23 @@ class TwinSettings:
             found.append("twin.source must be 'real' or 'simulated'")
         if not (_number(self.min_interval_s) and self.min_interval_s >= 0):
             found.append("twin.min_interval_s must be a finite number, zero or more")
+        for name in ("send_enabled", "allow_remote"):
+            if not isinstance(getattr(self, name), bool):
+                found.append(f"twin.{name} must be true or false")
+        for name in ("url", "token_file"):
+            if not isinstance(getattr(self, name), str):
+                found.append(f"twin.{name} must be text")
+        if not (_number(self.timeout_s) and 0 < self.timeout_s <= 60):
+            found.append("twin.timeout_s must be a number above zero and at most 60")
+        if self.send_enabled is True and isinstance(self.url, str) and isinstance(self.token_file, str):
+            if not self.token_file.strip():
+                found.append("twin.token_file must name the file with the token when twin.send_enabled is true")
+            try:
+                from .twin_sender import check_url
+
+                check_url(self)
+            except ValueError as error:
+                found.append(str(error))
         return found
 
 

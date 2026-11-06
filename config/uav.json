@@ -12,6 +12,11 @@
   "twin": {
     "robot_id": "uav-1",
     "source": "real",
-    "min_interval_s": 0.2
+    "min_interval_s": 0.2,
+    "send_enabled": false,
+    "url": "",
+    "token_file": "",
+    "timeout_s": 2.0,
+    "allow_remote": false
   }
 }
