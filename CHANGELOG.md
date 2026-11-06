@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **A visible simulation bench:** the workflow "Simulation bench" runs the emulators and fakes of the bridge without hardware on every push, by hand and once a week; `docs/SIMULATION.md` says what it exercises and what it cannot show.
+
 - **The state of the vehicle can be handed to HYDRA-UMC-TWIN, off by default (`twin.send_enabled`):** `twin_sender.py` posts each `TwinState` that the twin feed builds to `POST /twin/uav` of the twin (started there with `serve --uav-input`), with the bearer token read from `twin.token_file`. An `http://` address must be a loopback one unless `twin.allow_remote` says otherwise, an `https://` address is checked against the system certificates, a redirect is never followed (it would carry the token away), and a twin that is down or says no costs a counter (`failed`, `refused`) and never stops the bridge. The address, the token file and the timeout are in `config/uav.json`. 11 tests.
 
 ## [0.1.9] - The build test of the repository compiles only on CI or when allowed: for the stacks that compile (rust, go, android, flutter, firmware-c), tools/buildtest.py prints BUILDTEST=SKIPPED with exit status 2 on a plain PC, never a... (and 5 more changes)
