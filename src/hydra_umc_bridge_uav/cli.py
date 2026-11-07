@@ -100,6 +100,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--link-timeout", type=float, default=None,
         help=f"seconds of silence after which the link is LOST (default: {LINK_TIMEOUT_ENVIRONMENT}, else {DEFAULT_LINK_TIMEOUT_S:g})",
     )
+    run.add_argument("--settings", default=None, help="config/uav.json (default: none, so every switch is at its default, off)")
+    run.add_argument(
+        "--mqtt-host", default=None,
+        help="MQTT broker to receive jobs from (hydra/bridges/uav/cmd/job); used only when job_entry.enabled is true in the settings (or HYDRA_UMC_BRIDGE_UAV_JOB_ENTRY=1). Plan-only: the answers say what the gate decided and nothing is sent to the vehicle",
+    )
+    run.add_argument("--mqtt-port", type=int, default=1883, help="MQTT broker port (default 1883)")
     return parser
 
 
@@ -114,10 +120,36 @@ def _status_line(heartbeat: GcsHeartbeat, out: TextIO, linked: LinkedSink | None
     out.flush()
 
 
+def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | None, mqtt_opener: Callable[..., object] | None) -> object | None:
+    """Start the MQTT job entry when the settings (or the environment) switch it on; None while it is off. Plan-only: nothing is sent to the vehicle."""
+    from hydra_umc_sdk.bridge_contract import CellState
+
+    from .coordinator import UavCoordinator
+    from .job_entry import UavJobEntry, enabled_from_environment
+    from .settings import load_settings
+
+    settings = load_settings(getattr(args, "settings", None))
+    if not (settings.job_entry.enabled or enabled_from_environment()):
+        return None
+
+    def cell_state() -> CellState:
+        # the bridge cannot vouch for a vehicle it has lost: with the link monitor on, a LOST link is a fault
+        if linked is not None and linked.link_state().get("status") == "LOST":
+            return CellState.FAULT
+        return CellState.READY
+
+    # the state the autopilot reported is not mapped from its heartbeat yet, so the gate (fail-closed) refuses every flight phase here; only the requests that bring the vehicle to a safe state are answered as accepted
+    entry = UavJobEntry(UavCoordinator(), cell_state, lambda: None, None, enabled=True)
+    if mqtt_opener is None:
+        from .mqtt_transport import open_mqtt_client as mqtt_opener  # lazy: paho-mqtt is optional
+    return mqtt_opener(host, args.mqtt_port, job_entry=entry)
+
+
 def run(
     args: argparse.Namespace,
     *,
     opener: Callable[..., object] | None = None,
+    mqtt_opener: Callable[..., object] | None = None,
     stop: threading.Event | None = None,
     out: TextIO | None = None,
     err: TextIO | None = None,
@@ -200,6 +232,17 @@ def run(
     if link_monitor:
         linked = LinkedSink(sink, HeartbeatMonitor(link_timeout)).start()
         sink = linked
+    mqtt_client = None
+    mqtt_host = getattr(args, "mqtt_host", None)
+    if mqtt_host:
+        try:
+            mqtt_client = _open_job_entry(args, mqtt_host, linked, mqtt_opener)
+        except (ValueError, RuntimeError, OSError) as error:
+            err.write(f"error: the job entry could not be started: {error}\n")
+            close = getattr(sink, "close", None)
+            if callable(close):
+                close()
+            return EXIT_USAGE
     heartbeat = GcsHeartbeat(sink, rate)  # type: ignore[arg-type]
     heartbeat.start()
     out.write(f"HEARTBEAT_RUNNING connection={args.connection} rate_hz={rate:g}\n")
@@ -220,6 +263,11 @@ def run(
                 break
     finally:
         heartbeat.stop()
+        if mqtt_client is not None:
+            for name in ("loop_stop", "disconnect"):
+                action = getattr(mqtt_client, name, None)
+                if callable(action):
+                    action()
         close = getattr(sink, "close", None)
         if callable(close):
             close()

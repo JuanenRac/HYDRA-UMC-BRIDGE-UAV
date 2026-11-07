@@ -100,13 +100,55 @@ class TwinSettings:
 
 
 @dataclass(frozen=True)
+class DatalakeSettings:
+    # Where the position of every successful picture goes (`POST /ingest` of HYDRA-UMC-DATALAKE), off by default.
+    send_enabled: bool = False
+    url: str = ""
+    token_file: str = ""
+    timeout_s: float = 2.0
+    allow_remote: bool = False
+
+    def problems(self) -> list[str]:
+        found = []
+        for name in ("send_enabled", "allow_remote"):
+            if not isinstance(getattr(self, name), bool):
+                found.append(f"datalake.{name} must be true or false")
+        for name in ("url", "token_file"):
+            if not isinstance(getattr(self, name), str):
+                found.append(f"datalake.{name} must be text")
+        if not (_number(self.timeout_s) and 0 < self.timeout_s <= 60):
+            found.append("datalake.timeout_s must be a number above zero and at most 60")
+        if self.send_enabled is True and isinstance(self.url, str) and isinstance(self.token_file, str):
+            if not self.token_file.strip():
+                found.append("datalake.token_file must name the file with the token when datalake.send_enabled is true")
+            try:
+                from .datalake_sender import check_url
+
+                check_url(self)
+            except ValueError as error:
+                found.append(str(error))
+        return found
+
+
+@dataclass(frozen=True)
+class JobEntrySettings:
+    # The MQTT entry for jobs (`hydra/bridges/uav/cmd/job`), off by default; the broker address is an option of `run`.
+    enabled: bool = False
+
+    def problems(self) -> list[str]:
+        return [] if isinstance(self.enabled, bool) else ["job_entry.enabled must be true or false"]
+
+
+@dataclass(frozen=True)
 class UavSettings:
     mission: MissionSettings = field(default_factory=MissionSettings)
     camera: CameraSettings = field(default_factory=CameraSettings)
     twin: TwinSettings = field(default_factory=TwinSettings)
+    datalake: DatalakeSettings = field(default_factory=DatalakeSettings)
+    job_entry: JobEntrySettings = field(default_factory=JobEntrySettings)
 
     def problems(self) -> list[str]:
-        return self.mission.problems() + self.camera.problems() + self.twin.problems()
+        return self.mission.problems() + self.camera.problems() + self.twin.problems() + self.datalake.problems() + self.job_entry.problems()
 
 
 def load_settings(path: str | Path | None) -> UavSettings:
@@ -116,7 +158,7 @@ def load_settings(path: str | Path | None) -> UavSettings:
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ValueError("the settings must be a JSON object")
-    sections = {"mission": MissionSettings, "camera": CameraSettings, "twin": TwinSettings}
+    sections = {"mission": MissionSettings, "camera": CameraSettings, "twin": TwinSettings, "datalake": DatalakeSettings, "job_entry": JobEntrySettings}
     unknown = sorted(set(raw) - set(sections))
     if unknown:
         raise ValueError(f"unknown settings sections: {', '.join(unknown)}")

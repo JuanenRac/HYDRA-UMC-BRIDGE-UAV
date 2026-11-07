@@ -18,5 +18,15 @@
     "token_file": "",
     "timeout_s": 2.0,
     "allow_remote": false
+  },
+  "datalake": {
+    "send_enabled": false,
+    "url": "",
+    "token_file": "",
+    "timeout_s": 2.0,
+    "allow_remote": false
+  },
+  "job_entry": {
+    "enabled": false
   }
 }

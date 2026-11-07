@@ -57,3 +57,5 @@ jobs:
           test_mission_camera_twin
           test_sitl_smoke
           test_sortie_scenarios
+          test_job_entry
+          test_datalake_sender
