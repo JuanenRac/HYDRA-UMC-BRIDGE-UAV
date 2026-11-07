@@ -141,7 +141,9 @@ def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | No
     # the state the autopilot reported is not mapped from its heartbeat yet, so the gate (fail-closed) refuses every flight phase here; only the requests that bring the vehicle to a safe state are answered as accepted
     entry = UavJobEntry(UavCoordinator(), cell_state, lambda: None, None, enabled=True)
     if mqtt_opener is None:
-        from .mqtt_transport import open_mqtt_client as mqtt_opener  # lazy: paho-mqtt is optional
+        from .mqtt_transport import open_mqtt_client  # lazy: paho-mqtt is optional
+
+        return open_mqtt_client(host, args.mqtt_port, job_entry=entry)
     return mqtt_opener(host, args.mqtt_port, job_entry=entry)
 
 
