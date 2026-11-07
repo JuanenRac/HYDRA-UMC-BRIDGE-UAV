@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       image:
-        description: "Container image of a PX4 SITL that publishes MAVLink to the host on UDP 14550"
+        description: "Container image of a PX4 SITL that publishes MAVLink to the host on UDP 14540 (its onboard link)"
         default: "jonasvautherin/px4-gazebo-headless:1.14.3"
         required: true
 permissions: {contents: read}
@@ -45,7 +45,7 @@ jobs:
           docker logs px4 2>&1 | grep -v "pxh>" | tail -40 || true
           ss -ulpn || true
       - name: Run the smoke test
-        run: python tools/sitl_smoke.py --connection udpin:0.0.0.0:14550 --seconds 20 --open-timeout 60
+        run: python tools/sitl_smoke.py --connection udpin:0.0.0.0:14540 --seconds 20 --open-timeout 60
       - name: Stop the simulator
         if: always()
         run: docker rm -f px4
