@@ -18,14 +18,14 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-212%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-256%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
 
 ---
 
-> **诚实检查——今天真正可运行的部分：** 无依赖的飞行请求核心（`coordinator.py` 中的 `UavCoordinator`，每次派发都会经过 `HYDRA-UMC-SDK` 自身真正的 `evaluate_job()`）、确定性的心跳断链看门狗（`heartbeat.py` 中的 `HeartbeatMonitor`），以及真正的 MAVLink 命令传输（`mavlink_transport.py` 中的 `MavlinkFlightControl`）都是真实的，并由 165 个通过的单元测试覆盖（`python tools/build_test.py` —— `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`，以及让该桥接对抗一个协议忠实但纯手写的 MAVLink 自动驾驶仪模拟器（而非真实设备）的 `test_mavlink_emulator.py`）。以上这些都从未针对真实安装的 `pymavlink`、真实的无线电/遥测链路或实体 UAV/飞控进行过验证——`test_mavlink_transport.py` 自带的伪造 MAVLink 连接完全替代了 `pymavlink`（这些测试甚至不需要安装真正的库就能通过），并且目前还没有实时的 `run` 命令，因为尚未选定或验证任何真实的 MAVLink/OSDK 传输方案。详见下文的"当前状态与后续步骤"（已经如实说明了这一点），以及 `CHANGELOG.md` 中目前具体已交付的内容。
+> **诚实检查——今天真正可运行的部分：** 无依赖的飞行请求核心（`coordinator.py` 中的 `UavCoordinator`，每次派发都会经过 `HYDRA-UMC-SDK` 自身真正的 `evaluate_job()`）、确定性的心跳断链看门狗（`heartbeat.py` 中的 `HeartbeatMonitor`），以及真正的 MAVLink 命令传输（`mavlink_transport.py` 中的 `MavlinkFlightControl`）都是真实的，并由 256 个通过的单元测试覆盖（`python tools/build_test.py` —— `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`，以及让该桥接对抗一个协议忠实但纯手写的 MAVLink 自动驾驶仪模拟器（而非真实设备）的 `test_mavlink_emulator.py`）。以上这些都从未针对真实安装的 `pymavlink`、真实的无线电/遥测链路或实体 UAV/飞控进行过验证——`test_mavlink_transport.py` 自带的伪造 MAVLink 连接完全替代了 `pymavlink`（这些测试甚至不需要安装真正的库就能通过），并且目前还没有实时的 `run` 命令，因为尚未选定或验证任何真实的 MAVLink/OSDK 传输方案。详见下文的"当前状态与后续步骤"（已经如实说明了这一点），以及 `CHANGELOG.md` 中目前具体已交付的内容。
 
 > **安全与安防现状:**本生态系统不是经认证的安全系统。目前尚无硬件 E-STOP 通路,没有由固件强制执行的限位或联锁,也没有经过验证的运动指令;固件映像使用 CRC-32 和 Ed25519 签名校验,发布构建会拒绝已公开的开发密钥(中继之后的工具头和扩展板仍运行 URTC 的引导程序,它们使用共享密钥的 HMAC-SHA256 而不是签名);TLS 与双向 TLS 均为可选项,默认关闭;自制电路板尚未组装或测试。在依赖此处任何说法来保障人身安全之前,请先阅读[安全基线](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md)和[威胁模型](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md)。
 
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | 版本 | `0.2.0` |
 | 成熟度 | 可用 |
-| 测试 | 212 (`python tools/build_test.py`) |
+| 测试 | 256 (`python tools/build_test.py`) |
 | 技术栈 | Python / MAVLink / HYDRA-UMC-SDK |
 | 真实硬件 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 
@@ -52,7 +52,7 @@ GPL-3.0-or-later - see LICENSE
 | 领域 | 状态 | 在这里的含义 |
 |---|---|---|
 | 软件 | 🟡 | 主要用途可用；上面的诚实性检查列出了仍然缺少的内容 |
-| 测试 | 🟢 | 212 项自动测试，每次变更都会运行 |
+| 测试 | 🟢 | 256 项自动测试，每次变更都会运行 |
 | 真实硬件 | 🟠 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 | 集成 | 🟠 | 其消息和路由已对照 SDK 的共享契约检查；尚未与真实设备一起运行 |
 | 部署 | 🟠 | 已作为发布版本公开；在干净机器上安装有文档，但没有记录 |
@@ -115,7 +115,9 @@ flowchart LR
 * ✅ **非变更式构建/测试:** `build-test.bat`/`.sh` 编译源码并运行确定性单元测试,不改变版本或 CHANGELOG。*(已实现,见下方"构建与发布")*
 * 🔜 **一个 DJI OSDK 传输适配器**(面向非 MAVLink 平台)——只有在选定并测试了该 SDK 之后才会引入。*(计划中)*
 * ✅ **观测到的机器状态：** `UavCoordinator.dispatch()` 接受自动驾驶仪上报的状态，共享闸门使用它而不是作业中写的 `machine_state`（任何人都能在代理上发布的消息）；没有上报时仍使用声明值。*（已实现，已在 `tests/test_observed_state.py` 中测试）*
-* ✅ **`run` 中的链路监视（默认关闭）与可选的模拟器检查：** `run --link-monitor`（或 `HYDRA_UMC_BRIDGE_UAV_LINK_MONITOR=1`，配合 `--link-timeout` 或 `HYDRA_UMC_BRIDGE_UAV_LINK_TIMEOUT_SECONDS`，默认 5 秒）通过 `LinkedSink` 在唯一的 `MavlinkLink` 线程上读取链路，因此等待 `COMMAND_ACK` 与心跳看门狗不会再互相抢消息，每行状态都带有链路情况（`OK` 或 `LOST`、静默时长、它会请求的故障保护）。`.github/workflows/sitl.yml`（仅手动触发）会启动 PX4 SITL 容器并运行 `tools/sitl_smoke.py`，听到模拟器的心跳且桥接自己也发出心跳时通过。*（已实现，用假链路测试；模拟器作业从未运行过）*
+* ✅ **`run` 中的链路监视（默认关闭）与可选的模拟器检查：** `run --link-monitor`（或 `HYDRA_UMC_BRIDGE_UAV_LINK_MONITOR=1`，配合 `--link-timeout` 或 `HYDRA_UMC_BRIDGE_UAV_LINK_TIMEOUT_SECONDS`，默认 5 秒）通过 `LinkedSink` 在唯一的 `MavlinkLink` 线程上读取链路，因此等待 `COMMAND_ACK` 与心跳看门狗不会再互相抢消息，每行状态都带有链路情况（`OK` 或 `LOST`、静默时长、它会请求的故障保护）。`.github/workflows/sitl.yml`（仅手动触发）会启动 PX4 SITL 容器并运行 `tools/sitl_smoke.py`，听到模拟器的心跳且桥接自己也发出心跳时通过。*（已实现，用假链路测试；模拟器作业已在 Actions 中对 PX4 SITL 通过一次；从未对真实自动驾驶仪运行过）*
+* ✅ **通过 MQTT 接收作业（默认关闭）：** `run --mqtt-host <broker>` 在 `hydra/bridges/uav/cmd/job` 上接收一个作业（仅当 `config/uav.json` 中的 `job_entry.enabled` 或 `HYDRA_UMC_BRIDGE_UAV_JOB_ENTRY=1` 开启时），忽略保留的重放，拒绝过大、无法读取或格式错误的内容，不会重复执行同一个幂等键（返航请求会再次转发），并使用自动驾驶仪上报的状态通过 `UavCoordinator` 作出判断。它只做规划：`cmd/job/result` 上的应答为 `sent: false`，不会有任何内容到达飞行器。*（已实现，在 `tests/test_job_entry.py` 中用假客户端测试；从未对真实 broker 运行）*
+* ✅ **每张照片的位置可以送入数据湖（默认关闭）：** 启用 `datalake.send_enabled` 后，成功拍摄的纯数值样本会带着从 `datalake.token_file` 读取的持有者令牌发送到 `POST /ingest`；`http://` 地址必须是回环地址，除非 `datalake.allow_remote` 另有允许，重定向绝不会被跟随，失败的拍摄不发送任何内容，数据湖宕机或拒绝只会增加一个计数器，绝不会抛出异常。*（已实现，在 `tests/test_datalake_sender.py` 中通过真实套接字对替身服务测试；从未对真实数据湖或相机运行）*
 
 ## 🔒 安全与防护
 
@@ -172,7 +174,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 测试
 
-运行 `python tools/build_test.py` 会执行 212 个自动 `unittest` 用例（同时编译每个模块）。测试不需要硬件、网络或可选软件包：需要 `paho-mqtt`、`pyserial` 或厂商库的用例使用替身，缺少软件包时则跳过。
+运行 `python tools/build_test.py` 会执行 256 个自动 `unittest` 用例（同时编译每个模块）。测试不需要硬件、网络或可选软件包：需要 `paho-mqtt`、`pyserial` 或厂商库的用例使用替身，缺少软件包时则跳过。
 
 | 测试文件 | 测试数 | 覆盖内容 |
 |---|---|---|

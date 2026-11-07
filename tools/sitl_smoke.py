@@ -9,7 +9,7 @@
 # was heard (the link reported OK at least once) and the bridge sent its own beats. It sends nothing else to the vehicle.
 # The optional CI job (.github/workflows/sitl.yml) starts the simulator and runs this; it is not part of the normal checks.
 #
-#   py -3 tools/sitl_smoke.py --connection udpin:0.0.0.0:14550 [--seconds 15]
+#   py -3 tools/sitl_smoke.py --connection udpin:0.0.0.0:14540 [--seconds 15]
 # =============================================================================
 from __future__ import annotations
 

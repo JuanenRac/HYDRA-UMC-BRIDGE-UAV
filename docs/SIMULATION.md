@@ -26,11 +26,13 @@ workflow named "Simulation bench" does exactly this on a clean Linux runner on e
 | `tests/test_gcs_heartbeat.py` | the heartbeat the bridge sends as a ground station |
 | `tests/test_heartbeat.py` | the heartbeat monitor: never heard is lost, the timeout boundary and recovery |
 | `tests/test_mission_camera_twin.py` | the settings, the mission upload item by item (never started) and the camera and twin features with simulated input |
-| `tests/test_sitl_smoke.py` | the judge and the options of the software-in-the-loop smoke script; the run itself against an ArduPilot SITL is started by hand and is not part of this job |
+| `tests/test_job_entry.py` | the MQTT job entry: off by default, retained, oversized and malformed payloads, a repeated key, requests that bring the vehicle home, the unknown autopilot state, a broker that is gone, and its wiring in `run` |
+| `tests/test_datalake_sender.py` | the sample of a successful capture posted to a stand-in for the data lake on a real socket: token, sequence, refusals, a data lake that is gone, a redirect, the address rules and the settings |
+| `tests/test_sitl_smoke.py` | the judge and the options of the software-in-the-loop smoke script; the run itself against a PX4 SITL container is `sitl.yml`, started by hand, and is not part of this job |
 
 The broker scenarios start a real MQTT broker from a checkout of HYDRA-UMC-MQTT-BROKER (`HYDRA_UMC_TEST_BROKER_DIR`); the simulation job does not install it, so
 those cases skip themselves there and run in the normal test run on a machine that has the broker.
 
 ## What it cannot show
 
-An ArduPilot or PX4 SITL in CI (it is started by hand with `tools/sitl_smoke.py`), a real flight controller, radio link and aircraft. The hardware row of the status table therefore stays at "simulated" until a person has run the bridge on a real setup.
+A real flight controller, radio link and aircraft. The hardware row of the status table therefore stays at "simulated" until a person has run the bridge on a real setup.

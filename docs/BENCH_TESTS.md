@@ -1,11 +1,11 @@
 # Bench tests
 
-Every test below is **not executed**. The bridge has run only against the MAVLink emulator in `tests/mavlink_emulator.py` and the in-memory simulated vehicle; it has never talked to a flight controller, a PX4 or ArduPilot simulator, or an aircraft. Write a result only after a person ran the step.
+Every test below is **not executed** on a vehicle; steps 1 and 2 were executed against a PX4 simulator in Actions (marked). The bridge has run only against the MAVLink emulator in `tests/mavlink_emulator.py` and the in-memory simulated vehicle; it has never talked to a flight controller, a PX4 or ArduPilot simulator, or an aircraft. Write a result only after a person ran the step.
 
 ## What the software already covers (no vehicle needed)
 
 - `python tools/build_test.py` runs the unit tests: the job intake (retained, malformed and repeated messages), the link watchdog, the single receiver thread, the observed state and the emulator.
-- `.github/workflows/sitl.yml` (started by hand) can start a PX4 simulator and run `tools/sitl_smoke.py`; it has never been run.
+- `.github/workflows/sitl.yml` (started by hand) starts a PX4 simulator and runs `tools/sitl_smoke.py` against its onboard link (UDP 14540); it passed against PX4 SITL 1.14.3 in Actions, which says nothing about a real autopilot.
 
 ## Setup
 
@@ -17,8 +17,8 @@ Every test below is **not executed**. The bridge has run only against the MAVLin
 
 | # | Step | Expected result | Result |
 |---|------|-----------------|--------|
-| 1 | Run `tools/sitl_smoke.py` against the simulator. | The simulator heartbeat is heard and the bridge heartbeat is sent. | not executed |
-| 2 | Watch the status line for a minute. | `link` shows `OK`, the seconds of silence stay below the timeout and the reader is running. | not executed |
+| 1 | Run `tools/sitl_smoke.py` against the simulator. | The simulator heartbeat is heard and the bridge heartbeat is sent. | executed in PX4 SITL (Actions): passed |
+| 2 | Watch the status line for a minute. | `link` shows `OK`, the seconds of silence stay below the timeout and the reader is running. | executed in PX4 SITL (Actions) for 20 seconds: passed |
 | 3 | Stop the simulator. | `link` changes to `LOST` after the configured silence and names the failsafe it would ask for. | not executed |
 | 4 | Send the same job twice, then a retained job and a malformed one. | The first runs once, the second is answered from the store, the retained and malformed ones are refused. | not executed |
 | 5 | With the vehicle armed in the simulator, send a return-to-launch, a land and a disarm request. | Each reaches the vehicle and is acknowledged; the gate does not block these three. | not executed |
@@ -27,4 +27,4 @@ Every test below is **not executed**. The bridge has run only against the MAVLin
 
 ## What this bench cannot show
 
-Radio range, link loss on real hardware, the behaviour of the failsafe on a specific autopilot and any timing under load. The mission upload, the geotagged capture and the feed to the twin are not built yet, so they have no step here.
+Radio range, link loss on real hardware, the behaviour of the failsafe on a specific autopilot and any timing under load. The mission upload, the geotagged capture, the feed to the twin, the data lake sample and the MQTT job entry are built and tested against the emulator and fakes, but have no step here yet.
