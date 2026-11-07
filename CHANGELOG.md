@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Whole sorties with injected faults:** `tests/test_sortie_scenarios.py` flies the real flight control from arming to touchdown against the autopilot emulator and injects a low battery, a lost GPS fix, the link-loss failsafe, a silent camera, a second takeoff in the air, a cell that stops and a vehicle that does not know the signing key of the station (wrong key, unsigned with and without acceptance of unsigned messages). Simulator evidence only; no PX4, ArduPilot or aircraft was involved.
 ## [0.2.0] - A visible simulation bench: the workflow "Simulation bench" runs the emulators and fakes of the bridge without hardware on every push, by hand and once a week; docs/SIMULATION.md says what it exercises and what it cannot show. (and 1 more changes)
 
 - **A visible simulation bench:** the workflow "Simulation bench" runs the emulators and fakes of the bridge without hardware on every push, by hand and once a week; `docs/SIMULATION.md` says what it exercises and what it cannot show.

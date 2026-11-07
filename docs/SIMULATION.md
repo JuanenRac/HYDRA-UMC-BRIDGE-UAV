@@ -19,6 +19,7 @@ workflow named "Simulation bench" does exactly this on a clean Linux runner on e
 | File | What it exercises |
 |------|-------------------|
 | `tests/test_mavlink_emulator.py` | the emulator vehicle on the other end of the link |
+| `tests/test_sortie_scenarios.py` | a whole sortie against the autopilot emulator with a low battery, a lost GPS fix, the link-loss failsafe, a silent camera and a station signing key the vehicle does not know |
 | `tests/test_mavlink_link.py` | the vehicle heartbeat on the link: ok, lost and the ground station that is not the vehicle |
 | `tests/test_mavlink_transport.py` | the transport against the emulator |
 | `tests/test_simulated_uav.py` | the simulated UAV and its transitions |
