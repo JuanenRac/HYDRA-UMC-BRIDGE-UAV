@@ -36,9 +36,14 @@ jobs:
         env:
           IMAGE: ${{ inputs.image }}
         run: |
-          docker run -d --name px4 --network host "$IMAGE"
-          sleep 45
-          docker logs --tail 20 px4
+          # the argument is the address the simulator sends its MAVLink to: the runner itself (host network)
+          docker run -d -t --name px4 --network host "$IMAGE" 127.0.0.1
+          for i in $(seq 1 60); do
+            if docker logs px4 2>&1 | grep -q -E "Ready for takeoff|home position"; then break; fi
+            sleep 3
+          done
+          docker logs px4 2>&1 | grep -v "pxh>" | tail -40 || true
+          ss -ulpn || true
       - name: Run the smoke test
         run: python tools/sitl_smoke.py --connection udpin:0.0.0.0:14550 --seconds 20 --open-timeout 60
       - name: Stop the simulator
