@@ -56,3 +56,4 @@ jobs:
           test_heartbeat
           test_mission_camera_twin
           test_sitl_smoke
+          test_sortie_scenarios
