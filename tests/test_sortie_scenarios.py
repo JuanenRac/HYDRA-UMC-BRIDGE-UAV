@@ -17,7 +17,6 @@ from hydra_umc_bridge_uav import MavlinkFlightControl, UavDispatch
 
 from mavlink_emulator import (
     MavlinkFlightControllerEmulator,
-    RESULT_ACCEPTED,
     RESULT_TEMPORARILY_REJECTED,
     STATE_ACTIVE,
     STATE_CRITICAL,
