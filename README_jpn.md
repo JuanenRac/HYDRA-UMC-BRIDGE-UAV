@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-256%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-272%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | バージョン | `0.2.0` |
 | 成熟度 | 機能する |
-| テスト | 256 (`python tools/build_test.py`) |
+| テスト | 272 (`python tools/build_test.py`) |
 | 技術 | Python / MAVLink / HYDRA-UMC-SDK |
 | 実機での確認 | シミュレーションのみ：エミュレーター、模擬部品、シミュレーターで試験済み。このバージョンについて実機での動作記録はありません |
 
@@ -52,7 +52,7 @@ GPL-3.0-or-later - see LICENSE
 | 領域 | 状態 | ここでの意味 |
 |---|---|---|
 | ソフトウェア | 🟡 | 主な目的では動作します。足りない点は上の正直さの確認に書かれています |
-| テスト | 🟢 | 自動テスト 256 件。変更のたびに実行されます |
+| テスト | 🟢 | 自動テスト 272 件。変更のたびに実行されます |
 | 実機 | 🟠 | シミュレーションのみ：エミュレーター、模擬部品、シミュレーターで試験済み。このバージョンについて実機での動作記録はありません |
 | 連携 | 🟠 | メッセージとルートは SDK の共通契約に照らして検証されていますが、実機と一緒に動かしたことはありません |
 | デプロイ | 🟠 | リリースとして公開されています。新しい環境へのインストールは文書化されていますが記録はありません |
@@ -118,6 +118,7 @@ flowchart LR
 * ✅ **`run` のリンク監視（既定ではオフ）と任意のシミュレーター確認:** `run --link-monitor`（または `HYDRA_UMC_BRIDGE_UAV_LINK_MONITOR=1`。`--link-timeout` または `HYDRA_UMC_BRIDGE_UAV_LINK_TIMEOUT_SECONDS`、既定 5 秒）は、`LinkedSink` を通して 1 本の `MavlinkLink` スレッドでリンクを読むため、`COMMAND_ACK` の待機とハートビートの監視が互いのメッセージを奪わなくなり、各ステータス行にリンクの状態（`OK` または `LOST`、無音の長さ、要求するフェイルセーフ）が付きます。`.github/workflows/sitl.yml`（手動実行のみ）は PX4 SITL コンテナーを起動して `tools/sitl_smoke.py` を実行し、シミュレーターのハートビートが聞こえ、ブリッジ自身も送信していれば合格です。*(実装済み、偽のリンクでテスト済み。シミュレーターのジョブは Actions で PX4 SITL に対して一度合格しましたが、実際のオートパイロットでは未実施です)*
 * ✅ **MQTT でのジョブ受信（既定はオフ）：** `run --mqtt-host <ブローカー>` は `hydra/bridges/uav/cmd/job` で 1 件のジョブを受け取ります（`config/uav.json` の `job_entry.enabled` または `HYDRA_UMC_BRIDGE_UAV_JOB_ENTRY=1` で有効にした場合のみ）。保持された再送は無視し、大きすぎる・読めない・不正な内容は拒否し、同じ冪等キーは二度実行せず（帰還要求は再度転送）、オートパイロットが報告した状態を使って `UavCoordinator` で判断します。計画のみで、`cmd/job/result` の応答は `sent: false` となり、機体には何も届きません。*(実装済み、`tests/test_job_entry.py` で偽クライアントによりテスト済み。実際のブローカーでは未実行)*
 * ✅ **各写真の位置をデータレイクへ送れます（既定はオフ）：** `datalake.send_enabled` を有効にすると、撮影に成功したときの数値のみのサンプルが、`datalake.token_file` から読んだベアラートークンとともに `POST /ingest` へ送られます。`http://` のアドレスは `datalake.allow_remote` が許可しない限りループバックでなければならず、リダイレクトは決して辿らず、失敗した撮影は何も送らず、停止中または拒否するデータレイクはカウンターを増やすだけで例外にはなりません。*(実装済み、`tests/test_datalake_sender.py` で実ソケットと代替サーバーによりテスト済み。実際のデータレイクやカメラでは未実行)*
+* ✅ **グローバル停止に従う（既定ではオフ）:** `HYDRA_UMC_UAV_GLOBAL_STOP=1` で、ジョブ入口は `hydra/swarm/safety/estop` のサーバーの保持通知を読みます。それが `SAFE_STOP` の間、または読み取れない間は、機体に何かを求めるすべてのジョブ（アーム、離陸、地点への移動、ホバリングと撮影）を理由を付けて拒否し、その冪等性キーは未使用のままにします。ホームへの帰還、着陸、ディスアームは引き続き通すので、飛行中の機体は常に帰ってこられ、拒否を解くのは `READY` だけです。*（実装済み、偽のブローカークライアントでテスト済み。実際のサーバーや機体では未実行）*
 
 ## 🔒 セキュリティと安全
 
@@ -174,7 +175,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 テスト
 
-`python tools/build_test.py` で自動 `unittest` 256 件を実行します（各モジュールのコンパイルも行います）。テストにハードウェア、ネットワーク、オプションのパッケージは不要で、`paho-mqtt`・`pyserial`・ベンダーのライブラリが必要なものは代用品を使うか、パッケージがなければスキップされます。
+`python tools/build_test.py` で自動 `unittest` 272 件を実行します（各モジュールのコンパイルも行います）。テストにハードウェア、ネットワーク、オプションのパッケージは不要で、`paho-mqtt`・`pyserial`・ベンダーのライブラリが必要なものは代用品を使うか、パッケージがなければスキップされます。
 
 | テストファイル | テスト数 | 対象 |
 |---|---|---|

@@ -59,3 +59,4 @@ jobs:
           test_sortie_scenarios
           test_job_entry
           test_datalake_sender
+          test_global_stop

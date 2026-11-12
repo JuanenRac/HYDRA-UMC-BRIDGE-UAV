@@ -148,6 +148,21 @@ class UavCoordinator:
     def _intake_remember(self, key: str, result: UavDispatch) -> None:
         self._store.remember(key, f"{'accepted' if result.accepted else 'refused'}: {result.request}: {result.reason}")
 
+    def moves_the_vehicle(self, payload: Mapping[str, object]) -> bool:
+        """True when the job in `payload` asks for anything but a safe-state request (return to launch, land, disarm).
+
+        Used to refuse work while the global stop of the server is active. A phase that cannot be read counts as moving, so the doubt is never resolved in favour of flying.
+        """
+
+        phase = payload.get("phase")
+        if not isinstance(phase, str):
+            return True
+        try:
+            request = self._phases.action_for(JobPhase(phase.strip().upper()))
+        except ValueError:
+            return True
+        return request is not None and request not in self.SAFE_STATE_REQUESTS
+
     def emergency_land_request(self) -> UavDispatch:
         """Real, standalone LAND request - see the LAND constant's own
         comment for why this is deliberately outside the JobPhase-driven

@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-256%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-272%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.2.0` |
 | Maturity | Functional |
-| Tests | 256 (`python tools/build_test.py`) |
+| Tests | 272 (`python tools/build_test.py`) |
 | Stack | Python / MAVLink / HYDRA-UMC-SDK |
 | On real hardware | Simulated only: tested against emulators, fakes or simulators; no run on real hardware is recorded for this version |
 
@@ -52,7 +52,7 @@ Each line is one part of this repository and the light says how far it is today.
 | Area | State | What it means here |
 |---|---|---|
 | Software | 🟡 | Works for its main purpose; the honesty check above lists what is still missing |
-| Tests | 🟢 | 256 automated tests, run on every change |
+| Tests | 🟢 | 272 automated tests, run on every change |
 | Real hardware | 🟠 | Simulated only: tested against emulators, fakes or simulators; no run on real hardware is recorded for this version |
 | Integration | 🟠 | Its messages and routes are checked against the shared contracts of the SDK; it has not run together with the real equipment |
 | Deployment | 🟠 | Published as a release; installing it on a clean machine is documented but not recorded |
@@ -118,6 +118,7 @@ flowchart LR
 * ✅ **Link monitor in `run` (off by default) and an optional simulator check:** `run --link-monitor` (or `HYDRA_UMC_BRIDGE_UAV_LINK_MONITOR=1`, with `--link-timeout` or `HYDRA_UMC_BRIDGE_UAV_LINK_TIMEOUT_SECONDS`, 5 s by default) reads the link on the one `MavlinkLink` thread through a `LinkedSink`, so a wait for a `COMMAND_ACK` and the heartbeat watchdog no longer take messages from each other, and every status line carries the link (`OK` or `LOST`, the silence, the failsafe it would ask for). `.github/workflows/sitl.yml` (started by hand only) starts a PX4 SITL container and runs `tools/sitl_smoke.py`, which passes when the heartbeat of the simulator was heard and the bridge sent its own. *(implemented, tested against fake links; the simulator job passed once against PX4 SITL in Actions - never against a real autopilot)*
 * ✅ **Jobs over MQTT, off by default:** `run --mqtt-host <broker>` receives one job on `hydra/bridges/uav/cmd/job` (only when `job_entry.enabled` in `config/uav.json` or `HYDRA_UMC_BRIDGE_UAV_JOB_ENTRY=1` switch it on), ignores a retained replay, refuses an oversized, unreadable or malformed payload, does not run a repeated idempotency key twice (a return to launch is forwarded again) and decides it with `UavCoordinator` using the state the autopilot reported. It is plan-only: the answer on `cmd/job/result` says `sent: false` and nothing reaches the vehicle. *(implemented, tested in `tests/test_job_entry.py` with a fake client; never run against a real broker)*
 * ✅ **The position of every picture can go to the data lake, off by default:** with `datalake.send_enabled` the numbers-only sample of a successful capture is posted to `POST /ingest` with a bearer token read from `datalake.token_file`; an `http://` address must be loopback unless `datalake.allow_remote` says otherwise, a redirect is never followed, a failed capture sends nothing and a data lake that is down or says no costs a counter, never an exception. *(implemented, tested in `tests/test_datalake_sender.py` on a real socket against a stand-in; never run against a real data lake or camera)*
+* ✅ **Follows the global stop (off by default):** with `HYDRA_UMC_UAV_GLOBAL_STOP=1` the job entry reads the retained announcement of the server on `hydra/swarm/safety/estop`; while it says `SAFE_STOP`, or cannot be read, it refuses with a reason every job that asks the vehicle to do something (arm, take off, go to a point, hover and capture) and keeps its idempotency key free. Return to launch, land and disarm still pass, so a vehicle in the air can always come home, and only `READY` ends the refusal. *(implemented, tested with a fake broker client; never run with a real server or vehicle)*
 
 ## 🔒 Security & Safety
 
@@ -174,7 +175,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Testing
 
-256 automated `unittest` cases run with `python tools/build_test.py` (it also compiles every module). The tests need no hardware, no network and no optional package: the ones that would need `paho-mqtt`, `pyserial` or a vendor library use a stand-in or are skipped when the package is missing.
+272 automated `unittest` cases run with `python tools/build_test.py` (it also compiles every module). The tests need no hardware, no network and no optional package: the ones that would need `paho-mqtt`, `pyserial` or a vendor library use a stand-in or are skipped when the package is missing.
 
 | Test file | Tests | What it covers |
 |---|---|---|

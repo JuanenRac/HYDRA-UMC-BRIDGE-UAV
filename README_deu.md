@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-256%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-272%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.0-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.2.0` |
 | Reifegrad | Funktionsfähig |
-| Tests | 256 (`python tools/build_test.py`) |
+| Tests | 272 (`python tools/build_test.py`) |
 | Technik | Python / MAVLink / HYDRA-UMC-SDK |
 | Auf echter Hardware | Nur simuliert: gegen Emulatoren, Attrappen oder Simulatoren getestet; für diese Version ist kein Lauf auf echter Hardware vermerkt |
 
@@ -52,7 +52,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 | Bereich | Stand | Was das hier bedeutet |
 |---|---|---|
 | Software | 🟡 | Funktioniert für seinen Hauptzweck; die Ehrlichkeitsprüfung oben nennt, was noch fehlt |
-| Tests | 🟢 | 256 automatische Tests, bei jeder Änderung ausgeführt |
+| Tests | 🟢 | 272 automatische Tests, bei jeder Änderung ausgeführt |
 | Echte Hardware | 🟠 | Nur simuliert: gegen Emulatoren, Attrappen oder Simulatoren getestet; für diese Version ist kein Lauf auf echter Hardware vermerkt |
 | Integration | 🟠 | Seine Nachrichten und Routen werden gegen die gemeinsamen Verträge des SDK geprüft; es lief noch nicht zusammen mit der echten Ausrüstung |
 | Bereitstellung | 🟠 | Als Release veröffentlicht; die Installation auf einem frischen Rechner ist dokumentiert, aber nicht vermerkt |
@@ -118,6 +118,7 @@ flowchart LR
 * ✅ **Verbindungsüberwachung in `run` (standardmäßig aus) und eine optionale Simulatorprüfung:** `run --link-monitor` (oder `HYDRA_UMC_BRIDGE_UAV_LINK_MONITOR=1`, mit `--link-timeout` oder `HYDRA_UMC_BRIDGE_UAV_LINK_TIMEOUT_SECONDS`, standardmäßig 5 s) liest die Verbindung über einen `LinkedSink` im einen `MavlinkLink`-Thread, sodass das Warten auf ein `COMMAND_ACK` und der Heartbeat-Wächter einander keine Nachrichten mehr wegnehmen, und jede Statuszeile trägt die Verbindung (`OK` oder `LOST`, die Stille, den Failsafe, den sie verlangen würde). `.github/workflows/sitl.yml` (nur von Hand gestartet) startet einen PX4-SITL-Container und führt `tools/sitl_smoke.py` aus, das besteht, wenn der Heartbeat des Simulators gehört wurde und die Brücke ihren eigenen gesendet hat. *(umgesetzt, gegen falsche Verbindungen getestet; der Simulator-Job bestand einmal gegen PX4 SITL in Actions - nie gegen einen echten Autopiloten)*
 * ✅ **Aufträge über MQTT, standardmäßig aus:** `run --mqtt-host <Broker>` empfängt einen Auftrag auf `hydra/bridges/uav/cmd/job` (nur wenn `job_entry.enabled` in `config/uav.json` oder `HYDRA_UMC_BRIDGE_UAV_JOB_ENTRY=1` ihn einschalten), ignoriert eine gespeicherte Wiederholung, weist eine zu große, unlesbare oder fehlerhafte Nutzlast ab, führt denselben Idempotenzschlüssel nicht zweimal aus (ein Rückflug wird erneut weitergegeben) und entscheidet mit `UavCoordinator` anhand des vom Autopiloten gemeldeten Zustands. Es ist nur Planung: die Antwort auf `cmd/job/result` enthält `sent: false` und nichts erreicht das Fahrzeug. *(umgesetzt, in `tests/test_job_entry.py` mit einem falschen Client getestet; nie gegen einen echten Broker ausgeführt)*
 * ✅ **Die Position jedes Bildes kann in den Data Lake gehen, standardmäßig aus:** mit `datalake.send_enabled` wird die reine Zahlenprobe einer erfolgreichen Aufnahme mit einem Bearer-Token aus `datalake.token_file` an `POST /ingest` gesendet; eine `http://`-Adresse muss Loopback sein, außer `datalake.allow_remote` erlaubt mehr, eine Weiterleitung wird nie verfolgt, eine fehlgeschlagene Aufnahme sendet nichts und ein ausgefallener oder ablehnender Data Lake kostet einen Zähler, nie eine Ausnahme. *(umgesetzt, in `tests/test_datalake_sender.py` über einen echten Socket gegen einen Ersatz getestet; nie gegen einen echten Data Lake oder eine Kamera ausgeführt)*
+* ✅ **Folgt dem globalen Stopp (standardmäßig aus):** mit `HYDRA_UMC_UAV_GLOBAL_STOP=1` liest der Auftragseingang die retained Meldung des Servers auf `hydra/swarm/safety/estop`; solange sie `SAFE_STOP` lautet oder nicht lesbar ist, lehnt er jeden Auftrag, der vom Fahrzeug etwas verlangt (armen, starten, einen Punkt anfliegen, schweben und aufnehmen), mit Begründung ab und lässt dessen Idempotenzschlüssel frei. Rückkehr zum Startpunkt, Landen und Disarmen gehen weiter durch, damit ein Fahrzeug in der Luft immer nach Hause kommt, und nur `READY` beendet die Ablehnung. *(implementiert, mit einem falschen Broker-Client getestet; nie mit einem echten Server oder Fahrzeug gelaufen)*
 
 ## 🔒 Sicherheit und Schutz
 
@@ -174,7 +175,7 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Tests
 
-256 automatische `unittest`-Fälle laufen mit `python tools/build_test.py` (das kompiliert auch jedes Modul). Die Tests brauchen weder Hardware noch Netz noch optionale Pakete: Die, die `paho-mqtt`, `pyserial` oder eine Herstellerbibliothek bräuchten, nutzen einen Ersatz oder werden übersprungen, wenn das Paket fehlt.
+272 automatische `unittest`-Fälle laufen mit `python tools/build_test.py` (das kompiliert auch jedes Modul). Die Tests brauchen weder Hardware noch Netz noch optionale Pakete: Die, die `paho-mqtt`, `pyserial` oder eine Herstellerbibliothek bräuchten, nutzen einen Ersatz oder werden übersprungen, wenn das Paket fehlt.
 
 | Testdatei | Tests | Was sie abdeckt |
 |---|---|---|
