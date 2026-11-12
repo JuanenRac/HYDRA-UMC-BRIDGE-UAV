@@ -53,9 +53,13 @@ class Sink:
     def mission_item_int_send(self, *args: object) -> None:
         self.sent.append(args)
 
-    def recv_match(self, name: str, blocking: bool, timeout: float) -> object:
-        if self.script and self.script[0][0] == name:
-            return self.script.pop(0)[1]
+    def recv_match(self, name: "str | list[str]", blocking: bool, timeout: float) -> object:
+        names = [name] if isinstance(name, str) else list(name)
+        if self.script and self.script[0][0] in names:
+            kind, message = self.script.pop(0)
+            if message is not None and not hasattr(message, "get_type"):
+                message.get_type = lambda kind=kind: kind
+            return message
         return None
 
 
@@ -190,10 +194,35 @@ class UploadTests(unittest.TestCase):
         self.assertIn("did not ask for the next item", result.reason)
         self.assertEqual(result.items, 1)
 
-    def test_an_ack_that_arrives_after_the_last_wait_is_still_taken(self) -> None:
-        sink = Sink([request(0), request(1), request(2), ("MISSION_REQUEST_INT", None), ack(0)])
+    def test_an_ack_that_arrives_right_after_the_last_request_is_taken(self) -> None:
+        sink = Sink([request(0), request(1), request(2), ack(0)])
         result = self.run_upload(sink)
         self.assertTrue(result.sent, result.reason)
+
+    def test_neither_answer_is_dropped_while_waiting_for_the_other(self) -> None:
+        """A real link keeps only the kind it is asked for and drops the rest: asking for the acknowledgement before the next request lost that request."""
+
+        class DroppingSink(Sink):
+            def __init__(self, queue):
+                super().__init__()
+                self.queue = list(queue)
+                self.asked = []
+
+            def recv_match(self, name, blocking, timeout):
+                self.asked.append(name)
+                wanted = [name] if isinstance(name, str) else list(name)
+                while self.queue:
+                    kind, message = self.queue.pop(0)
+                    if kind in wanted:
+                        message.get_type = lambda kind=kind: kind
+                        return message
+                return None
+
+        sink = DroppingSink([("MISSION_REQUEST_INT", request(0)[1]), ("MISSION_REQUEST_INT", request(1)[1]), ("MISSION_REQUEST_INT", request(2)[1]), ("MISSION_ACK", ack(0)[1])])
+        result = self.run_upload(sink)
+        self.assertTrue(result.sent, result.reason)
+        self.assertEqual(result.items, 3)
+        self.assertTrue(all(isinstance(asked, list) and set(asked) == {"MISSION_REQUEST_INT", "MISSION_ACK"} for asked in sink.asked))
 
     def test_the_total_time_is_a_limit_even_when_the_vehicle_keeps_asking(self) -> None:
         now = [0.0]

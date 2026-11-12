@@ -147,7 +147,7 @@ class MavlinkCommandSink(Protocol):
         z: float,
     ) -> object: ...
 
-    def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None: ...
+    def recv_match(self, type: str | list[str], blocking: bool, timeout: float) -> object | None: ...
 
 
 #: The component id of the first autopilot of a vehicle (MAV_COMP_ID_AUTOPILOT1).
@@ -192,7 +192,7 @@ class _PymavlinkConnectionSink:
     def mission_item_int_send(self, *args: float | int, **kwargs: float | int) -> object:
         return self._connection.mav.mission_item_int_send(*args, **kwargs)
 
-    def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None:
+    def recv_match(self, type: str | list[str], blocking: bool, timeout: float) -> object | None:
         return self._connection.recv_match(type=type, blocking=blocking, timeout=timeout)
 
     def heartbeat_send(self, type: int, autopilot: int, base_mode: int, custom_mode: int, system_status: int) -> object:

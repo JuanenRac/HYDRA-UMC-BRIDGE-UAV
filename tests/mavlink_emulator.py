@@ -282,10 +282,13 @@ class MavlinkFlightControllerEmulator:
         interface-parity with pymavlink but ignored - `command_long_send()`
         above only ever queues COMMAND_ACK, the one type this bridge waits
         for."""
-        if type == "MISSION_REQUEST_INT" or type == "MISSION_ACK":
-            for index, message in enumerate(self._mission_queue):
-                if message.get_type() == type:
-                    return self._mission_queue.pop(index)
+        wanted = [type] if isinstance(type, str) else list(type)
+        if "MISSION_REQUEST_INT" in wanted or "MISSION_ACK" in wanted:
+            # like pymavlink: the first queued message of a wanted kind; a message of another kind that comes before it is dropped
+            while self._mission_queue:
+                message = self._mission_queue.pop(0)
+                if message.get_type() in wanted:
+                    return message
             return None
         if type == "CAMERA_IMAGE_CAPTURED":
             return self._camera_queue.pop(0) if self._camera_queue else None

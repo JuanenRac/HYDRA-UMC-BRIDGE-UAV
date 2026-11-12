@@ -132,6 +132,12 @@ def _item_message(item: MissionItem) -> tuple[int, int, float, float, int, int, 
     return MAV_FRAME_MISSION, MAV_CMD_NAV_RETURN_TO_LAUNCH, 0.0, 0.0, 0, 0, 0.0
 
 
+def _message_type(message: object) -> str:
+    """The MAVLink name of a message (pymavlink's get_type())."""
+    get_type = getattr(message, "get_type", None)
+    return str(get_type()) if callable(get_type) else ""
+
+
 class MissionUploader:
     """Run the upload; every failure comes back as a reason, nothing raises for a refused or silent vehicle."""
 
@@ -150,15 +156,13 @@ class MissionUploader:
             while True:
                 if self._clock() > deadline:
                     return MissionUploadResult(False, "the vehicle did not close the upload in time", len(served))
-                ack = sink.recv_match("MISSION_ACK", False, 0.0)  # type: ignore[attr-defined]
-                if ack is not None:
-                    return self._closed(ack, len(items), len(served))
-                request = sink.recv_match("MISSION_REQUEST_INT", True, self.settings.request_timeout_s)  # type: ignore[attr-defined]
+                # ONE wait for either answer: waiting for a kind drops every message of another kind that arrives meanwhile, so asking for the
+                # acknowledgement and for the next request one after the other could throw away the one that was wanted
+                request = sink.recv_match(["MISSION_REQUEST_INT", "MISSION_ACK"], True, self.settings.request_timeout_s)  # type: ignore[attr-defined]
                 if request is None:
-                    ack = sink.recv_match("MISSION_ACK", False, 0.0)  # type: ignore[attr-defined]
-                    if ack is not None:
-                        return self._closed(ack, len(items), len(served))
                     return MissionUploadResult(False, "the vehicle did not ask for the next item in time", len(served))
+                if _message_type(request) == "MISSION_ACK":
+                    return self._closed(request, len(items), len(served))
                 seq = getattr(request, "seq", None)
                 if type(seq) is not int or not 0 <= seq < len(items):
                     return MissionUploadResult(False, f"the vehicle asked for item {seq!r}, which is not in the mission", len(served))

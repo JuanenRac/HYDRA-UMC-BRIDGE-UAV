@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- **The mission upload waits for the next request and for the acknowledgement in one wait:** it used to look for the acknowledgement first and for the next request afterwards, and a real MAVLink link keeps only the kind of message it is asked for and drops the rest, so a request that arrived while the acknowledgement was being looked for was lost and the upload ended with "the vehicle did not ask for the next item in time" against a simulator. The emulator of the autopilot in the tests now drops the other kinds the same way, and a test keeps both answers from being lost.
+
 - **A heartbeat that does not name a component no longer sends the mission and command messages to component 0:** pymavlink leaves the target component at 0 (all components) when the heartbeat it learned the vehicle from did not name one, and the simulator ignored the mission count sent that way. The link now addresses the first autopilot (component 1) in that case and keeps any component the heartbeat did name.
 
 - **The simulator job also uploads a mission:** `tools/sitl_mission.py` reads the position the simulator reports, builds a takeoff, two waypoints and a landing around it inside a flight envelope and sends it with the bridge's own mission uploader; the check passes only when the simulator accepts every item, and a second mission with a point far outside the envelope must be refused before a single item is sent. Nothing is armed and the mission is never started. The optional workflow `sitl.yml` runs it after the link check; the flow is tested here against the autopilot emulator (20 tests).
