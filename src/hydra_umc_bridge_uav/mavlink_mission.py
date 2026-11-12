@@ -132,6 +132,10 @@ def _item_message(item: MissionItem) -> tuple[int, int, float, float, int, int, 
     return MAV_FRAME_MISSION, MAV_CMD_NAV_RETURN_TO_LAUNCH, 0.0, 0.0, 0, 0, 0.0
 
 
+#: The vehicle asks for the next item with MISSION_REQUEST_INT, or with the older MISSION_REQUEST until it has seen an integer item (PX4 does); both carry `seq`.
+_AWAITED = ["MISSION_REQUEST_INT", "MISSION_REQUEST", "MISSION_ACK"]
+
+
 def _message_type(message: object) -> str:
     """The MAVLink name of a message (pymavlink's get_type())."""
     get_type = getattr(message, "get_type", None)
@@ -158,7 +162,7 @@ class MissionUploader:
                     return MissionUploadResult(False, "the vehicle did not close the upload in time", len(served))
                 # ONE wait for either answer: waiting for a kind drops every message of another kind that arrives meanwhile, so asking for the
                 # acknowledgement and for the next request one after the other could throw away the one that was wanted
-                request = sink.recv_match(["MISSION_REQUEST_INT", "MISSION_ACK"], True, self.settings.request_timeout_s)  # type: ignore[attr-defined]
+                request = sink.recv_match(_AWAITED, True, self.settings.request_timeout_s)  # type: ignore[attr-defined]
                 if request is None:
                     return MissionUploadResult(False, "the vehicle did not ask for the next item in time", len(served))
                 if _message_type(request) == "MISSION_ACK":

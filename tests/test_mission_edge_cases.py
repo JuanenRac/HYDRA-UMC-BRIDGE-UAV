@@ -199,6 +199,12 @@ class UploadTests(unittest.TestCase):
         result = self.run_upload(sink)
         self.assertTrue(result.sent, result.reason)
 
+    def test_the_older_request_of_a_vehicle_that_has_not_seen_an_integer_item_is_served_like_the_new_one(self) -> None:
+        sink = Sink([("MISSION_REQUEST", Msg(seq=0)), ("MISSION_REQUEST", Msg(seq=1)), ("MISSION_REQUEST_INT", Msg(seq=2)), ack(0)])
+        result = self.run_upload(sink)
+        self.assertTrue(result.sent, result.reason)
+        self.assertEqual([call[2] for call in sink.sent], [0, 1, 2])
+
     def test_neither_answer_is_dropped_while_waiting_for_the_other(self) -> None:
         """A real link keeps only the kind it is asked for and drops the rest: asking for the acknowledgement before the next request lost that request."""
 
@@ -222,7 +228,7 @@ class UploadTests(unittest.TestCase):
         result = self.run_upload(sink)
         self.assertTrue(result.sent, result.reason)
         self.assertEqual(result.items, 3)
-        self.assertTrue(all(isinstance(asked, list) and set(asked) == {"MISSION_REQUEST_INT", "MISSION_ACK"} for asked in sink.asked))
+        self.assertTrue(all(isinstance(asked, list) and set(asked) == {"MISSION_REQUEST_INT", "MISSION_REQUEST", "MISSION_ACK"} for asked in sink.asked))
 
     def test_the_total_time_is_a_limit_even_when_the_vehicle_keeps_asking(self) -> None:
         now = [0.0]
