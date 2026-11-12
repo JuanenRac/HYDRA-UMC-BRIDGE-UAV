@@ -4,6 +4,10 @@
 
 All notable changes to this project are documented here.
 
+## [Unreleased]
+
+- **More tests on the corners of the bridge (coverage 93% to 96%):** the MQTT connection is now run against a stand-in for paho-mqtt (subscription after every connect and reconnect, only handled topics reach the job entry with their retain flag, a refused login, a broker that does not answer, a connection that never opens, a missing paho) and the mission upload is run against a scripted vehicle (items that are not a mission, every refusal before anything is sent, a request for an item that does not exist, a silent or late vehicle, the total time limit, a lost link, and 200 random scripts from a fixed seed that must always end with a verdict). 30 new tests; no behaviour changed.
+
 ## [0.2.1] - The job entry can follow the global stop of the server, off by default: with `HYDRA_UMC_UAV_GLOBAL_STOP=1` (topic `HYDRA_UMC_UAV_GLOBAL_STOP_TOPIC`, `HYDRA_UMC_UAV_GLOBAL_STOP_STRICT=1` to also refuse before the first announcement) the entry reads the retained
 
 - **The job entry can follow the global stop of the server, off by default:** with `HYDRA_UMC_UAV_GLOBAL_STOP=1` (topic `HYDRA_UMC_UAV_GLOBAL_STOP_TOPIC`, `HYDRA_UMC_UAV_GLOBAL_STOP_STRICT=1` to also refuse before the first announcement) the entry reads the retained announcement of the server on `hydra/swarm/safety/estop`. While it says `SAFE_STOP`, or cannot be read, every job that asks the vehicle to do something (arm, take off, go to a point, hover and capture) is refused with the reason and keeps its idempotency key free; return to launch, land and disarm still go through, so a vehicle in the air can always come home. Only a clear `READY` ends the refusal. 16 more tests.
