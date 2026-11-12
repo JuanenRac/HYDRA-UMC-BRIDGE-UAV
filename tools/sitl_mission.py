@@ -84,10 +84,27 @@ def read_home(connection: Any, timeout_s: float) -> tuple[float, float] | None:
     return lat / 1e7, lon / 1e7
 
 
+def _probe_replies(connection: Any) -> dict[str, str]:
+    """Two harmless questions to tell a deaf link from a mission protocol that stays silent: the list of the mission and a request for a message."""
+    found: dict[str, str] = {}
+    try:
+        system, component = int(connection.target_system), int(connection.target_component) or 1
+        connection.mav.mission_request_list_send(system, component)
+        reply = connection.recv_match(type=["MISSION_COUNT", "MISSION_ACK"], blocking=True, timeout=3.0)
+        found["mission_request_list"] = reply.get_type() if reply is not None else "no reply"
+        connection.mav.command_long_send(system, component, 512, 0, 148, 0, 0, 0, 0, 0, 0)
+        reply = connection.recv_match(type="COMMAND_ACK", blocking=True, timeout=3.0)
+        found["request_message"] = f"COMMAND_ACK result {getattr(reply, 'result', '?')}" if reply is not None else "no reply"
+    except Exception as error:  # noqa: BLE001 - a probe never hides the real failure
+        found["error"] = f"{type(error).__name__}: {error}"
+    return found
+
+
 def diagnostic(connection: Any, seconds: float = 3.0) -> str:
     """What the vehicle says for a few seconds after a failed upload: the ids the bridge addressed and the kinds of message that came back."""
     counts: dict[str, int] = {}
     texts: list[str] = []
+    probes = _probe_replies(connection)
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
         try:
@@ -101,7 +118,7 @@ def diagnostic(connection: Any, seconds: float = 3.0) -> str:
         if kind == "STATUSTEXT" and len(texts) < 5:
             texts.append(str(getattr(message, "text", "")))
     ids = f"target={getattr(connection, 'target_system', '?')}/{getattr(connection, 'target_component', '?')}"
-    return f"{ids} messages={dict(sorted(counts.items()))} statustext={texts}"
+    return f"{ids} probes={probes} messages={dict(sorted(counts.items()))} statustext={texts}"
 
 
 def _open(url: str, timeout_s: float) -> Any:
