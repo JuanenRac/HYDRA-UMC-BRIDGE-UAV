@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- **The address test compares the parsed address:** the datalake sender test checks the scheme, host and port of the accepted address with `urllib.parse` instead of a substring of the text.
 - **The mission upload also serves the older request of the vehicle:** an autopilot that has not yet seen an integer mission item (PX4) asks for the next item with `MISSION_REQUEST` instead of `MISSION_REQUEST_INT`; the upload ignored it and ended with "the vehicle did not ask for the next item in time". Both requests are served the same way now (the item always goes out as an integer item).
 - **The mission upload waits for the next request and for the acknowledgement in one wait:** it used to look for the acknowledgement first and for the next request afterwards, and a real MAVLink link keeps only the kind of message it is asked for and drops the rest, so a request that arrived while the acknowledgement was being looked for was lost and the upload ended with "the vehicle did not ask for the next item in time" against a simulator. The emulator of the autopilot in the tests now drops the other kinds the same way, and a test keeps both answers from being lost.
 

@@ -12,6 +12,7 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlparse
 
 from hydra_umc_bridge_uav.camera_capture import capture_event
 from hydra_umc_bridge_uav.datalake_sender import PATH, DatalakeSender, check_url
@@ -137,8 +138,10 @@ class AddressAndSettingsTests(unittest.TestCase):
         for bad in ("ftp://127.0.0.1", "http://", "http://user:pw@127.0.0.1:1", "http://127.0.0.1:1/x", "http://127.0.0.1:1?q=1", "http://127.0.0.1:notaport", "http://lake.example:8095"):
             with self.assertRaises(ValueError, msg=bad):
                 check_url(settings(bad))
-        self.assertTrue(check_url(settings("http://lake.example:8095", allow_remote=True)).startswith("http://lake.example"))
-        self.assertTrue(check_url(settings("https://lake.example")).startswith("https://"))
+        remote = urlparse(check_url(settings("http://lake.example:8095", allow_remote=True)))
+        self.assertEqual((remote.scheme, remote.hostname, remote.port), ("http", "lake.example", 8095))
+        secure = urlparse(check_url(settings("https://lake.example")))
+        self.assertEqual((secure.scheme, secure.hostname), ("https", "lake.example"))
 
     def test_the_section_is_off_by_default_and_checked_when_on(self) -> None:
         self.assertEqual(DatalakeSettings().problems(), [])
