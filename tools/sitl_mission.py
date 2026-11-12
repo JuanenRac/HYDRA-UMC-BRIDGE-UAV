@@ -18,6 +18,7 @@ import argparse
 import math
 import os
 import sys
+import time
 from typing import Any, Callable, Sequence
 
 from hydra_umc_bridge_uav.mavlink_mission import MissionUploader, MissionUploadResult, parse_items
@@ -83,6 +84,26 @@ def read_home(connection: Any, timeout_s: float) -> tuple[float, float] | None:
     return lat / 1e7, lon / 1e7
 
 
+def diagnostic(connection: Any, seconds: float = 3.0) -> str:
+    """What the vehicle says for a few seconds after a failed upload: the ids the bridge addressed and the kinds of message that came back."""
+    counts: dict[str, int] = {}
+    texts: list[str] = []
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        try:
+            message = connection.recv_match(blocking=True, timeout=0.5)
+        except Exception as error:  # noqa: BLE001 - a diagnostic never hides the real failure
+            return f"the link failed while listening: {type(error).__name__}: {error}"
+        if message is None:
+            continue
+        kind = str(message.get_type())
+        counts[kind] = counts.get(kind, 0) + 1
+        if kind == "STATUSTEXT" and len(texts) < 5:
+            texts.append(str(getattr(message, "text", "")))
+    ids = f"target={getattr(connection, 'target_system', '?')}/{getattr(connection, 'target_component', '?')}"
+    return f"{ids} messages={dict(sorted(counts.items()))} statustext={texts}"
+
+
 def _open(url: str, timeout_s: float) -> Any:
     # the mission protocol with integer coordinates (MISSION_REQUEST_INT) is the MAVLink 2 one: pymavlink speaks MAVLink 1 unless told otherwise
     os.environ.setdefault("MAVLINK20", "1")
@@ -113,6 +134,8 @@ def main(argv: Sequence[str] | None = None, connect: Callable[[str, float], Any]
             print("SITL_MISSION=FAIL the vehicle reported no position in time")
             return 1
         passed, reason = upload_both(_PymavlinkConnectionSink(connection), home[0], home[1], args.radius)
+        if not passed:
+            print("SITL_MISSION_DIAGNOSTIC " + diagnostic(connection))
     except Exception as error:  # noqa: BLE001 - a simulator that is not there is a failed check with a reason, not a traceback
         print(f"SITL_MISSION=FAIL {type(error).__name__}: {error}")
         return 1

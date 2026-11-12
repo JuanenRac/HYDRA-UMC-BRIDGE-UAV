@@ -109,6 +109,38 @@ class Connection:
         return self._message
 
 
+class ListeningConnection:
+    def __init__(self, messages, target=(1, 1)):
+        self.messages, self.target_system, self.target_component = list(messages), *target
+
+    def recv_match(self, **kwargs):
+        return self.messages.pop(0) if self.messages else None
+
+
+class Message:
+    def __init__(self, kind, text=""):
+        self._kind, self.text = kind, text
+
+    def get_type(self):
+        return self._kind
+
+
+class DiagnosticTests(unittest.TestCase):
+    def test_the_kinds_of_message_and_the_status_texts_are_counted(self):
+        connection = ListeningConnection([Message("MISSION_REQUEST"), Message("MISSION_REQUEST"), Message("STATUSTEXT", "Mission rejected")])
+        text = sitl_mission.diagnostic(connection, seconds=0.2)
+        self.assertIn("target=1/1", text)
+        self.assertIn("'MISSION_REQUEST': 2", text)
+        self.assertIn("Mission rejected", text)
+
+    def test_a_link_that_fails_while_listening_is_reported_not_raised(self):
+        class Broken:
+            def recv_match(self, **kwargs):
+                raise OSError("link down")
+
+        self.assertIn("link down", sitl_mission.diagnostic(Broken(), seconds=0.2))
+
+
 class HomeAndMainTests(unittest.TestCase):
     def test_the_home_is_the_reported_position_in_degrees(self):
         self.assertEqual(sitl_mission.read_home(Connection(SimpleNamespace(lat=473977420, lon=85455940)), 1.0), (47.397742, 8.545594))
