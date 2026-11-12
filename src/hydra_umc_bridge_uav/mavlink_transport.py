@@ -150,6 +150,10 @@ class MavlinkCommandSink(Protocol):
     def recv_match(self, type: str, blocking: bool, timeout: float) -> object | None: ...
 
 
+#: The component id of the first autopilot of a vehicle (MAV_COMP_ID_AUTOPILOT1).
+MAV_COMP_ID_AUTOPILOT1 = 1
+
+
 class _PymavlinkConnectionSink:
     """Adapts a real `mavutil.mavlink_connection(...)` object onto this
     module's own `MavlinkCommandSink` seam.
@@ -171,7 +175,10 @@ class _PymavlinkConnectionSink:
 
     @property
     def target_component(self) -> int:
-        return int(self._connection.target_component)
+        # pymavlink leaves the component at 0 (all components) when the heartbeat it learned the vehicle from did not name one; the
+        # mission and command protocols are addressed to the autopilot, which is component 1
+        component = int(self._connection.target_component)
+        return component if component else MAV_COMP_ID_AUTOPILOT1
 
     def command_long_send(self, *args: float | int, **kwargs: float | int) -> object:
         return self._connection.mav.command_long_send(*args, **kwargs)

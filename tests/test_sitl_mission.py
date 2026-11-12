@@ -125,6 +125,20 @@ class Message:
         return self._kind
 
 
+class TargetComponentTests(unittest.TestCase):
+    def sink(self, component):
+        from hydra_umc_bridge_uav.mavlink_transport import _PymavlinkConnectionSink
+
+        return _PymavlinkConnectionSink(SimpleNamespace(target_system=1, target_component=component))
+
+    def test_a_component_the_heartbeat_did_not_name_is_the_first_autopilot(self):
+        self.assertEqual(self.sink(0).target_component, 1)
+
+    def test_a_component_the_heartbeat_named_is_kept(self):
+        self.assertEqual(self.sink(1).target_component, 1)
+        self.assertEqual(self.sink(7).target_component, 7)
+
+
 class DiagnosticTests(unittest.TestCase):
     def test_the_kinds_of_message_and_the_status_texts_are_counted(self):
         connection = ListeningConnection([Message("MISSION_REQUEST"), Message("MISSION_REQUEST"), Message("STATUSTEXT", "Mission rejected")])
