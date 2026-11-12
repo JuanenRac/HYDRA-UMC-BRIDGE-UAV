@@ -24,6 +24,7 @@ Every test below is **not executed** on a vehicle; steps 1 and 2 were executed a
 | 5 | With the vehicle armed in the simulator, send a return-to-launch, a land and a disarm request. | Each reaches the vehicle and is acknowledged; the gate does not block these three. | not executed |
 | 6 | Send an ordinary command with the gate not ready. | The command is refused and nothing is sent to the vehicle. | not executed |
 | 7 | With MAVLink 2 signing configured, send a command from a station with the wrong key. | The vehicle ignores it. | not executed |
+| 8 | Run `tools/sitl_mission.py` against the simulator: upload a mission of four items inside the envelope, then one with a point outside it. | The simulator asks for every item and accepts the mission; the second one is refused by the bridge before anything is sent; nothing is armed or started. | executed in PX4 SITL (Actions): passed |
 
 ## What this bench cannot show
 
