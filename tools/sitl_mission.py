@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 import sys
 from typing import Any, Callable, Sequence
 
@@ -83,6 +84,8 @@ def read_home(connection: Any, timeout_s: float) -> tuple[float, float] | None:
 
 
 def _open(url: str, timeout_s: float) -> Any:
+    # the mission protocol with integer coordinates (MISSION_REQUEST_INT) is the MAVLink 2 one: pymavlink speaks MAVLink 1 unless told otherwise
+    os.environ.setdefault("MAVLINK20", "1")
     from pymavlink import mavutil  # imported here: the judgement above needs no pymavlink
 
     connection = mavutil.mavlink_connection(url)
