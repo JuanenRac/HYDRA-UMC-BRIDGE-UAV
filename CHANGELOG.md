@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- **README: the platform statement:** a note says that where the README speaks of the CM5 it means the pilot bench that runs today, and that the target platform of HYDRA-UMC, an NVIDIA Jetson Orin NX 16 GB, is a design that has not been built or tested.
 - **The tests have a coverage floor of 94 %:** `tools/coverage_floor.json` holds the measured line and branch coverage of the bridge, rounded down (94.5 % measured in the CI environment), and `python tools/hydra_project_tool.py coverage` warns when it falls below it (a warning, not a CI check). Tooling only: no behaviour changes.
 - **The address test compares the parsed address:** the datalake sender test checks the scheme, host and port of the accepted address with `urllib.parse` instead of a substring of the text.
 - **The mission upload also serves the older request of the vehicle:** an autopilot that has not yet seen an integer mission item (PX4) asks for the next item with `MISSION_REQUEST` instead of `MISSION_REQUEST_INT`; the upload ignored it and ended with "the vehicle did not ask for the next item in time". Both requests are served the same way now (the item always goes out as an integer item).

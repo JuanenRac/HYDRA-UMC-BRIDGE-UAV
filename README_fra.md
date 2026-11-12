@@ -72,6 +72,8 @@ Il appartient à la famille **Mobile & Autonomous Bridges**, aux côtés de `HYD
 
 Il partage avec tous les bridges le contrat de sécurité de `HYDRA-UMC-SDK` : un travail n'est accepté que si la porte partagée `evaluate_job()` le permet, et cette porte échoue en position fermée. Ce bridge n'a pas de transport MQTT ; il s'exécute comme la commande `hydra-umc-bridge-uav run`.
 
+> **Plateforme :** là où ce README dit CM5, il s'agit du banc pilote qui fonctionne aujourd'hui ; la plateforme visée par HYDRA-UMC est un NVIDIA Jetson Orin NX 16 Go, une conception ni construite ni testée.
+
 ## 🏛️ Architecture
 
 <p align="center">

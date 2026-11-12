@@ -71,6 +71,8 @@ O **HYDRA-UMC-BRIDGE-UAV** fica entre um UAV com câmara (MAVLink) e a célula d
 
 Partilha com todos os bridges o contrato de segurança do `HYDRA-UMC-SDK`: um trabalho só é aceite quando a porta partilhada `evaluate_job()` o permite, e essa porta falha fechada. Este bridge não tem transporte MQTT; corre como o comando `hydra-umc-bridge-uav run`.
 
+> **Plataforma:** onde este README diz CM5, refere-se ao banco piloto que funciona hoje; a plataforma objetivo do HYDRA-UMC é uma NVIDIA Jetson Orin NX de 16 GB, um desenho que não foi construído nem testado.
+
 ## 🏛️ Arquitetura
 
 <p align="center">

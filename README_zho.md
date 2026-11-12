@@ -72,6 +72,8 @@ GPL-3.0-or-later - see LICENSE
 
 与所有桥接一样遵循 `HYDRA-UMC-SDK` 的安全契约：只有共用的 `evaluate_job()` 关口放行，任务才会被接受，且该关口失败时保持关闭。本桥接没有 MQTT 传输，以命令 `hydra-umc-bridge-uav run` 运行。
 
+> **平台：** 本 README 中的 CM5 指的是目前正在运行的试验台；HYDRA-UMC 的目标平台是 NVIDIA Jetson Orin NX 16 GB，这是尚未制造或测试的设计。
+
 ## 🏛️ 架构
 
 <p align="center">
