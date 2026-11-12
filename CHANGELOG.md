@@ -1,8 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
 All notable changes to this project are documented here.
 
-## [Unreleased]
+## [0.2.1] - The job entry can follow the global stop of the server, off by default: with `HYDRA_UMC_UAV_GLOBAL_STOP=1` (topic `HYDRA_UMC_UAV_GLOBAL_STOP_TOPIC`, `HYDRA_UMC_UAV_GLOBAL_STOP_STRICT=1` to also refuse before the first announcement) the entry reads the retained
 
 - **The job entry can follow the global stop of the server, off by default:** with `HYDRA_UMC_UAV_GLOBAL_STOP=1` (topic `HYDRA_UMC_UAV_GLOBAL_STOP_TOPIC`, `HYDRA_UMC_UAV_GLOBAL_STOP_STRICT=1` to also refuse before the first announcement) the entry reads the retained announcement of the server on `hydra/swarm/safety/estop`. While it says `SAFE_STOP`, or cannot be read, every job that asks the vehicle to do something (arm, take off, go to a point, hover and capture) is refused with the reason and keeps its idempotency key free; return to launch, land and disarm still go through, so a vehicle in the air can always come home. Only a clear `READY` ends the refusal. 16 more tests.
 - **Jobs over MQTT, off by default (`job_entry.enabled`):** `job_entry.py` receives one job on `hydra/bridges/uav/cmd/job`, ignores a retained replay, refuses an oversized, unreadable or malformed payload, does not run a repeated idempotency key twice (a return to launch is forwarded again) and decides it with `UavCoordinator` using the state the autopilot reported. It is plan-only: without a sender the answer on `cmd/job/result` says `sent: false`, and `ARM` is never confirmed by the entry. `run --mqtt-host` starts it through `mqtt_transport.py` (lazy paho-mqtt, retried first connect, subscription renewed after every reconnect) only when the settings or `HYDRA_UMC_BRIDGE_UAV_JOB_ENTRY=1` switch it on.
