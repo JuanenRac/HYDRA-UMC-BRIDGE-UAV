@@ -5,7 +5,7 @@ Every test below is **not executed** on a vehicle; steps 1 and 2 were executed a
 ## What the software already covers (no vehicle needed)
 
 - `python tools/build_test.py` runs the unit tests: the job intake (retained, malformed and repeated messages), the link watchdog, the single receiver thread, the observed state and the emulator.
-- `.github/workflows/sitl.yml` (started by hand) starts a PX4 simulator and runs `tools/sitl_smoke.py` against its onboard link (UDP 14540); it passed against PX4 SITL 1.14.3 in Actions, which says nothing about a real autopilot.
+- `.github/workflows/sitl.yml` (started by hand) starts a PX4 simulator and runs `tools/sitl_smoke.py` against its onboard link (UDP 14540); it passed against PX4 SITL 1.14.3 in Actions, which says nothing about a real autopilot. The same workflow then runs `tools/sitl_mission.py`, which uploads a small mission through the bridge's uploader and passes only when the simulator accepts every item (the mission is never started).
 
 ## Setup
 

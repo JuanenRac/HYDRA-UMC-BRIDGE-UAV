@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- **The simulator job also uploads a mission:** `tools/sitl_mission.py` reads the position the simulator reports, builds a takeoff, two waypoints and a landing around it inside a flight envelope and sends it with the bridge's own mission uploader; the check passes only when the simulator accepts every item, and a second mission with a point far outside the envelope must be refused before a single item is sent. Nothing is armed and the mission is never started. The optional workflow `sitl.yml` runs it after the link check; the flow is tested here against the autopilot emulator (16 tests).
+
 All notable changes to this project are documented here.
 
 ## [Unreleased]

@@ -5,7 +5,7 @@
 #
 # Only runs when started by hand (Actions > Run workflow): it pulls a large simulator image and is not part of the normal checks.
 # It starts PX4 SITL in a container, lets the bridge open the link and keep its heartbeat going, and passes when the heartbeat
-# of the simulator was heard. It sends nothing else to the vehicle.
+# of the simulator was heard. Then it uploads a small mission through the bridge's own uploader and passes when the simulator accepts it (the mission is never started).
 # =============================================================================
 name: Autopilot simulator check (optional)
 on:
@@ -46,6 +46,8 @@ jobs:
           ss -ulpn || true
       - name: Run the smoke test
         run: python tools/sitl_smoke.py --connection udpin:0.0.0.0:14540 --seconds 20 --open-timeout 60
+      - name: Upload a mission and check it is accepted
+        run: python tools/sitl_mission.py --connection udpin:0.0.0.0:14540 --open-timeout 60 --position-timeout 60
       - name: Stop the simulator
         if: always()
         run: docker rm -f px4
