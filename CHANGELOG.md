@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.2] - A coverage floor of 94 percent, the older mission request served and a simulator job that uploads a mission
 
 - **README: the platform statement:** a note says that where the README speaks of the CM5 it means the pilot bench that runs today, and that the target platform of HYDRA-UMC, an NVIDIA Jetson Orin NX 16 GB, is a design that has not been built or tested.
 - **The tests have a coverage floor of 94 %:** `tools/coverage_floor.json` holds the measured line and branch coverage of the bridge, rounded down (94.5 % measured in the CI environment), and `python tools/hydra_project_tool.py coverage` warns when it falls below it (a warning, not a CI check). Tooling only: no behaviour changes.
