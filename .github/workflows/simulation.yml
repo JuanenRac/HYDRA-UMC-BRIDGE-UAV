@@ -60,3 +60,4 @@ jobs:
           test_job_entry
           test_datalake_sender
           test_global_stop
+          test_human_confirmation_edges
