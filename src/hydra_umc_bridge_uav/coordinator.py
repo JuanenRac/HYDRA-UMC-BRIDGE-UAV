@@ -163,6 +163,17 @@ class UavCoordinator:
             return True
         return request is not None and request not in self.SAFE_STATE_REQUESTS
 
+    def request_for(self, payload: Mapping[str, object]) -> str | None:
+        """The name of the flight request a job in `payload` maps onto (None when the phase cannot be read or has none)."""
+
+        phase = payload.get("phase")
+        if not isinstance(phase, str):
+            return None
+        try:
+            return self._phases.action_for(JobPhase(phase.strip().upper()))
+        except ValueError:
+            return None
+
     def emergency_land_request(self) -> UavDispatch:
         """Real, standalone LAND request - see the LAND constant's own
         comment for why this is deliberately outside the JobPhase-driven

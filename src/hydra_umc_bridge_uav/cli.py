@@ -125,6 +125,7 @@ def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | No
     from hydra_umc_sdk.bridge_contract import CellState
 
     from .coordinator import UavCoordinator
+    from .flight_policy import FlightPolicy
     from .job_entry import UavJobEntry, enabled_from_environment
     from .settings import load_settings
 
@@ -139,7 +140,14 @@ def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | No
         return CellState.READY
 
     # the state the autopilot reported is not mapped from its heartbeat yet, so the gate (fail-closed) refuses every flight phase here; only the requests that bring the vehicle to a safe state are answered as accepted
-    entry = UavJobEntry(UavCoordinator(), cell_state, lambda: None, None, enabled=True)
+    # the flight policy comes from the settings and is on by default: no flight request is accepted without the envelope and a confirmation signed by the server
+    verifier = None
+    if settings.confirmation.required and settings.confirmation.key_file.strip():
+        from .human_confirmation import ConfirmationVerifier, load_key
+
+        verifier = ConfirmationVerifier(load_key(settings.confirmation.key_file), max_ttl_s=settings.confirmation.max_ttl_s, max_clock_skew_s=settings.confirmation.max_clock_skew_s)
+    policy = FlightPolicy(settings.envelope, settings.confirmation, settings.phases, verifier)
+    entry = UavJobEntry(UavCoordinator(), cell_state, lambda: None, None, enabled=True, policy=policy)
     if mqtt_opener is None:
         from .mqtt_transport import open_mqtt_client  # lazy: paho-mqtt is optional
 

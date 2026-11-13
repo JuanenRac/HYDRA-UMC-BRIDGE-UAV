@@ -33,6 +33,10 @@ MAV_CMD_NAV_RETURN_TO_LAUNCH = 20
 MAV_CMD_NAV_LAND = 21
 MAV_CMD_NAV_TAKEOFF = 22
 MAV_FRAME_MISSION = 2
+MAV_FRAME_GLOBAL_INT = 5
+MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION = 5003
+MAV_MISSION_TYPE_MISSION = 0
+MAV_MISSION_TYPE_FENCE = 1
 MAV_FRAME_GLOBAL_RELATIVE_ALT_INT = 6
 
 MISSION_RESULT_NAMES = {
@@ -153,8 +157,27 @@ class MissionUploader:
         refused = check_items(items, envelope, self.settings)
         if refused:
             return MissionUploadResult(False, refused)
+        messages = [_item_message(item) for item in items]
+        return self._protocol(sink, target_system, target_component, messages, MAV_MISSION_TYPE_MISSION, "the vehicle accepted the mission (it was not started)")
+
+    def upload_geofence(self, sink: object, target_system: int, target_component: int, envelope: FlightEnvelope | None, *, enabled: bool) -> MissionUploadResult:
+        """Load the radius of the envelope into the autopilot as one circular inclusion fence (MAVLink fence protocol, mission type 1).
+
+        Only with `enabled` (`envelope.upload_geofence`, off by default) and an envelope. The altitude ceiling is not part of this fence: an autopilot keeps it as a
+        parameter of its own, which the bridge does not write. The vehicle is not told to use the fence; enabling it is the autopilot's own configuration.
+        """
+        if not enabled:
+            return MissionUploadResult(False, "the geofence upload is switched off (envelope.upload_geofence in config/uav.json)")
+        if envelope is None:
+            return MissionUploadResult(False, "a geofence needs a flight envelope")
+        messages = [(MAV_FRAME_GLOBAL_INT, MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION, float(envelope.max_radius_m), 1.0, round(envelope.home_lat * 1e7), round(envelope.home_lon * 1e7), 0.0)]
+        return self._protocol(sink, target_system, target_component, messages, MAV_MISSION_TYPE_FENCE, "the vehicle accepted the geofence")
+
+    def _protocol(
+        self, sink: object, target_system: int, target_component: int, messages: Sequence[tuple[int, int, float, float, int, int, float]], mission_type: int, success: str
+    ) -> MissionUploadResult:
         try:
-            sink.mission_count_send(target_system, target_component, len(items), 0)  # type: ignore[attr-defined]
+            sink.mission_count_send(target_system, target_component, len(messages), mission_type)  # type: ignore[attr-defined]
             served: set[int] = set()
             deadline = self._clock() + self.settings.total_timeout_s
             while True:
@@ -166,23 +189,23 @@ class MissionUploader:
                 if request is None:
                     return MissionUploadResult(False, "the vehicle did not ask for the next item in time", len(served))
                 if _message_type(request) == "MISSION_ACK":
-                    return self._closed(request, len(items), len(served))
+                    return self._closed(request, len(messages), len(served), success)
                 seq = getattr(request, "seq", None)
-                if type(seq) is not int or not 0 <= seq < len(items):
+                if type(seq) is not int or not 0 <= seq < len(messages):
                     return MissionUploadResult(False, f"the vehicle asked for item {seq!r}, which is not in the mission", len(served))
-                frame, command, p1, p2, x, y, z = _item_message(items[seq])
+                frame, command, p1, p2, x, y, z = messages[seq]
                 sink.mission_item_int_send(  # type: ignore[attr-defined]
-                    target_system, target_component, seq, frame, command, 0, 1, p1, p2, 0.0, 0.0, x, y, z, 0
+                    target_system, target_component, seq, frame, command, 0, 1, p1, p2, 0.0, 0.0, x, y, z, mission_type
                 )
                 served.add(seq)
         except Exception as error:  # noqa: BLE001 - a lost link or a sink that cannot send: fail closed with a reason
             return MissionUploadResult(False, f"the upload failed: {type(error).__name__}: {error}")
 
     @staticmethod
-    def _closed(ack: object, count: int, served: int) -> MissionUploadResult:
+    def _closed(ack: object, count: int, served: int, success: str = "the vehicle accepted the mission (it was not started)") -> MissionUploadResult:
         result = getattr(ack, "type", None)
         if result == _ACCEPTED and served >= count:
-            return MissionUploadResult(True, "the vehicle accepted the mission (it was not started)", count)
+            return MissionUploadResult(True, success, count)
         if result == _ACCEPTED:
             return MissionUploadResult(False, "the vehicle closed the upload before it had every item", served)
         name = MISSION_RESULT_NAMES.get(result, f"result {result!r}") if isinstance(result, int) else "an unreadable result"

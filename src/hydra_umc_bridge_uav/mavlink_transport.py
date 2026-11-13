@@ -353,6 +353,7 @@ class MavlinkFlightControl:
         waypoint_alt_m: float | None = None,
         altitude_frame: str = "relative",
         envelope: FlightEnvelope | None = None,
+        require_envelope: bool = False,
         camera_component: int | None = None,
         ack_timeout_seconds: float = _DEFAULT_ACK_TIMEOUT_SECONDS,
     ) -> MavlinkSendResult:
@@ -399,6 +400,8 @@ class MavlinkFlightControl:
             # physically meaningless for this command's own real purpose.
             if not _positive_finite(takeoff_altitude_m):
                 return MavlinkSendResult(False, f"takeoff_altitude_m must be a finite, positive number, got {takeoff_altitude_m!r}")
+            if envelope is None and require_envelope is True:
+                return MavlinkSendResult(False, "a takeoff needs a flight envelope: refusing without one")
             if envelope is not None:
                 refusal = envelope.refusal_for_altitude(takeoff_altitude_m)
                 if refusal is not None:
@@ -425,6 +428,8 @@ class MavlinkFlightControl:
             frame = ALTITUDE_FRAMES.get(altitude_frame) if isinstance(altitude_frame, str) else None
             if frame is None:
                 return MavlinkSendResult(False, f"altitude_frame must be one of {sorted(ALTITUDE_FRAMES)}, got {altitude_frame!r}")
+            if envelope is None and require_envelope is True:
+                return MavlinkSendResult(False, "a go-to needs a flight envelope: refusing without one")
             if envelope is not None:
                 if altitude_frame != "relative":
                     return MavlinkSendResult(False, "a flight envelope can only be checked against a relative altitude")

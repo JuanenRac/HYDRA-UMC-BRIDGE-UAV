@@ -26,6 +26,7 @@ workflow named "Simulation bench" does exactly this on a clean Linux runner on e
 | `tests/test_gcs_heartbeat.py` | the heartbeat the bridge sends as a ground station |
 | `tests/test_heartbeat.py` | the heartbeat monitor: never heard is lost, the timeout boundary and recovery |
 | `tests/test_mission_camera_twin.py` | the settings, the mission upload item by item (never started) and the camera and twin features with simulated input |
+| `tests/test_flight_policy.py` | the required envelope, the signed one-use human confirmation (forged, expired, replayed, wrong request or job), chaining of requests in the air, the settings, the transport check and the geofence upload against the emulator |
 | `tests/test_job_entry.py` | the MQTT job entry: off by default, retained, oversized and malformed payloads, a repeated key, requests that bring the vehicle home, the unknown autopilot state, a broker that is gone, and its wiring in `run` |
 | `tests/test_datalake_sender.py` | the sample of a successful capture posted to a stand-in for the data lake on a real socket: token, sequence, refusals, a data lake that is gone, a redirect, the address rules and the settings |
 | `tests/test_global_stop.py` | the job entry that follows the global stop of the server: off by default, every phase that asks for work refused while stopped or unreadable, return to launch and abort still passing, the idempotency key kept free, a seeded fuzz of payloads |

@@ -140,15 +140,89 @@ class JobEntrySettings:
 
 
 @dataclass(frozen=True)
+class EnvelopeSettings:
+    # The flight envelope the job entry requires before any request that starts or continues a flight (takeoff, go to a point). Required by default: without a
+    # home point the requests are refused. The numbers are conservative and are meant to be edited for the site, always inside the legal limit the operator fixes.
+    required: bool = True
+    max_altitude_m: float = 30.0
+    max_radius_m: float = 100.0
+    home_lat: float | None = None
+    home_lon: float | None = None
+    # Also load the radius into the autopilot as a circular inclusion fence (MAVLink fence protocol); off by default like the mission upload.
+    upload_geofence: bool = False
+
+    def problems(self) -> list[str]:
+        found = []
+        for name in ("required", "upload_geofence"):
+            if not isinstance(getattr(self, name), bool):
+                found.append(f"envelope.{name} must be true or false")
+        for name in ("max_altitude_m", "max_radius_m"):
+            value = getattr(self, name)
+            if not (_number(value) and value > 0):
+                found.append(f"envelope.{name} must be a finite, positive number")
+        for name, bound in (("home_lat", 90), ("home_lon", 180)):
+            value = getattr(self, name)
+            if value is not None and not (_number(value) and -bound <= value <= bound):
+                found.append(f"envelope.{name} must be a number in [-{bound}, {bound}] or null")
+        if (self.home_lat is None) != (self.home_lon is None):
+            found.append("envelope.home_lat and envelope.home_lon must be given together")
+        return found
+
+
+@dataclass(frozen=True)
+class ConfirmationSettings:
+    # The confirmation of an operator, signed by the server and valid once, that the job must carry for the listed requests (see human_confirmation.py).
+    required: bool = True
+    key_file: str = ""
+    max_ttl_s: float = 120.0
+    max_clock_skew_s: float = 5.0
+    actions: tuple[str, ...] = ("ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE")
+
+    def problems(self) -> list[str]:
+        found = []
+        if not isinstance(self.required, bool):
+            found.append("confirmation.required must be true or false")
+        if not isinstance(self.key_file, str):
+            found.append("confirmation.key_file must be text")
+        for name, limit in (("max_ttl_s", 3600), ("max_clock_skew_s", 60)):
+            value = getattr(self, name)
+            if not (_number(value) and 0 < value <= limit):
+                found.append(f"confirmation.{name} must be a number above zero and at most {limit}")
+        known = {"ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE"}
+        if not isinstance(self.actions, (list, tuple)) or any(item not in known for item in self.actions):
+            found.append(f"confirmation.actions must be a list of {', '.join(sorted(known))}")
+        return found
+
+
+@dataclass(frozen=True)
+class PhaseSettings:
+    # Chaining of productive phases with the vehicle already in the air. Off by default: every flight starts on the ground. When on, a go-to or hover is
+    # accepted with the vehicle in flight only if the previous request of the flight was accepted, the envelope is active and the operator confirmed it.
+    chain_in_flight: bool = False
+    chain_max_gap_s: float = 600.0
+
+    def problems(self) -> list[str]:
+        found = []
+        if not isinstance(self.chain_in_flight, bool):
+            found.append("phases.chain_in_flight must be true or false")
+        if not (_number(self.chain_max_gap_s) and 0 < self.chain_max_gap_s <= 86400):
+            found.append("phases.chain_max_gap_s must be a number above zero and at most 86400")
+        return found
+
+
+@dataclass(frozen=True)
 class UavSettings:
     mission: MissionSettings = field(default_factory=MissionSettings)
     camera: CameraSettings = field(default_factory=CameraSettings)
     twin: TwinSettings = field(default_factory=TwinSettings)
     datalake: DatalakeSettings = field(default_factory=DatalakeSettings)
     job_entry: JobEntrySettings = field(default_factory=JobEntrySettings)
+    envelope: EnvelopeSettings = field(default_factory=EnvelopeSettings)
+    confirmation: ConfirmationSettings = field(default_factory=ConfirmationSettings)
+    phases: PhaseSettings = field(default_factory=PhaseSettings)
 
     def problems(self) -> list[str]:
-        return self.mission.problems() + self.camera.problems() + self.twin.problems() + self.datalake.problems() + self.job_entry.problems()
+        return self.mission.problems() + self.camera.problems() + self.twin.problems() + self.datalake.problems() + self.job_entry.problems() + self.envelope.problems() + self.confirmation.problems() + self.phases.problems()
 
 
 def load_settings(path: str | Path | None) -> UavSettings:
@@ -158,7 +232,7 @@ def load_settings(path: str | Path | None) -> UavSettings:
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ValueError("the settings must be a JSON object")
-    sections = {"mission": MissionSettings, "camera": CameraSettings, "twin": TwinSettings, "datalake": DatalakeSettings, "job_entry": JobEntrySettings}
+    sections = {"mission": MissionSettings, "camera": CameraSettings, "twin": TwinSettings, "datalake": DatalakeSettings, "job_entry": JobEntrySettings, "envelope": EnvelopeSettings, "confirmation": ConfirmationSettings, "phases": PhaseSettings}
     unknown = sorted(set(raw) - set(sections))
     if unknown:
         raise ValueError(f"unknown settings sections: {', '.join(unknown)}")
@@ -170,6 +244,8 @@ def load_settings(path: str | Path | None) -> UavSettings:
         bad = sorted(set(body) - {item.name for item in fields(kind)})
         if bad:
             raise ValueError(f"unknown keys in {name}: {', '.join(bad)}")
+        if name == "confirmation" and isinstance(body.get("actions"), list):
+            body = {**body, "actions": tuple(body["actions"])}
         built[name] = kind(**body)
     settings = UavSettings(**built)
     problems = settings.problems()
