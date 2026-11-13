@@ -32,6 +32,7 @@ from hydra_umc_sdk.bridge_contract import CellState, MachineState
 from hydra_umc_sdk.global_stop import GlobalStopGuard, GlobalStopSettings
 
 from .coordinator import UavCoordinator, UavDispatch
+from .flight_policy import FlightPolicy
 
 _LOG = logging.getLogger(__name__)
 
@@ -63,12 +64,15 @@ class UavJobEntry:
         *,
         enabled: bool | None = None,
         global_stop: GlobalStopGuard | GlobalStopSettings | None = None,
+        policy: FlightPolicy | None = None,
     ) -> None:
         """`cell_state` and `machine_state` are read for every job; the second one must be what the autopilot reported (None when unknown: the gate refuses flight phases)."""
         self._coordinator = coordinator
         self._cell_state = cell_state
         self._machine_state = machine_state
         self._sender = sender
+        # the flight policy (required envelope, human confirmation, chaining in flight); None keeps the entry as it was, the command line always builds one from the settings
+        self._policy = policy
         self.enabled = enabled_from_environment() if enabled is None else bool(enabled)
         # follows the global stop that the server announces (hydra_umc_sdk.global_stop); off unless HYDRA_UMC_UAV_GLOBAL_STOP=1 or a guard is given
         if isinstance(global_stop, GlobalStopGuard):
@@ -128,10 +132,28 @@ class UavJobEntry:
             if isinstance(job_id, str):
                 refused["job_id"] = job_id
             return refused
-        dispatch = self._coordinator.handle_message(raw, self._cell_state(), self._machine_state())
+        machine_state = self._machine_state()
+        verdict = None
+        if self._policy is not None:
+            verdict = self._policy.review(raw, self._coordinator.request_for(raw), machine_state)
+            if not verdict.accepted:
+                # refused before the coordinator sees it: the idempotency key stays free, so the same job can be sent again with what was missing
+                refused = {"allowed": False, "reason": verdict.reason, "request": verdict.request or "none", "mode": "refused", "sent": False}
+                if isinstance(job_id, str):
+                    refused["job_id"] = job_id
+                return refused
+            if verdict.machine_state is not None:
+                machine_state = verdict.machine_state
+        dispatch = self._coordinator.handle_message(raw, self._cell_state(), machine_state)
         answer: dict[str, object] = {"allowed": dispatch.accepted, "reason": dispatch.reason, "request": dispatch.request, "mode": dispatch.mode, "sent": False}
         if isinstance(job_id, str):
             answer["job_id"] = job_id
+        if dispatch.accepted and self._policy is not None and verdict is not None:
+            used = self._policy.use_confirmation(verdict)
+            if used is not None:
+                answer["allowed"] = False
+                answer["reason"] = used
+                return answer
         if dispatch.accepted and self._sender is not None:
             result = self._sender(dispatch)
             sent = bool(getattr(result, "sent", getattr(result, "ok", False)))
@@ -140,4 +162,6 @@ class UavJobEntry:
             if not sent:
                 answer["allowed"] = False
                 answer["reason"] = str(getattr(result, "reason", "the vehicle did not take the request"))
+        if dispatch.accepted and self._policy is not None and verdict is not None:
+            self._policy.note_flight(verdict, sent=bool(answer["sent"]) or self._sender is None)
         return answer

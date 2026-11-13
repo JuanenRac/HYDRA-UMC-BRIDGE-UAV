@@ -113,6 +113,8 @@ class MavlinkFlightControllerEmulator:
         self._pending_acks: list["_Ack"] = []
         # mission microservice (MISSION_COUNT / MISSION_REQUEST_INT / MISSION_ITEM_INT / MISSION_ACK)
         self.mission: list[dict] = []
+        self.fence: list[dict] = []  # the circular inclusion fence of the fence protocol (mission type 1)
+        self._mission_type = 0
         self.mission_ack_result = 0  # what the vehicle answers when the upload is complete (MAV_MISSION_RESULT)
         self.mission_max_items = 700
         self.mission_stall_after: int | None = None  # stop asking after this many items (a silent vehicle)
@@ -209,6 +211,7 @@ class MavlinkFlightControllerEmulator:
     def mission_count_send(self, target_system: int, target_component: int, count: int, mission_type: int = 0) -> object:
         self._mission_received = {}
         self._mission_queue = []
+        self._mission_type = mission_type
         if count > self.mission_max_items:
             self._mission_queue.append(_Msg("MISSION_ACK", type=4))  # MAV_MISSION_NO_SPACE
         elif count == 0:
@@ -239,12 +242,16 @@ class MavlinkFlightControllerEmulator:
         if frame not in (2, 3, 5, 6, 10):  # MISSION, GLOBAL_RELATIVE_ALT, GLOBAL, ... : frames this emulator knows
             self._mission_queue.append(_Msg("MISSION_ACK", type=2))
             return None
-        if command not in (16, 20, 21, 22):
+        if command not in ((5003,) if mission_type == 1 else (16, 20, 21, 22)):
             self._mission_queue.append(_Msg("MISSION_ACK", type=3))
             return None
         self._mission_received[seq] = {"seq": seq, "frame": frame, "command": command, "param1": param1, "x": x, "y": y, "z": z}
         if len(self._mission_received) == self._mission_expected:
-            self.mission = [self._mission_received[i] for i in sorted(self._mission_received)]
+            done = [self._mission_received[i] for i in sorted(self._mission_received)]
+            if mission_type == 1:
+                self.fence = done
+            else:
+                self.mission = done
             self._mission_queue.append(_Msg("MISSION_ACK", type=self.mission_ack_result))
         elif self.mission_stall_after is not None and len(self._mission_received) >= self.mission_stall_after:
             pass  # silent: no further request

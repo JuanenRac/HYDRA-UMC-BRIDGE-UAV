@@ -28,5 +28,24 @@
   },
   "job_entry": {
     "enabled": false
+  },
+  "envelope": {
+    "required": true,
+    "max_altitude_m": 30.0,
+    "max_radius_m": 100.0,
+    "home_lat": null,
+    "home_lon": null,
+    "upload_geofence": false
+  },
+  "confirmation": {
+    "required": true,
+    "key_file": "",
+    "max_ttl_s": 120.0,
+    "max_clock_skew_s": 5.0,
+    "actions": ["ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE"]
+  },
+  "phases": {
+    "chain_in_flight": false,
+    "chain_max_gap_s": 600.0
   }
 }
