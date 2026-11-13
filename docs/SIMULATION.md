@@ -30,6 +30,7 @@ workflow named "Simulation bench" does exactly this on a clean Linux runner on e
 | `tests/test_job_entry.py` | the MQTT job entry: off by default, retained, oversized and malformed payloads, a repeated key, requests that bring the vehicle home, the unknown autopilot state, a broker that is gone, and its wiring in `run` |
 | `tests/test_datalake_sender.py` | the sample of a successful capture posted to a stand-in for the data lake on a real socket: token, sequence, refusals, a data lake that is gone, a redirect, the address rules and the settings |
 | `tests/test_global_stop.py` | the job entry that follows the global stop of the server: off by default, every phase that asks for work refused while stopped or unreadable, return to launch and abort still passing, the idempotency key kept free, a seeded fuzz of payloads |
+| `tests/test_human_confirmation_edges.py` | the signed one-use confirmation: every missing or mistyped claim, the clock limits, racing threads and the bounded memory of used tokens |
 | `tests/test_sitl_smoke.py` | the judge and the options of the software-in-the-loop smoke script; the run itself against a PX4 SITL container is `sitl.yml`, started by hand, and is not part of this job |
 | `tests/test_sitl_mission.py` | the judgement and the flow of the mission upload check against the autopilot emulator (accepted, refused, silent vehicle, a mission outside the envelope); the run against the simulator is `sitl.yml` |
 
