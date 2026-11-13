@@ -284,18 +284,65 @@ def read_server_mission_upload(path: str) -> bool | None:
     return value
 
 
-def with_server_switches(settings: UavSettings, server_config: str | None, environ: Mapping[str, str] | None = None) -> UavSettings:
-    """The settings with the mission upload switch of Server Admin, when the host allows remote settings and names the server configuration file.
+#: The flight-policy switches of Server Admin (`bridges.uav.<name>`) and what each one may do here. They only ever TIGHTEN what the host's own file says: a requirement
+#: (`envelopeRequired`, `confirmationRequired`) can be switched on from the server but never off, and a permission (`chainInFlight`, `uploadGeofence`) can be switched
+#: off from the server but never on. A value the server sends that would relax the host's own file is ignored.
+FLIGHT_POLICY_SWITCHES = ("envelopeRequired", "confirmationRequired", "chainInFlight", "uploadGeofence")
 
-    Without the host switch or the file name, `settings` come back unchanged. When both are given and the file cannot be read or its value is damaged, the
-    mission upload is switched OFF: a bridge told to follow the server that cannot hear it does not keep a switch that was on.
+
+def read_server_flight_policy(path: str) -> dict[str, bool]:
+    """The flight-policy switches that `bridges.uav` of the Server's `data/server-config.json` carries (only the ones that are saved there). A file that cannot be read, or a
+    value that is not true or false, is a ValueError."""
+    try:
+        document = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise ValueError(f"the server configuration file cannot be read: {getattr(error, 'strerror', None) or error}") from error
+    section = document.get("bridges") if isinstance(document, dict) else None
+    uav = section.get("uav") if isinstance(section, dict) else None
+    if not isinstance(uav, dict):
+        return {}
+    found: dict[str, bool] = {}
+    for name in FLIGHT_POLICY_SWITCHES:
+        if name in uav:
+            if not isinstance(uav[name], bool):
+                raise ValueError(f"bridges.uav.{name} in the server configuration must be true or false")
+            found[name] = uav[name]
+    return found
+
+
+def tightened(settings: UavSettings, switches: Mapping[str, bool]) -> UavSettings:
+    """`settings` with the switches of the server applied in the tightening direction only (see FLIGHT_POLICY_SWITCHES). Returns `settings` itself when nothing changes."""
+    envelope, confirmation, phases = settings.envelope, settings.confirmation, settings.phases
+    if switches.get("envelopeRequired") is True:
+        envelope = dataclasses.replace(envelope, required=True)
+    if switches.get("uploadGeofence") is False:
+        envelope = dataclasses.replace(envelope, upload_geofence=False)
+    if switches.get("confirmationRequired") is True:
+        confirmation = dataclasses.replace(confirmation, required=True)
+    if switches.get("chainInFlight") is False:
+        phases = dataclasses.replace(phases, chain_in_flight=False)
+    if (envelope, confirmation, phases) == (settings.envelope, settings.confirmation, settings.phases):
+        return settings
+    return dataclasses.replace(settings, envelope=envelope, confirmation=confirmation, phases=phases)
+
+
+def with_server_switches(settings: UavSettings, server_config: str | None, environ: Mapping[str, str] | None = None) -> UavSettings:
+    """The settings with the switches of Server Admin, when the host allows remote settings and names the server configuration file.
+
+    The mission upload follows the server in either direction; the flight-policy switches (`envelopeRequired`, `confirmationRequired`, `chainInFlight`, `uploadGeofence`)
+    only tighten (see FLIGHT_POLICY_SWITCHES). Without the host switch or the file name, `settings` come back unchanged. When both are given and the file cannot be read
+    or a value is damaged, the mission upload and the geofence upload are switched OFF, chaining in flight is switched off and the envelope and the confirmation are
+    required: a bridge told to follow the server that cannot hear it does not keep a switch that was on, and takes the stricter side of every policy.
     """
     if not server_config or not remote_settings_allowed(environ):
         return settings
     try:
         value = read_server_mission_upload(server_config)
+        policy = read_server_flight_policy(server_config)
     except ValueError:
         value = False
-    if value is None:
-        return settings
-    return dataclasses.replace(settings, mission=dataclasses.replace(settings.mission, upload_enabled=value))
+        policy = {"envelopeRequired": True, "confirmationRequired": True, "chainInFlight": False, "uploadGeofence": False}
+    result = settings
+    if value is not None:
+        result = dataclasses.replace(result, mission=dataclasses.replace(result.mission, upload_enabled=value))
+    return tightened(result, policy)

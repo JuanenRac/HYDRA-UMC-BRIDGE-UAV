@@ -127,9 +127,12 @@ def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | No
     from .coordinator import UavCoordinator
     from .flight_policy import FlightPolicy
     from .job_entry import UavJobEntry, enabled_from_environment
-    from .settings import load_settings
+    from .settings import load_settings, with_server_switches
 
-    settings = load_settings(getattr(args, "settings", None))
+    # the switches of Server Admin (only when the host allows remote settings and names the server configuration file); the flight-policy ones only tighten
+    server_config = getattr(args, "server_config", None)
+    server_config = (server_config if isinstance(server_config, str) and server_config else None) or os.environ.get(SERVER_CONFIG_ENVIRONMENT, "").strip() or None
+    settings = with_server_switches(load_settings(getattr(args, "settings", None)), server_config)
     if not (settings.job_entry.enabled or enabled_from_environment()):
         return None
 
