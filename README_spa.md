@@ -153,6 +153,7 @@ El comando `hydra-umc-bridge-uav run` (o `python -m hydra_umc_bridge_uav run`) a
 
 | Variable | Por defecto | Qué fija |
 |---|---|---|
+| `HYDRA_UMC_UAV_IN_DOUBT_CONSULT` | desactivado | `1` responde a una clave de trabajo repetida cuyo primer intento no dejó respuesta con el estado que informa el piloto automático, en lugar de rechazarla; no se ejecuta nada de nuevo |
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | frecuencia del latido de estación de tierra del bridge, de 0,1 a 10; `0` lo apaga |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | sin definir | ruta de la clave de firma MAVLink 2 (32 bytes, cruda o 64 caracteres hexadecimales); manda `--signing-key-file` |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | sin definir | `1` acepta mensajes sin firma con una clave; manda `--signing-allow-unsigned`, luego esto, luego la configuración del Server |

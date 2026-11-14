@@ -153,6 +153,7 @@ flowchart LR
 
 | 変数 | 既定値 | 設定する内容 |
 |---|---|---|
+| `HYDRA_UMC_UAV_IN_DOUBT_CONSULT` | オフ | `1` にすると、最初の試行が応答を残さなかった再送のジョブキーを拒否せず、オートパイロットが報告する状態で応答します。何も再実行されません |
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | ブリッジの地上局ハートビートの周波数（0.1〜10）。`0` で停止 |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | 未設定 | MAVLink 2 署名キーのパス（32 バイト、生または 16 進 64 文字）。`--signing-key-file` が優先されます |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | 未設定 | `1` で鍵がある場合に未署名メッセージを受け入れます。`--signing-allow-unsigned` が優先され、次にこれ、次にサーバーの設定です |
