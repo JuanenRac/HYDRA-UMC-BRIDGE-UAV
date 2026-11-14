@@ -153,6 +153,7 @@ flowchart LR
 
 | 变量 | 默认值 | 设置内容 |
 |---|---|---|
+| `HYDRA_UMC_UAV_IN_DOUBT_CONSULT` | 关闭 | `1` 时，对首次尝试未留下应答的重复任务键，不再直接拒绝，而是用自动驾驶仪上报的状态作答；不会再次执行任何操作 |
 | `HYDRA_UAV_GCS_HEARTBEAT_HZ` | `1.0` | 桥接地面站心跳的频率，0.1 到 10；`0` 关闭 |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | 未设置 | MAVLink 2 签名密钥的路径（32 字节，原始或 64 个十六进制字符）；`--signing-key-file` 优先 |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | 未设置 | `1` 表示有密钥时接受未签名的消息;`--signing-allow-unsigned` 优先,其次是它,再其次是服务器配置 |
