@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The SDK pin and the shared tools are up to date:** the SDK dependency names the newest release tag, and the shared tools are the canonical copies again.
 - **A job whose first attempt left no answer can be looked up instead of refused, off by default:** with `HYDRA_UMC_UAV_IN_DOUBT_CONSULT=1` (or `in_doubt_consult=True` on `UavCoordinator`) a repeated idempotency key that was claimed but never answered is answered with the state the autopilot reported with the repeat ("the vehicle now reports ..."). The request is never sent again, the reading is stored so a further repeat gets the same answer, and a repeat that comes with no reported state leaves the repeat refused. A request that only brings the vehicle to a safe state (return to launch, land, disarm) is still forwarded again, as before. Without the switch the repeat is refused exactly as before. Tested with a scripted state (`tests/test_in_doubt_consult.py`, simulation only).
 
 - **The coverage job of the CI checks out the same SDK release as the rest:** `ci.yml` still named the older release in the job that measures coverage, while `pyproject.toml` and the other workflows name v0.6.4; all of them now agree.
