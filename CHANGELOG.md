@@ -4,6 +4,9 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+
+## [0.2.3]
+
 - **Comments describe what the code does, not what it used to do:** the notes on the arm request in `coordinator.py` and `mavlink_transport.py` say the present behaviour and the reason for it. Comments only: no behaviour changes.
 - **The SDK pin and the shared tools are up to date:** the SDK dependency names the newest release tag, and the shared tools are the canonical copies again.
 - **A job whose first attempt left no answer can be looked up instead of refused, off by default:** with `HYDRA_UMC_UAV_IN_DOUBT_CONSULT=1` (or `in_doubt_consult=True` on `UavCoordinator`) a repeated idempotency key that was claimed but never answered is answered with the state the autopilot reported with the repeat ("the vehicle now reports ..."). The request is never sent again, the reading is stored so a further repeat gets the same answer, and a repeat that comes with no reported state leaves the repeat refused. A request that only brings the vehicle to a safe state (return to launch, land, disarm) is still forwarded again, as before. Without the switch the repeat is refused exactly as before. Tested with a scripted state (`tests/test_in_doubt_consult.py`, simulation only).
@@ -20,6 +23,8 @@ All notable changes to this project are documented here.
 - **Productive requests can follow each other in the air, off by default (`phases.chain_in_flight`):** a go-to or a hover is accepted with the vehicle flying only when the previous request of the flight was accepted and sent, nothing to come home came after it, the gap is within `phases.chain_max_gap_s` and the envelope and the confirmation are in force. Arming and taking off always start from the ground.
 - 30 new tests against the autopilot emulator (simulator evidence only; nothing has flown).
 - **More tests on the corners of the bridge (coverage 93% to 96%):** the MQTT connection is now run against a stand-in for paho-mqtt (subscription after every connect and reconnect, only handled topics reach the job entry with their retain flag, a refused login, a broker that does not answer, a connection that never opens, a missing paho) and the mission upload is run against a scripted vehicle (items that are not a mission, every refusal before anything is sent, a request for an item that does not exist, a silent or late vehicle, the total time limit, a lost link, and 200 random scripts from a fixed seed that must always end with a verdict). 30 new tests; no behaviour changed.
+
+- Successful incremental build: synchronized package metadata and `hydra-umc.project.json`.
 
 ## [0.2.2] - Mission upload fixes and a coverage floor
 
