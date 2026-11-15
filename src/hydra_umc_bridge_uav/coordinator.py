@@ -53,17 +53,16 @@ class UavRequestPlan:
 class UavCoordinator:
     """Gate jobs before a future MAVLink/OSDK transport adapter reaches a real UAV."""
 
-    # :
-    # this constant used to be named PRE_FLIGHT_CHECK, but the real
+    # This constant is named ARM, not PRE_FLIGHT_CHECK: the real
     # MAVLink command it maps to (mavlink_transport.py's own
     # MAV_CMD_COMPONENT_ARM_DISARM, param1=1) genuinely arms the vehicle -
     # real flight stacks (PX4/ArduPilot) run their own pre-arm check suite
     # AS PART OF processing an arm request, and there is no separate,
     # real, standard MAVLink command in the common message set that runs
-    # those checks WITHOUT arming. Calling this "PRE_FLIGHT_CHECK" made a
-    # real arm command sound like an inert, read-only query - fixed by
-    # naming it for what it actually does. mavlink_transport.py's own
-    # send() now also requires an explicit confirm_arm=True to actually
+    # those checks WITHOUT arming. A name like "PRE_FLIGHT_CHECK" would make a
+    # real arm command sound like an inert, read-only query, so it is
+    # named for what it actually does. mavlink_transport.py's own
+    # send() also requires an explicit confirm_arm=True to actually
     # send it - "specific authorization for arming", not a bare gate
     # decision alone.
     ARM = "ARM"

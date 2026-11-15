@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Comments describe what the code does, not what it used to do:** the notes on the arm request in `coordinator.py` and `mavlink_transport.py` say the present behaviour and the reason for it. Comments only: no behaviour changes.
 - **The SDK pin and the shared tools are up to date:** the SDK dependency names the newest release tag, and the shared tools are the canonical copies again.
 - **A job whose first attempt left no answer can be looked up instead of refused, off by default:** with `HYDRA_UMC_UAV_IN_DOUBT_CONSULT=1` (or `in_doubt_consult=True` on `UavCoordinator`) a repeated idempotency key that was claimed but never answered is answered with the state the autopilot reported with the repeat ("the vehicle now reports ..."). The request is never sent again, the reading is stored so a further repeat gets the same answer, and a repeat that comes with no reported state leaves the repeat refused. A request that only brings the vehicle to a safe state (return to launch, land, disarm) is still forwarded again, as before. Without the switch the repeat is refused exactly as before. Tested with a scripted state (`tests/test_in_doubt_consult.py`, simulation only).
 

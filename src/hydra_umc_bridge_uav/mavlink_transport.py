@@ -11,9 +11,9 @@ the MAVLink common message set (researched against the authoritative
 common.xml, github.com/mavlink/mavlink/blob/master/message_definitions/
 v1.0/common.xml), never an invented or guessed command ID:
 
-- ARM -> MAV_CMD_COMPONENT_ARM_DISARM (400), param1=1 (arm). this
-  used to be named PRE_FLIGHT_CHECK, sounding like an inert, read-only query - it
-  genuinely arms the vehicle. PX4/ArduPilot both run their own real
+- ARM -> MAV_CMD_COMPONENT_ARM_DISARM (400), param1=1 (arm). It is
+  not called a pre-flight check, which would sound like an inert,
+  read-only query - it genuinely arms the vehicle. PX4/ArduPilot both run their own real
   internal pre-arm check suite as part of processing an arm request (so
   there is no separate, real, standard MAVLink command that runs those
   checks WITHOUT arming), but that does not make "arm" a safe name to
@@ -372,13 +372,13 @@ class MavlinkFlightControl:
             # shared cell/machine gate every other request already passes
             # through. Defaults to refusing: confirm_arm must be True.
             #
-            # this
-            # used to be `not confirm_arm`, which Python's own truthiness
-            # rules make dangerously permissive - a real caller passing
-            # the STRING `'false'` (a non-empty string, therefore truthy)
-            # made `not confirm_arm` evaluate to `False`, letting a real
-            # arm command through despite never receiving a real `True`.
-            # `is not True` accepts nothing but the literal boolean.
+            # The test is `is not True`, not `not confirm_arm`: Python's own
+            # truthiness rules would make `not confirm_arm` dangerously
+            # permissive - a real caller passing the STRING `'false'` (a
+            # non-empty string, therefore truthy) would make it evaluate to
+            # `False`, letting a real arm command through despite never
+            # receiving a real `True`. `is not True` accepts nothing but the
+            # literal boolean.
             return MavlinkSendResult(False, "arming a real vehicle requires confirm_arm=True - refusing by default")
 
         if dispatch.request == "ARM":
