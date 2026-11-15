@@ -1,17 +1,5 @@
 # Changelog
 
-## [0.2.2] - Mission upload fixes and a coverage floor
-
-- **README: the platform statement:** a note says that where the README speaks of the CM5 it means the pilot bench that runs today, and that the target platform of HYDRA-UMC, an NVIDIA Jetson Orin NX 16 GB, is a design that has not been built or tested.
-- **The tests have a coverage floor of 94 %:** `tools/coverage_floor.json` holds the measured line and branch coverage of the bridge, rounded down (94.5 % measured in the CI environment), and `python tools/hydra_project_tool.py coverage` warns when it falls below it (a warning, not a CI check). Tooling only: no behaviour changes.
-- **The address test compares the parsed address:** the datalake sender test checks the scheme, host and port of the accepted address with `urllib.parse` instead of a substring of the text.
-- **The mission upload also serves the older request of the vehicle:** an autopilot that has not yet seen an integer mission item (PX4) asks for the next item with `MISSION_REQUEST` instead of `MISSION_REQUEST_INT`; the upload ignored it and ended with "the vehicle did not ask for the next item in time". Both requests are served the same way now (the item always goes out as an integer item).
-- **The mission upload waits for the next request and for the acknowledgement in one wait:** it used to look for the acknowledgement first and for the next request afterwards, and a real MAVLink link keeps only the kind of message it is asked for and drops the rest, so a request that arrived while the acknowledgement was being looked for was lost and the upload ended with "the vehicle did not ask for the next item in time" against a simulator. The emulator of the autopilot in the tests now drops the other kinds the same way, and a test keeps both answers from being lost.
-
-- **A heartbeat that does not name a component no longer sends the mission and command messages to component 0:** pymavlink leaves the target component at 0 (all components) when the heartbeat it learned the vehicle from did not name one, and the simulator ignored the mission count sent that way. The link now addresses the first autopilot (component 1) in that case and keeps any component the heartbeat did name.
-
-- **The simulator job also uploads a mission:** `tools/sitl_mission.py` reads the position the simulator reports, builds a takeoff, two waypoints and a landing around it inside a flight envelope and sends it with the bridge's own mission uploader; the check passes only when the simulator accepts every item, and a second mission with a point far outside the envelope must be refused before a single item is sent. Nothing is armed and the mission is never started. The optional workflow `sitl.yml` runs it after the link check; the flow is tested here against the autopilot emulator (20 tests).
-
 All notable changes to this project are documented here.
 
 ## [Unreleased]
@@ -30,6 +18,18 @@ All notable changes to this project are documented here.
 - **Productive requests can follow each other in the air, off by default (`phases.chain_in_flight`):** a go-to or a hover is accepted with the vehicle flying only when the previous request of the flight was accepted and sent, nothing to come home came after it, the gap is within `phases.chain_max_gap_s` and the envelope and the confirmation are in force. Arming and taking off always start from the ground.
 - 30 new tests against the autopilot emulator (simulator evidence only; nothing has flown).
 - **More tests on the corners of the bridge (coverage 93% to 96%):** the MQTT connection is now run against a stand-in for paho-mqtt (subscription after every connect and reconnect, only handled topics reach the job entry with their retain flag, a refused login, a broker that does not answer, a connection that never opens, a missing paho) and the mission upload is run against a scripted vehicle (items that are not a mission, every refusal before anything is sent, a request for an item that does not exist, a silent or late vehicle, the total time limit, a lost link, and 200 random scripts from a fixed seed that must always end with a verdict). 30 new tests; no behaviour changed.
+
+## [0.2.2] - Mission upload fixes and a coverage floor
+
+- **README: the platform statement:** a note says that where the README speaks of the CM5 it means the pilot bench that runs today, and that the target platform of HYDRA-UMC, an NVIDIA Jetson Orin NX 16 GB, is a design that has not been built or tested.
+- **The tests have a coverage floor of 94 %:** `tools/coverage_floor.json` holds the measured line and branch coverage of the bridge, rounded down (94.5 % measured in the CI environment), and `python tools/hydra_project_tool.py coverage` warns when it falls below it (a warning, not a CI check). Tooling only: no behaviour changes.
+- **The address test compares the parsed address:** the datalake sender test checks the scheme, host and port of the accepted address with `urllib.parse` instead of a substring of the text.
+- **The mission upload also serves the older request of the vehicle:** an autopilot that has not yet seen an integer mission item (PX4) asks for the next item with `MISSION_REQUEST` instead of `MISSION_REQUEST_INT`; the upload ignored it and ended with "the vehicle did not ask for the next item in time". Both requests are served the same way now (the item always goes out as an integer item).
+- **The mission upload waits for the next request and for the acknowledgement in one wait:** it used to look for the acknowledgement first and for the next request afterwards, and a real MAVLink link keeps only the kind of message it is asked for and drops the rest, so a request that arrived while the acknowledgement was being looked for was lost and the upload ended with "the vehicle did not ask for the next item in time" against a simulator. The emulator of the autopilot in the tests now drops the other kinds the same way, and a test keeps both answers from being lost.
+
+- **A heartbeat that does not name a component no longer sends the mission and command messages to component 0:** pymavlink leaves the target component at 0 (all components) when the heartbeat it learned the vehicle from did not name one, and the simulator ignored the mission count sent that way. The link now addresses the first autopilot (component 1) in that case and keeps any component the heartbeat did name.
+
+- **The simulator job also uploads a mission:** `tools/sitl_mission.py` reads the position the simulator reports, builds a takeoff, two waypoints and a landing around it inside a flight envelope and sends it with the bridge's own mission uploader; the check passes only when the simulator accepts every item, and a second mission with a point far outside the envelope must be refused before a single item is sent. Nothing is armed and the mission is never started. The optional workflow `sitl.yml` runs it after the link check; the flow is tested here against the autopilot emulator (20 tests).
 
 ## [0.2.1] - The job entry can follow the global stop of the server, off by default: with `HYDRA_UMC_UAV_GLOBAL_STOP=1` (topic `HYDRA_UMC_UAV_GLOBAL_STOP_TOPIC`, `HYDRA_UMC_UAV_GLOBAL_STOP_STRICT=1` to also refuse before the first announcement) the entry reads the retained
 
