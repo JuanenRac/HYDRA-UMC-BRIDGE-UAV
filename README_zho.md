@@ -27,7 +27,7 @@ GPL-3.0-or-later - see LICENSE
 
 > **诚实检查——今天真正可运行的部分：** 无依赖的飞行请求核心（`coordinator.py` 中的 `UavCoordinator`，每次派发都会经过 `HYDRA-UMC-SDK` 自身真正的 `evaluate_job()`）、确定性的心跳断链看门狗（`heartbeat.py` 中的 `HeartbeatMonitor`），以及真正的 MAVLink 命令传输（`mavlink_transport.py` 中的 `MavlinkFlightControl`）都是真实的，并由 256 个通过的单元测试覆盖（`python tools/build_test.py` —— `test_coordinator.py`、`test_heartbeat.py`、`test_mavlink_transport.py`，以及让该桥接对抗一个协议忠实但纯手写的 MAVLink 自动驾驶仪模拟器（而非真实设备）的 `test_mavlink_emulator.py`）。以上这些都从未针对真实安装的 `pymavlink`、真实的无线电/遥测链路或实体 UAV/飞控进行过验证——`test_mavlink_transport.py` 自带的伪造 MAVLink 连接完全替代了 `pymavlink`（这些测试甚至不需要安装真正的库就能通过），并且目前还没有实时的 `run` 命令，因为尚未选定或验证任何真实的 MAVLink/OSDK 传输方案。详见下文的"当前状态与后续步骤"（已经如实说明了这一点），以及 `CHANGELOG.md` 中目前具体已交付的内容。
 
-> **安全与安防现状:**本生态系统不是经认证的安全系统。目前尚无硬件 E-STOP 通路,没有由固件强制执行的限位或联锁,也没有经过验证的运动指令;固件映像使用 CRC-32 和 Ed25519 签名校验,发布构建会拒绝已公开的开发密钥(中继之后的工具头和扩展板仍运行 URTC 的引导程序,它们使用共享密钥的 HMAC-SHA256 而不是签名);TLS 与双向 TLS 均为可选项,默认关闭;自制电路板尚未组装或测试。在依赖此处任何说法来保障人身安全之前,请先阅读[安全基线](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md)和[威胁模型](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md)。
+> **安全与安防现状:**本生态系统不是经认证的安全系统。目前尚无硬件 E-STOP 通路,没有由固件强制执行的限位或联锁,也没有经过验证的运动指令;固件映像使用 CRC-32 和 Ed25519 签名校验,发布构建会拒绝已公开的开发密钥(中继之后的 URTC 引导程序不再使用共享密钥:主板用公钥表校验 Ed25519 记录,扩展板只有在主板确认了该确切映像之后才会安装它);TLS 与双向 TLS 均为可选项,默认关闭;自制电路板尚未组装或测试。在依赖此处任何说法来保障人身安全之前,请先阅读[安全基线](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/SECURITY_BASELINE.md)和[威胁模型](https://github.com/JuanenRac/HYDRA-UMC-DOCS/blob/main/docs/THREAT_MODEL.md)。
 
 ---
 
@@ -51,7 +51,7 @@ GPL-3.0-or-later - see LICENSE
 
 | 领域 | 状态 | 在这里的含义 |
 |---|---|---|
-| 软件 | 🟡 | 主要用途可用；上面的诚实性检查列出了仍然缺少的内容 |
+| 软件 | 🟡 | 主要用途可用；本 README 中的诚实性检查列出了仍然缺少的内容 |
 | 测试 | 🟢 | 401 项自动测试，每次变更都会运行 |
 | 真实硬件 | 🟠 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 | 集成 | 🟠 | 其消息和路由已对照 SDK 的共享契约检查；尚未与真实设备一起运行 |
