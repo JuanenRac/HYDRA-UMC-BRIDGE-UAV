@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **Only the heartbeat of the vehicle's autopilot keeps the link watchdog alive:** a HEARTBEAT from a component that says it is no autopilot (a gimbal, a camera, a companion computer) or from another system on the same link no longer counts as a sign that the vehicle is there, so the link is declared lost when the vehicle itself falls silent. A message that does not say where it comes from is counted as before. Tests cover each case.
+
 
 ## [0.2.3]
 

@@ -27,6 +27,8 @@ from .heartbeat import HeartbeatMonitor
 
 # MAV_TYPE_GCS: a ground station's own heartbeat is not the vehicle's.
 _MAV_TYPE_GCS = 6
+# MAV_AUTOPILOT_INVALID: a component that is not an autopilot (a gimbal, a camera, a companion computer) says so in its HEARTBEAT.
+_MAV_AUTOPILOT_INVALID = 8
 _QUEUE_DEPTH = 64
 
 
@@ -85,13 +87,30 @@ class MavlinkLink:
                 continue
             self._dispatch(message)
 
+    def _is_vehicle_heartbeat(self, message: object) -> bool:
+        """True for the HEARTBEAT of the vehicle's autopilot: not a ground station, not a component that is no autopilot, and (when both ends
+        say which system they are) not another system on the same link. Only these keep the watchdog alive."""
+
+        if getattr(message, "type", None) == _MAV_TYPE_GCS:
+            return False
+        if getattr(message, "autopilot", None) == _MAV_AUTOPILOT_INVALID:
+            return False
+        target = getattr(self._connection, "target_system", None)
+        source_of = getattr(message, "get_srcSystem", None)
+        if isinstance(target, int) and not isinstance(target, bool) and target > 0 and callable(source_of):
+            try:
+                return source_of() == target
+            except Exception:  # noqa: BLE001
+                return True
+        return True
+
     def _dispatch(self, message: object) -> None:
         get_type = getattr(message, "get_type", None)
         kind = get_type() if callable(get_type) else None
         if not isinstance(kind, str):
             return
         if kind == "HEARTBEAT":
-            if getattr(message, "type", None) != _MAV_TYPE_GCS:
+            if self._is_vehicle_heartbeat(message):
                 self._monitor.observe(self._clock())
             return
         with self._cond:
