@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The status table of the README shows the exact test count as confirmed:** the table is regenerated from the recorded data, so the Tests line is green for a count that was collected and that a workflow runs. The README and its seven translations are regenerated.
+
 - **The README names the heartbeat that stops with the broker:** the configuration table lists `job_entry.broker_loss_stops_heartbeat_s`, the test table lists `test_broker_loss_heartbeat.py`, the file tree names `broker_watch.py`, the guide has a paragraph on it, and the test counts are current. The README and its seven translations are regenerated.
 
 - **The heartbeat of the station can stop when the MQTT broker is gone:** `job_entry.broker_loss_stops_heartbeat_s` (0 by default, which keeps the heartbeat running whatever the broker does) set to a number of seconds withholds the heartbeat once the broker has been unreachable for longer than that, so the autopilot's own failsafe can react; the beats withheld are counted in the status line (`withheld`) and the heartbeat resumes by itself when the broker is back. Switching it on can make a vehicle return home because of a network fault on the ground.
