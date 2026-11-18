@@ -28,7 +28,8 @@
   },
   "job_entry": {
     "enabled": false,
-    "broker_loss_stops_heartbeat_s": 0
+    "broker_loss_stops_heartbeat_s": 0,
+    "idempotency_file": ""
   },
   "envelope": {
     "required": true,
@@ -43,10 +44,22 @@
     "key_file": "",
     "max_ttl_s": 120.0,
     "max_clock_skew_s": 5.0,
-    "actions": ["ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE"]
+    "actions": ["ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE"],
+    "used_file": ""
   },
   "phases": {
     "chain_in_flight": false,
     "chain_max_gap_s": 600.0
+  },
+  "cell_state": {
+    "source": "none",
+    "value": "READY",
+    "path": "",
+    "url": "",
+    "max_age_seconds": 5.0,
+    "key_file": "",
+    "public_key_file": "",
+    "algorithm": "HMAC-SHA256",
+    "key_id": ""
   }
 }

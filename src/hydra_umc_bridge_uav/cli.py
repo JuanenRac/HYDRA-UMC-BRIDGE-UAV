@@ -124,6 +124,7 @@ def _status_line(heartbeat: GcsHeartbeat, out: TextIO, linked: LinkedSink | None
 def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | None, mqtt_opener: Callable[..., object] | None, watch: Any = None) -> object | None:
     """Start the MQTT job entry when the settings (or the environment) switch it on; None while it is off. Plan-only: nothing is sent to the vehicle."""
     from hydra_umc_sdk.bridge_contract import CellState
+    from hydra_umc_sdk.job_intake import IdempotencyStore
 
     from .coordinator import UavCoordinator
     from .flight_policy import FlightPolicy
@@ -137,10 +138,18 @@ def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | No
     if not (settings.job_entry.enabled or enabled_from_environment()):
         return None
 
+    reader = None
+    if settings.cell_state.source != "none":
+        from .cell_source import build_cell_source
+
+        reader = build_cell_source(settings.cell_state)
+
     def cell_state() -> CellState:
         # the bridge cannot vouch for a vehicle it has lost: with the link monitor on, a LOST link is a fault
         if linked is not None and linked.link_state().get("status") == "LOST":
             return CellState.FAULT
+        if reader is not None:
+            return CellState(reader.read())
         return CellState.READY
 
     # the state the autopilot reported is not mapped from its heartbeat yet, so the gate (fail-closed) refuses every flight phase here; only the requests that bring the vehicle to a safe state are answered as accepted
@@ -149,9 +158,15 @@ def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | No
     if settings.confirmation.required and settings.confirmation.key_file.strip():
         from .human_confirmation import ConfirmationVerifier, load_key
 
-        verifier = ConfirmationVerifier(load_key(settings.confirmation.key_file), max_ttl_s=settings.confirmation.max_ttl_s, max_clock_skew_s=settings.confirmation.max_clock_skew_s)
+        verifier = ConfirmationVerifier(
+            load_key(settings.confirmation.key_file),
+            max_ttl_s=settings.confirmation.max_ttl_s,
+            max_clock_skew_s=settings.confirmation.max_clock_skew_s,
+            used_file=settings.confirmation.used_file,
+        )
     policy = FlightPolicy(settings.envelope, settings.confirmation, settings.phases, verifier)
-    entry = UavJobEntry(UavCoordinator(), cell_state, lambda: None, None, enabled=True, policy=policy)
+    store = IdempotencyStore(settings.job_entry.idempotency_file) if settings.job_entry.idempotency_file else None
+    entry = UavJobEntry(UavCoordinator(store), cell_state, lambda: None, None, enabled=True, policy=policy, cell_source=settings.cell_state.source)
     # the watch exists only when the settings ask for the heartbeat to stop with the broker (off by default): without it the openers are called as before
     extra: dict[str, object] = {}
     if watch is not None and settings.job_entry.broker_loss_stops_heartbeat_s > 0:

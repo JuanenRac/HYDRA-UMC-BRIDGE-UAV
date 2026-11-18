@@ -136,9 +136,13 @@ class JobEntrySettings:
     enabled: bool = False
     # Seconds without the MQTT broker after which the bridge stops sending its own ground-station heartbeat, so that the autopilot's own failsafe can react; 0 (the default) never stops it.
     broker_loss_stops_heartbeat_s: float = 0.0
+    # A file that keeps the idempotency keys (and the answers) of the jobs across a restart, so a job repeated after a restart is not run twice; empty (the default) keeps them in memory only.
+    idempotency_file: str = ""
 
     def problems(self) -> list[str]:
         found = [] if isinstance(self.enabled, bool) else ["job_entry.enabled must be true or false"]
+        if not isinstance(self.idempotency_file, str):
+            found.append("job_entry.idempotency_file must be text")
         loss = self.broker_loss_stops_heartbeat_s
         if isinstance(loss, bool) or not isinstance(loss, (int, float)) or not 0 <= loss < float("inf"):
             found.append("job_entry.broker_loss_stops_heartbeat_s must be 0 (off) or a number of seconds")
@@ -183,9 +187,13 @@ class ConfirmationSettings:
     max_ttl_s: float = 120.0
     max_clock_skew_s: float = 5.0
     actions: tuple[str, ...] = ("ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE")
+    # A file that keeps the numbers of the confirmations already used across a restart, so a token cannot be used again after one; empty (the default) keeps them in memory only.
+    used_file: str = ""
 
     def problems(self) -> list[str]:
         found = []
+        if not isinstance(self.used_file, str):
+            found.append("confirmation.used_file must be text")
         if not isinstance(self.required, bool):
             found.append("confirmation.required must be true or false")
         if not isinstance(self.key_file, str):
@@ -197,6 +205,48 @@ class ConfirmationSettings:
         known = {"ARM", "TAKEOFF", "GOTO_WAYPOINT", "HOVER_AND_CAPTURE"}
         if not isinstance(self.actions, (list, tuple)) or any(item not in known for item in self.actions):
             found.append(f"confirmation.actions must be a list of {', '.join(sorted(known))}")
+        return found
+
+
+CELL_SOURCES = ("none", "fixed", "file", "safety_zones")
+
+
+@dataclass(frozen=True)
+class CellStateSettings:
+    # Where the bridge reads the state of the cell. "none" (the default) is what it always did: READY, or FAULT while the link to the vehicle is lost. The other sources are the shared
+    # readers of the SDK (`hydra_umc_sdk.cell_state_source`): "fixed" (a word), "file" (a fresh file) and "safety_zones" (the signed verdict of the safety zones service).
+    source: str = "none"
+    value: str = "READY"
+    path: str = ""
+    url: str = ""
+    max_age_seconds: float = 5.0
+    key_file: str = ""
+    public_key_file: str = ""
+    algorithm: str = "HMAC-SHA256"
+    key_id: str = ""
+
+    def problems(self) -> list[str]:
+        found = []
+        if self.source not in CELL_SOURCES:
+            found.append(f"cell_state.source must be one of {', '.join(CELL_SOURCES)}")
+        if self.value not in ("READY", "INHIBITED", "FAULT", "SAFE_STOP"):
+            found.append("cell_state.value must be READY, INHIBITED, FAULT or SAFE_STOP")
+        if not (_number(self.max_age_seconds) and 0 < self.max_age_seconds <= 86400):
+            found.append("cell_state.max_age_seconds must be a number above zero and at most 86400")
+        for name in ("path", "url", "key_file", "public_key_file", "algorithm", "key_id"):
+            if not isinstance(getattr(self, name), str):
+                found.append(f"cell_state.{name} must be text")
+        if self.algorithm not in ("HMAC-SHA256", "Ed25519"):
+            found.append("cell_state.algorithm must be HMAC-SHA256 or Ed25519")
+        if self.source == "file" and not self.path:
+            found.append("cell_state.path is needed for the file source")
+        if self.source == "safety_zones":
+            if bool(self.path) == bool(self.url):
+                found.append("cell_state needs a path or a url (not both) for the safety_zones source")
+            if self.algorithm == "HMAC-SHA256" and not self.key_file:
+                found.append("cell_state.key_file is needed for the safety_zones source (an unsigned verdict is never accepted)")
+            if self.algorithm == "Ed25519" and not self.public_key_file:
+                found.append("cell_state.public_key_file is needed for an Ed25519 verdict")
         return found
 
 
@@ -226,9 +276,10 @@ class UavSettings:
     envelope: EnvelopeSettings = field(default_factory=EnvelopeSettings)
     confirmation: ConfirmationSettings = field(default_factory=ConfirmationSettings)
     phases: PhaseSettings = field(default_factory=PhaseSettings)
+    cell_state: CellStateSettings = field(default_factory=CellStateSettings)
 
     def problems(self) -> list[str]:
-        return self.mission.problems() + self.camera.problems() + self.twin.problems() + self.datalake.problems() + self.job_entry.problems() + self.envelope.problems() + self.confirmation.problems() + self.phases.problems()
+        return self.mission.problems() + self.camera.problems() + self.twin.problems() + self.datalake.problems() + self.job_entry.problems() + self.envelope.problems() + self.confirmation.problems() + self.phases.problems() + self.cell_state.problems()
 
 
 def load_settings(path: str | Path | None) -> UavSettings:
@@ -238,7 +289,7 @@ def load_settings(path: str | Path | None) -> UavSettings:
     raw = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ValueError("the settings must be a JSON object")
-    sections = {"mission": MissionSettings, "camera": CameraSettings, "twin": TwinSettings, "datalake": DatalakeSettings, "job_entry": JobEntrySettings, "envelope": EnvelopeSettings, "confirmation": ConfirmationSettings, "phases": PhaseSettings}
+    sections = {"mission": MissionSettings, "camera": CameraSettings, "twin": TwinSettings, "datalake": DatalakeSettings, "job_entry": JobEntrySettings, "envelope": EnvelopeSettings, "confirmation": ConfirmationSettings, "phases": PhaseSettings, "cell_state": CellStateSettings}
     unknown = sorted(set(raw) - set(sections))
     if unknown:
         raise ValueError(f"unknown settings sections: {', '.join(unknown)}")
