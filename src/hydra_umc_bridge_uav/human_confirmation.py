@@ -99,7 +99,7 @@ def make_token(key: bytes, *, operator: str, role: str, action: str, job_id: str
 class ConfirmationVerifier:
     """Checks the confirmation of a request and remembers the tokens it has accepted, so each one works once."""
 
-    def __init__(self, key: bytes, *, max_ttl_s: float = 120.0, max_clock_skew_s: float = 5.0, clock: Callable[[], float] = time.time) -> None:
+    def __init__(self, key: bytes, *, max_ttl_s: float = 120.0, max_clock_skew_s: float = 5.0, clock: Callable[[], float] = time.time, used_file: str = "") -> None:
         if len(key) < MIN_KEY_CHARS:
             raise ValueError(f"the confirmation key must have at least {MIN_KEY_CHARS} characters")
         self._key = key
@@ -108,6 +108,40 @@ class ConfirmationVerifier:
         self._clock = clock
         self._used: dict[str, float] = {}
         self._lock = threading.Lock()
+        # the numbers of the confirmations used, kept in a file when one is given so that a restart does not make a used token valid again (unreadable or damaged: refused to start, never forgotten)
+        self._used_file = used_file
+        if used_file:
+            self._used = self._load_used(used_file)
+
+    def _load_used(self, path: str) -> dict[str, float]:
+        import json as _json
+        from pathlib import Path as _Path
+
+        file = _Path(path)
+        if not file.is_file():
+            return {}
+        try:
+            raw = _json.loads(file.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as error:
+            raise ValueError(f"the file of used confirmations cannot be read: {error}") from error
+        if not isinstance(raw, dict) or any(not isinstance(k, str) or isinstance(v, bool) or not isinstance(v, (int, float)) for k, v in raw.items()):
+            raise ValueError("the file of used confirmations must be a JSON object of token numbers and expiry times")
+        now = self._clock()
+        return {k: float(v) for k, v in raw.items() if float(v) > now}
+
+    def _save_used(self) -> bool:
+        import json as _json
+        import os as _os
+        from pathlib import Path as _Path
+
+        target = _Path(self._used_file)
+        temporary = target.with_name(target.name + ".tmp")
+        try:
+            temporary.write_text(_json.dumps(self._used), encoding="utf-8")
+            _os.replace(temporary, target)
+        except OSError:
+            return False
+        return True
 
     def verify(self, token: object, *, action: str, job_id: str) -> Confirmation:
         """The confirmation in `token` for exactly this action and job, or ConfirmationError. It does NOT use the token up: call `consume` once the request is accepted."""
@@ -162,4 +196,8 @@ class ConfirmationVerifier:
                 if len(self._used) >= MAX_REMEMBERED:
                     return False  # full of live tokens: fail closed rather than forget one
             self._used[confirmation.token_id] = confirmation.expires_at
+            if self._used_file and not self._save_used():
+                # the token cannot be remembered across a restart: fail closed rather than let it be used again later
+                del self._used[confirmation.token_id]
+                return False
             return True
