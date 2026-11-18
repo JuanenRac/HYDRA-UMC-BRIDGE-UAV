@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-401%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-419%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.3-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | 版本 | `0.2.3` |
 | 成熟度 | 可用 |
-| 测试 | 401 (`python tools/build_test.py`) |
+| 测试 | 419 (`python tools/build_test.py`) |
 | 技术栈 | Python / MAVLink / HYDRA-UMC-SDK |
 | 真实硬件 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 
@@ -52,7 +52,7 @@ GPL-3.0-or-later - see LICENSE
 | 领域 | 状态 | 在这里的含义 |
 |---|---|---|
 | 软件 | 🟡 | 主要用途可用；本 README 中的诚实性检查列出了仍然缺少的内容 |
-| 测试 | 🟢 | 401 项自动测试，每次变更都会运行 |
+| 测试 | 🟡 | 已记录 419 项自动测试；确切数量，或每次变更都运行它们的工作流，尚未确认 |
 | 真实硬件 | 🟠 | 仅模拟：使用模拟器、替身或仿真测试；此版本没有在真实硬件上运行的记录 |
 | 集成 | 🟠 | 其消息和路由已对照 SDK 的共享契约检查；尚未与真实设备一起运行 |
 | 部署 | 🟠 | 已作为发布版本公开；在干净机器上安装有文档，但没有记录 |
@@ -158,6 +158,7 @@ flowchart LR
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | 未设置 | MAVLink 2 签名密钥的路径（32 字节，原始或 64 个十六进制字符）；`--signing-key-file` 优先 |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | 未设置 | `1` 表示有密钥时接受未签名的消息;`--signing-allow-unsigned` 优先,其次是它,再其次是服务器配置 |
 | `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | 未设置 | 服务器 `data/server-config.json` 的路径(`--server-config` 优先) |
+| `job_entry.broker_loss_stops_heartbeat_s` | `0` | MQTT 代理可持续无法连接的秒数；超过后桥接会停发地面站心跳，让自动驾驶仪自己的故障保护得以动作；被停发的心跳在状态行中计为 `withheld`，代理恢复后心跳会自动继续；`0` 表示无论代理如何都保持心跳。仅可在 `config/uav.json` 中设置；开启后，地面网络故障可能使飞行器返航 |
 
 ## 🚀 快速开始
 
@@ -178,13 +179,14 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 测试
 
-运行 `python tools/build_test.py` 会执行 401 个自动 `unittest` 用例（同时编译每个模块）。测试不需要硬件、网络或可选软件包：需要 `paho-mqtt`、`pyserial` 或厂商库的用例使用替身，缺少软件包时则跳过。
+运行 `python tools/build_test.py` 会执行 419 个自动 `unittest` 用例（同时编译每个模块）。测试不需要硬件、网络或可选软件包：需要 `paho-mqtt`、`pyserial` 或厂商库的用例使用替身，缺少软件包时则跳过。
 
 | 测试文件 | 测试数 | 覆盖内容 |
 |---|---|---|
 | `test_coordinator.py`, `test_observed_state.py`, `test_simulated_uav.py` | - | 任务到飞行请求的映射、观测到的飞行器状态、各状态下允许的请求 |
 | `test_mavlink_transport.py`, `test_mavlink_emulator.py`, `mavlink_emulator.py` | - | 针对替身和模拟器的真实 MAVLink 命令、高度参照系、签名 |
 | `test_heartbeat.py`, `test_gcs_heartbeat.py`, `test_cli.py`, `test_edge_cases.py` | - | 链路丢失故障保护、地面站心跳、命令行及其退出码、边界情况 |
+| `test_broker_loss_heartbeat.py` | - | 代理缺席过久时停发并计数心跳、代理恢复后继续、设置检查，以及它在 `run` 和 MQTT 传输中的接线 |
 
 CI 运行 `HYDRA_UMC_CI=1 python tools/ci_validate.py`，检查清单、文档、八个 README 和图片，并使用 SDK 副本运行测试。
 
@@ -234,10 +236,11 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── settings.py                读取 config/uav.json
 │   ├── heartbeat.py               链路丢失故障保护状态机
 │   ├── gcs_heartbeat.py           桥接自己的地面站 HEARTBEAT
+│   ├── broker_watch.py            记录 MQTT 代理缺席的起点，以便停发心跳
 │   ├── mavlink_link.py            单一接收线程:喂看门狗并分发消息
 │   ├── cli.py                     `hydra-umc-bridge-uav run`
 │   └── simulated_uav.py           各状态下允许哪些请求
-├── tests/                         212 项测试（含 MAVLink 模拟器）
+├── tests/                         419 项测试（含 MAVLink 模拟器）
 ├── docs/                          桥接指南
 ├── config/                        任务、相机和孪生参数
 ├── tools/                         构建与测试运行器、版本提升、CI 校验、README 与图片的生成和检查

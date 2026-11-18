@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-401%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-419%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.3-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | バージョン | `0.2.3` |
 | 成熟度 | 機能する |
-| テスト | 401 (`python tools/build_test.py`) |
+| テスト | 419 (`python tools/build_test.py`) |
 | 技術 | Python / MAVLink / HYDRA-UMC-SDK |
 | 実機での確認 | シミュレーションのみ：エミュレーター、模擬部品、シミュレーターで試験済み。このバージョンについて実機での動作記録はありません |
 
@@ -52,7 +52,7 @@ GPL-3.0-or-later - see LICENSE
 | 領域 | 状態 | ここでの意味 |
 |---|---|---|
 | ソフトウェア | 🟡 | 主な目的では動作します。足りない点はこの README の正直さの確認に書かれています |
-| テスト | 🟢 | 自動テスト 401 件。変更のたびに実行されます |
+| テスト | 🟡 | 自動テスト 419 件を記録済み。正確な件数、または変更のたびに実行するワークフローはまだ確認されていません |
 | 実機 | 🟠 | シミュレーションのみ：エミュレーター、模擬部品、シミュレーターで試験済み。このバージョンについて実機での動作記録はありません |
 | 連携 | 🟠 | メッセージとルートは SDK の共通契約に照らして検証されていますが、実機と一緒に動かしたことはありません |
 | デプロイ | 🟠 | リリースとして公開されています。新しい環境へのインストールは文書化されていますが記録はありません |
@@ -158,6 +158,7 @@ flowchart LR
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | 未設定 | MAVLink 2 署名キーのパス（32 バイト、生または 16 進 64 文字）。`--signing-key-file` が優先されます |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | 未設定 | `1` で鍵がある場合に未署名メッセージを受け入れます。`--signing-allow-unsigned` が優先され、次にこれ、次にサーバーの設定です |
 | `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | 未設定 | サーバーの `data/server-config.json` のパス(`--server-config` が優先されます) |
+| `job_entry.broker_loss_stops_heartbeat_s` | `0` | MQTT ブローカーに届かない状態が続いてもよい秒数。これを超えるとブリッジは地上局のハートビートを止め、オートパイロット自身のフェイルセーフが働けるようにします。止めた拍は状態行に `withheld` として数えられ、ブローカーが戻ればハートビートは自動で再開します。`0` ならブローカーの状態にかかわらずハートビートを続けます。`config/uav.json` でのみ指定でき、有効にすると地上のネットワーク障害で機体が帰還することがあります |
 
 ## 🚀 クイックスタート
 
@@ -178,13 +179,14 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 テスト
 
-`python tools/build_test.py` で自動 `unittest` 401 件を実行します（各モジュールのコンパイルも行います）。テストにハードウェア、ネットワーク、オプションのパッケージは不要で、`paho-mqtt`・`pyserial`・ベンダーのライブラリが必要なものは代用品を使うか、パッケージがなければスキップされます。
+`python tools/build_test.py` で自動 `unittest` 419 件を実行します（各モジュールのコンパイルも行います）。テストにハードウェア、ネットワーク、オプションのパッケージは不要で、`paho-mqtt`・`pyserial`・ベンダーのライブラリが必要なものは代用品を使うか、パッケージがなければスキップされます。
 
 | テストファイル | テスト数 | 対象 |
 |---|---|---|
 | `test_coordinator.py`, `test_observed_state.py`, `test_simulated_uav.py` | - | ジョブから飛行要求への変換、観測された機体状態、どの状態からどの要求が許されるか |
 | `test_mavlink_transport.py`, `test_mavlink_emulator.py`, `mavlink_emulator.py` | - | ダミーとエミュレーターに対する実際の MAVLink コマンド、高度の基準、署名 |
 | `test_heartbeat.py`, `test_gcs_heartbeat.py`, `test_cli.py`, `test_edge_cases.py` | - | リンク喪失のフェイルセーフ、地上局ハートビート、コマンドラインと終了コード、境界ケース |
+| `test_broker_loss_heartbeat.py` | - | ブローカーが長く不在のときにハートビートを止めて数えること、戻ったときの再開、設定の検査、`run` と MQTT 転送への接続 |
 
 CI は `HYDRA_UMC_CI=1 python tools/ci_validate.py` を実行し、マニフェスト、文書、8 つの README、図を検査し、SDK のチェックアウトを使ってテストを実行します。
 
@@ -234,10 +236,11 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── settings.py                config/uav.json を読む
 │   ├── heartbeat.py               リンク喪失フェイルセーフの状態機械
 │   ├── gcs_heartbeat.py           ブリッジ自身の地上局 HEARTBEAT
+│   ├── broker_watch.py            MQTT ブローカーがいつから不在かを記録し、ハートビートを止める
 │   ├── mavlink_link.py            1 本の受信スレッド: 監視の更新とメッセージの振り分け
 │   ├── cli.py                     `hydra-umc-bridge-uav run`
 │   └── simulated_uav.py           どの状態からどの要求が許されるか
-├── tests/                         212 件（MAVLink エミュレーター付き）
+├── tests/                         419 件（MAVLink エミュレーター付き）
 ├── docs/                          ブリッジガイド
 ├── config/                        ミッション・カメラ・ツインの設定値
 ├── tools/                         ビルド・テスト実行、バージョン引き上げ、CI 検証、README と図の生成・検査

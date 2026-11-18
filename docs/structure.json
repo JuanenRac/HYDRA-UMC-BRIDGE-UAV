@@ -136,6 +136,19 @@
           }
         },
         {
+          "name": "broker_watch.py",
+          "desc": {
+            "en": "since when the MQTT broker has been gone, to withhold the heartbeat",
+            "es": "desde cuándo falta el broker MQTT, para retener el latido",
+            "de": "seit wann der MQTT-Broker fehlt, um den Heartbeat zurückzuhalten",
+            "fr": "depuis quand le broker MQTT est absent, pour retenir le HEARTBEAT",
+            "it": "da quando manca il broker MQTT, per trattenere l'HEARTBEAT",
+            "ja": "MQTT ブローカーがいつから不在かを記録し、ハートビートを止める",
+            "zh": "记录 MQTT 代理缺席的起点，以便停发心跳",
+            "pt": "desde quando falta o broker MQTT, para reter o HEARTBEAT"
+          }
+        },
+        {
           "name": "mavlink_link.py",
           "desc": {
             "en": "one reader thread: watchdog feed and message routing",
@@ -195,14 +208,14 @@
         {
           "name": "tests/",
           "desc": {
-            "en": "212 tests, with a MAVLink emulator",
-            "es": "212 pruebas, con un emulador MAVLink",
-            "de": "212 Tests, mit einem MAVLink-Emulator",
-            "fr": "212 tests, avec un émulateur MAVLink",
-            "it": "212 test, con un emulatore MAVLink",
-            "ja": "212 件（MAVLink エミュレーター付き）",
-            "zh": "212 项测试（含 MAVLink 模拟器）",
-            "pt": "212 testes, com um emulador MAVLink"
+            "en": "419 tests, with a MAVLink emulator",
+            "es": "419 pruebas, con un emulador MAVLink",
+            "de": "419 Tests, mit einem MAVLink-Emulator",
+            "fr": "419 tests, avec un émulateur MAVLink",
+            "it": "419 test, con un emulatore MAVLink",
+            "ja": "419 件（MAVLink エミュレーター付き）",
+            "zh": "419 项测试（含 MAVLink 模拟器）",
+            "pt": "419 testes, com um emulador MAVLink"
           }
         },
         {
