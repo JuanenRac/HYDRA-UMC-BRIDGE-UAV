@@ -27,7 +27,8 @@
     "allow_remote": false
   },
   "job_entry": {
-    "enabled": false
+    "enabled": false,
+    "broker_loss_stops_heartbeat_s": 0
   },
   "envelope": {
     "required": true,

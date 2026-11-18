@@ -19,6 +19,7 @@ import threading
 from hydra_umc_sdk.bridge_transport import connect_with_retry
 from hydra_umc_sdk.mqtt_connection import apply_connection_settings, settings_from_env
 
+from .broker_watch import BrokerWatch
 from .job_entry import MqttPublisher, UavJobEntry
 
 _LOG = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ def open_mqtt_client(
     connect_retry_delay_seconds: float = 2.0,
     client_id: str = DEFAULT_CLIENT_ID,
     connack_timeout_seconds: float = 10.0,
+    broker_watch: BrokerWatch | None = None,
 ) -> MqttPublisher:
     """Connect, subscribe `job_entry` after every (re)connect and hand each message to it. Raises RuntimeError when paho-mqtt is missing or the broker refuses."""
     try:
@@ -52,12 +54,16 @@ def open_mqtt_client(
         if getattr(reason_code, "is_failure", False):
             refusal.append(str(reason_code))
         else:
+            if broker_watch is not None:
+                broker_watch.connected()
             subscriptions = job_entry.subscriptions()
             if subscriptions:
                 client.subscribe(subscriptions)  # type: ignore[attr-defined]
         answered.set()
 
     def on_disconnect(client: object, userdata: object, *args: object) -> None:
+        if broker_watch is not None:
+            broker_watch.lost()
         _LOG.warning("the MQTT connection to the broker was lost; the client reconnects on its own")
 
     def on_message(_client: object, _userdata: object, message: object) -> None:

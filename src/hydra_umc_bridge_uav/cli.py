@@ -21,8 +21,9 @@ import os
 import signal
 import sys
 import threading
-from typing import Callable, Sequence, TextIO
+from typing import Any, Callable, Sequence, TextIO
 
+from .broker_watch import BrokerWatch
 from .gcs_heartbeat import ENVIRONMENT_VARIABLE, GcsHeartbeat, parse_rate_hz, rate_from_environment
 from .heartbeat import HeartbeatMonitor
 from .mavlink_link import LinkedSink
@@ -112,7 +113,7 @@ def build_parser() -> argparse.ArgumentParser:
 def _status_line(heartbeat: GcsHeartbeat, out: TextIO, linked: LinkedSink | None = None) -> None:
     status = heartbeat.status()
     line: dict[str, object] = {
-        "heartbeat": {"running": status.running, "rate_hz": status.rate_hz, "sent": status.sent, "failed": status.failed, "last_error": status.last_error},
+        "heartbeat": {"running": status.running, "rate_hz": status.rate_hz, "sent": status.sent, "failed": status.failed, "last_error": status.last_error, "withheld": status.withheld},
     }
     if linked is not None:
         line["link"] = linked.link_state()
@@ -120,7 +121,7 @@ def _status_line(heartbeat: GcsHeartbeat, out: TextIO, linked: LinkedSink | None
     out.flush()
 
 
-def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | None, mqtt_opener: Callable[..., object] | None) -> object | None:
+def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | None, mqtt_opener: Callable[..., object] | None, watch: Any = None) -> object | None:
     """Start the MQTT job entry when the settings (or the environment) switch it on; None while it is off. Plan-only: nothing is sent to the vehicle."""
     from hydra_umc_sdk.bridge_contract import CellState
 
@@ -151,11 +152,16 @@ def _open_job_entry(args: argparse.Namespace, host: str, linked: LinkedSink | No
         verifier = ConfirmationVerifier(load_key(settings.confirmation.key_file), max_ttl_s=settings.confirmation.max_ttl_s, max_clock_skew_s=settings.confirmation.max_clock_skew_s)
     policy = FlightPolicy(settings.envelope, settings.confirmation, settings.phases, verifier)
     entry = UavJobEntry(UavCoordinator(), cell_state, lambda: None, None, enabled=True, policy=policy)
+    # the watch exists only when the settings ask for the heartbeat to stop with the broker (off by default): without it the openers are called as before
+    extra: dict[str, object] = {}
+    if watch is not None and settings.job_entry.broker_loss_stops_heartbeat_s > 0:
+        watch.stop_after_s = float(settings.job_entry.broker_loss_stops_heartbeat_s)
+        extra["broker_watch"] = watch
     if mqtt_opener is None:
         from .mqtt_transport import open_mqtt_client  # lazy: paho-mqtt is optional
 
-        return open_mqtt_client(host, args.mqtt_port, job_entry=entry)
-    return mqtt_opener(host, args.mqtt_port, job_entry=entry)
+        return open_mqtt_client(host, args.mqtt_port, job_entry=entry, **extra)  # type: ignore[arg-type]
+    return mqtt_opener(host, args.mqtt_port, job_entry=entry, **extra)
 
 
 def run(
@@ -246,17 +252,18 @@ def run(
         linked = LinkedSink(sink, HeartbeatMonitor(link_timeout)).start()
         sink = linked
     mqtt_client = None
+    watch = BrokerWatch()
     mqtt_host = getattr(args, "mqtt_host", None)
     if mqtt_host:
         try:
-            mqtt_client = _open_job_entry(args, mqtt_host, linked, mqtt_opener)
+            mqtt_client = _open_job_entry(args, mqtt_host, linked, mqtt_opener, watch)
         except (ValueError, RuntimeError, OSError) as error:
             err.write(f"error: the job entry could not be started: {error}\n")
             close = getattr(sink, "close", None)
             if callable(close):
                 close()
             return EXIT_USAGE
-    heartbeat = GcsHeartbeat(sink, rate)  # type: ignore[arg-type]
+    heartbeat = GcsHeartbeat(sink, rate, healthy=watch.healthy)  # type: ignore[arg-type]
     heartbeat.start()
     out.write(f"HEARTBEAT_RUNNING connection={args.connection} rate_hz={rate:g}\n")
     out.flush()

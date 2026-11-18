@@ -70,13 +70,17 @@ class HeartbeatStatus:
     sent: int
     failed: int
     last_error: str | None
+    withheld: int = 0  # beats not sent because the bridge was not healthy (see `healthy`)
 
 
 class GcsHeartbeat:
     """Sends the station heartbeat on a background thread, or on demand with `beat()` (used by the tests)."""
 
-    def __init__(self, sink: HeartbeatSink, rate_hz: float = DEFAULT_RATE_HZ, *, wait: Callable[[threading.Event, float], bool] | None = None) -> None:
+    def __init__(self, sink: HeartbeatSink, rate_hz: float = DEFAULT_RATE_HZ, *, wait: Callable[[threading.Event, float], bool] | None = None, healthy: Callable[[], bool] | None = None) -> None:
+        """`healthy` (default: always) says whether the bridge may keep telling the autopilot that its station is alive; when it says no the beat is skipped and counted as withheld."""
         self._sink = sink
+        self._healthy = healthy
+        self._withheld = 0
         self._rate_hz = parse_rate_hz(rate_hz)
         self._wait = wait or (lambda stop, seconds: stop.wait(seconds))
         self._stop = threading.Event()
@@ -103,10 +107,22 @@ class GcsHeartbeat:
             self._sent += 1
         return True
 
+    def _is_healthy(self) -> bool:
+        if self._healthy is None:
+            return True
+        try:
+            return bool(self._healthy())
+        except Exception:  # noqa: BLE001 - a broken health check must not stop the beats
+            return True
+
     def _run(self) -> None:
         period = 1.0 / self._rate_hz
         while not self._stop.is_set():
-            self.beat()
+            if self._is_healthy():
+                self.beat()
+            else:
+                with self._lock:
+                    self._withheld += 1
             if self._wait(self._stop, period):
                 break
 
@@ -129,7 +145,7 @@ class GcsHeartbeat:
     def status(self) -> HeartbeatStatus:
         with self._lock:
             running = self._thread is not None and self._thread.is_alive()
-            return HeartbeatStatus(running, self._rate_hz, self._sent, self._failed, self._last_error)
+            return HeartbeatStatus(running, self._rate_hz, self._sent, self._failed, self._last_error, self._withheld)
 
     def __enter__(self) -> "GcsHeartbeat":
         self.start()
