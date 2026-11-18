@@ -4,6 +4,7 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+- **The heartbeat of the station can stop when the MQTT broker is gone:** `job_entry.broker_loss_stops_heartbeat_s` (0 by default, which keeps the heartbeat running whatever the broker does) set to a number of seconds withholds the heartbeat once the broker has been unreachable for longer than that, so the autopilot's own failsafe can react; the beats withheld are counted in the status line (`withheld`) and the heartbeat resumes by itself when the broker is back. Switching it on can make a vehicle return home because of a network fault on the ground.
 - **Only the heartbeat of the vehicle's autopilot keeps the link watchdog alive:** a HEARTBEAT from a component that says it is no autopilot (a gimbal, a camera, a companion computer) or from another system on the same link no longer counts as a sign that the vehicle is there, so the link is declared lost when the vehicle itself falls silent. A message that does not say where it comes from is counted as before. Tests cover each case.
 
 

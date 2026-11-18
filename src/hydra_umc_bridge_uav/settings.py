@@ -134,9 +134,15 @@ class DatalakeSettings:
 class JobEntrySettings:
     # The MQTT entry for jobs (`hydra/bridges/uav/cmd/job`), off by default; the broker address is an option of `run`.
     enabled: bool = False
+    # Seconds without the MQTT broker after which the bridge stops sending its own ground-station heartbeat, so that the autopilot's own failsafe can react; 0 (the default) never stops it.
+    broker_loss_stops_heartbeat_s: float = 0.0
 
     def problems(self) -> list[str]:
-        return [] if isinstance(self.enabled, bool) else ["job_entry.enabled must be true or false"]
+        found = [] if isinstance(self.enabled, bool) else ["job_entry.enabled must be true or false"]
+        loss = self.broker_loss_stops_heartbeat_s
+        if isinstance(loss, bool) or not isinstance(loss, (int, float)) or not 0 <= loss < float("inf"):
+            found.append("job_entry.broker_loss_stops_heartbeat_s must be 0 (off) or a number of seconds")
+        return found
 
 
 @dataclass(frozen=True)
