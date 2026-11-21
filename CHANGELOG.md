@@ -4,6 +4,8 @@ All notable changes to this project are documented here.
 
 ## [Unreleased]
 
+## [0.2.4] - Broker-loss heartbeat stop, cell state from settings and a stricter link watchdog
+
 - **The state of the cell can come from the settings, and the one-use memories can survive a restart:** the `cell_state` section of `config/uav.json` chooses where the job entry reads the cell (`none`, the default, is the reading it always had: READY, or FAULT while the link is lost; `fixed`, `file` and `safety_zones` use the shared reader of the SDK, the last one accepting only a signed, fresh verdict), and every answer says which source it used in `cell_source`. `job_entry.idempotency_file` keeps the idempotency keys of the jobs and `confirmation.used_file` keeps the numbers of the confirmations already used, so a job or a token repeated after a restart is not accepted again; a file that cannot be read stops the start, and a token that cannot be remembered is refused.
 
 - **The status table of the README shows the exact test count as confirmed:** the table is regenerated from the recorded data, so the Tests line is green for a count that was collected and that a workflow runs. The README and its seven translations are regenerated.
