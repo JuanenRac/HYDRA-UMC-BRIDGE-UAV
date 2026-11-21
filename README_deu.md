@@ -18,7 +18,7 @@ GPL-3.0-or-later - see LICENSE
   <img src="https://img.shields.io/badge/License-GPL%203.0--or--later-blue.svg" alt="GPL 3.0 or later">
   <img src="https://img.shields.io/badge/Python-3.11%2B-3776AB.svg" alt="Python">
   <img src="https://img.shields.io/badge/Safety-Fails%20Closed-red.svg" alt="Safety">
-  <img src="https://img.shields.io/badge/Tests-401%20passing-2ea44f.svg" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-419%20passing-2ea44f.svg" alt="Tests">
   <img src="https://img.shields.io/badge/Version-0.2.3-0f6cbd.svg" alt="Version">
   <img src="https://img.shields.io/badge/Maturity-functional-0F6CBD.svg" alt="Maturity">
 </p>
@@ -37,7 +37,7 @@ GPL-3.0-or-later - see LICENSE
 |---|---|
 | Version | `0.2.3` |
 | Reifegrad | Funktionsfähig |
-| Tests | 401 (`python tools/build_test.py`) |
+| Tests | 419 (`python tools/build_test.py`) |
 | Technik | Python / MAVLink / HYDRA-UMC-SDK |
 | Auf echter Hardware | Nur simuliert: gegen Emulatoren, Attrappen oder Simulatoren getestet; für diese Version ist kein Lauf auf echter Hardware vermerkt |
 
@@ -52,7 +52,7 @@ Jede Zeile ist ein Teil dieses Repositorys, und die Ampel sagt, wie weit er heut
 | Bereich | Stand | Was das hier bedeutet |
 |---|---|---|
 | Software | 🟡 | Funktioniert für seinen Hauptzweck; die Ehrlichkeitsprüfung in diesem README nennt, was noch fehlt |
-| Tests | 🟢 | 401 automatische Tests, bei jeder Änderung ausgeführt |
+| Tests | 🟢 | 419 automatische Tests, bei jeder Änderung ausgeführt |
 | Echte Hardware | 🟠 | Nur simuliert: gegen Emulatoren, Attrappen oder Simulatoren getestet; für diese Version ist kein Lauf auf echter Hardware vermerkt |
 | Integration | 🟠 | Seine Nachrichten und Routen werden gegen die gemeinsamen Verträge des SDK geprüft; es lief noch nicht zusammen mit der echten Ausrüstung |
 | Bereitstellung | 🟠 | Als Release veröffentlicht; die Installation auf einem frischen Rechner ist dokumentiert, aber nicht vermerkt |
@@ -158,6 +158,7 @@ Der Befehl `hydra-umc-bridge-uav run` (oder `python -m hydra_umc_bridge_uav run`
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_KEY_FILE` | nicht gesetzt | Pfad des MAVLink-2-Signierschlüssels (32 Byte, roh oder 64 Hexzeichen); `--signing-key-file` hat Vorrang |
 | `HYDRA_UMC_BRIDGE_UAV_SIGNING_ALLOW_UNSIGNED` | nicht gesetzt | `1` nimmt mit Schlüssel unsignierte Nachrichten an; `--signing-allow-unsigned` hat Vorrang, dann dies, dann die Server-Konfiguration |
 | `HYDRA_UMC_BRIDGE_UAV_SERVER_CONFIG` | nicht gesetzt | Pfad der `data/server-config.json` des Servers (`--server-config` hat Vorrang) |
+| `job_entry.broker_loss_stops_heartbeat_s` | `0` | Sekunden, die der MQTT-Broker unerreichbar sein darf, bevor der Bridge seinen Bodenstation-Heartbeat zurückhält, damit der eigene Rückfall des Autopiloten reagieren kann; die zurückgehaltenen Schläge werden in der Statuszeile als `withheld` gezählt, und der Heartbeat läuft von selbst weiter, sobald der Broker wieder da ist; `0` lässt den Heartbeat laufen, was der Broker auch tut. Nur in `config/uav.json` einstellbar; eingeschaltet kann es ein Fahrzeug wegen einer Netzstörung am Boden zur Rückkehr bringen |
 
 ## 🚀 Schnellstart
 
@@ -178,13 +179,14 @@ hydra-umc-bridge-uav run --connection udpin:0.0.0.0:14550 --signing-key-file ~/u
 
 ## 🧪 Tests
 
-401 automatische `unittest`-Fälle laufen mit `python tools/build_test.py` (das kompiliert auch jedes Modul). Die Tests brauchen weder Hardware noch Netz noch optionale Pakete: Die, die `paho-mqtt`, `pyserial` oder eine Herstellerbibliothek bräuchten, nutzen einen Ersatz oder werden übersprungen, wenn das Paket fehlt.
+419 automatische `unittest`-Fälle laufen mit `python tools/build_test.py` (das kompiliert auch jedes Modul). Die Tests brauchen weder Hardware noch Netz noch optionale Pakete: Die, die `paho-mqtt`, `pyserial` oder eine Herstellerbibliothek bräuchten, nutzen einen Ersatz oder werden übersprungen, wenn das Paket fehlt.
 
 | Testdatei | Tests | Was sie abdeckt |
 |---|---|---|
 | `test_coordinator.py`, `test_observed_state.py`, `test_simulated_uav.py` | - | Auftrag-zu-Flugaufforderung-Abbildung, der beobachtete Fahrzeugzustand, welche Anforderung aus welchem Zustand erlaubt ist |
 | `test_mavlink_transport.py`, `test_mavlink_emulator.py`, `mavlink_emulator.py` | - | echte MAVLink-Befehle gegen Attrappen und einen Emulator, Höhenbezüge, Signierung |
 | `test_heartbeat.py`, `test_gcs_heartbeat.py`, `test_cli.py`, `test_edge_cases.py` | - | der Rückfall bei Verbindungsverlust, der Bodenstation-Heartbeat, die Kommandozeile und ihre Exit-Codes, Randfälle |
+| `test_broker_loss_heartbeat.py` | - | der zurückgehaltene und gezählte Heartbeat, wenn der Broker zu lange fehlt, seine Wiederaufnahme bei Rückkehr, die Prüfung der Einstellung und ihre Verdrahtung in `run` und im MQTT-Transport |
 
 Die CI führt `HYDRA_UMC_CI=1 python tools/ci_validate.py` aus; das prüft das Manifest, die Dokumente, die acht READMEs und die Bilder und führt die Tests mit einem SDK-Checkout aus.
 
@@ -234,10 +236,11 @@ HYDRA-UMC-BRIDGE-UAV/
 │   ├── settings.py                liest config/uav.json
 │   ├── heartbeat.py               Zustandsautomat für Verbindungsverlust
 │   ├── gcs_heartbeat.py           der eigene Bodenstation-HEARTBEAT
+│   ├── broker_watch.py            seit wann der MQTT-Broker fehlt, um den Heartbeat zurückzuhalten
 │   ├── mavlink_link.py            ein Lese-Thread: speist die Überwachung und verteilt Meldungen
 │   ├── cli.py                     `hydra-umc-bridge-uav run`
 │   └── simulated_uav.py           welche Anforderung aus welchem Zustand erlaubt ist
-├── tests/                         212 Tests, mit einem MAVLink-Emulator
+├── tests/                         419 Tests, mit einem MAVLink-Emulator
 ├── docs/                          Bridge-Leitfaden
 ├── config/                        Werte für Mission, Kamera und Zwilling
 ├── tools/                         Build- und Testläufer, Versionserhöhung, CI-Prüfer, README- und Bildgeneratoren samt Prüfungen
