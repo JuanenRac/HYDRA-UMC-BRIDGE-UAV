@@ -65,12 +65,15 @@ class UavJobEntry:
         enabled: bool | None = None,
         global_stop: GlobalStopGuard | GlobalStopSettings | None = None,
         policy: FlightPolicy | None = None,
+        cell_source: str = "none",
     ) -> None:
         """`cell_state` and `machine_state` are read for every job; the second one must be what the autopilot reported (None when unknown: the gate refuses flight phases)."""
         self._coordinator = coordinator
         self._cell_state = cell_state
         self._machine_state = machine_state
         self._sender = sender
+        # where the cell state comes from, said in every answer: "none" is the built-in reading (READY, or FAULT while the link is lost), the others are the sources of the settings
+        self._cell_source = cell_source
         # the flight policy (required envelope, human confirmation, chaining in flight); None keeps the entry as it was, the command line always builds one from the settings
         self._policy = policy
         self.enabled = enabled_from_environment() if enabled is None else bool(enabled)
@@ -110,6 +113,7 @@ class UavJobEntry:
         except Exception as error:  # noqa: BLE001 - nothing a message does may end the loop
             _LOG.exception("could not handle %s", topic)
             answer = {"allowed": False, "reason": f"the job could not be handled: {type(error).__name__}", "sent": False}
+        answer.setdefault("cell_source", self._cell_source)
         try:
             client.publish(RESULT_TOPIC, json.dumps(answer))
         except Exception:  # noqa: BLE001 - a broker that is gone must not end the loop either
