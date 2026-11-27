@@ -53,7 +53,7 @@ def check_url(settings: TwinSettings) -> str:
 def read_token(path: str | Path) -> str:
     """The token in the file, without the line break; a ValueError when it cannot be read or is not usable."""
     try:
-        text = Path(path).read_text(encoding="utf-8").strip()
+        text = Path(path).read_text(encoding="utf-8-sig").strip()
     except (OSError, ValueError) as error:
         raise ValueError(f"twin.token_file cannot be read: {getattr(error, 'strerror', None) or error}") from error
     if not text or any(ord(c) < 32 or ord(c) == 127 for c in text):
